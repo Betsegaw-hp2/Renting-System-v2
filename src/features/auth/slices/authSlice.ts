@@ -23,7 +23,6 @@ export const signupUser = createAsyncThunk(
         lastName: credentials.lastName,
         role: credentials.role,
         phoneNumber: credentials.phoneNumber,
-        agreeToTerms: credentials.agreeToTerms,
         // Include role-specific fields
         ...(credentials.role === "TENANT"
           ? {
@@ -60,20 +59,37 @@ export const signupUser = createAsyncThunk(
   },
 )
 
-export const loginUser = createAsyncThunk("auth/login", async (credentials: LoginCredentials, { rejectWithValue }) => {
-  try {
-    const response = await authApi.login(credentials)
-    localStorage.setItem("token", response.token)
-    return response
-  } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Login failed")
-  }
-})
+export interface LoginUserParams extends LoginCredentials {
+  rememberMe?: boolean
+}
+
+export const loginUser = createAsyncThunk(
+  "auth/login",
+  async ({ email, password, rememberMe }: LoginUserParams, { rejectWithValue }) => {
+    try {
+      const response = await authApi.login({ email, password })
+
+      // If rememberMe is true, store the token in localStorage, otherwise in sessionStorage
+      if (rememberMe) {
+        localStorage.setItem("token", response.token)
+      } else {
+        sessionStorage.setItem("token", response.token)
+        // Remove from localStorage if it exists there
+        localStorage.removeItem("token")
+      }
+
+      return response
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Login failed")
+    }
+  },
+)
 
 export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {
     await authApi.logout()
     localStorage.removeItem("token")
+    sessionStorage.removeItem("token")
     return null
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || "Logout failed")

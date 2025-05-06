@@ -24,13 +24,14 @@ export interface User {
 	lastName: string
 	role: UserRole
 	phoneNumber: string
-	agreeToTerms: boolean
+	
 
   }
   
   export interface LoginCredentials {
 	email: string
 	password: string
+	rememberMe?: boolean
   }
   
   export interface AuthState {

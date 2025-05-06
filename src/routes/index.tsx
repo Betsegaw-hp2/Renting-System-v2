@@ -4,7 +4,8 @@ import ProtectedRoute from "./protectedRoute"
 
 // Lazy-loaded components
 const SignupPage = lazy(() => import("../features/auth/pages/SignupPage"))
-// const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
+const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
+const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPasswordPage"))
 // const HomePage = lazy(() => import("../pages/Home"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
 
@@ -36,7 +37,15 @@ const router = createBrowserRouter([
     path: "/login",
     element: (
       <Suspense fallback={<LoadingFallback />}>
-        {/* <LoginPage /> */}
+        <LoginPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ForgotPasswordPage />
       </Suspense>
     ),
   },
