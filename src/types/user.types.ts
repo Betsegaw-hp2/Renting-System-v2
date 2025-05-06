@@ -24,8 +24,6 @@ export interface User {
 	lastName: string
 	role: UserRole
 	phoneNumber: string
-	
-
   }
   
   export interface LoginCredentials {

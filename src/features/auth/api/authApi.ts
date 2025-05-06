@@ -7,17 +7,17 @@ export interface AuthResponse {
 }
 
 export const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
-  const response = await apiClient.post<AuthResponse>("/auth/signup", credentials)
+  const response = await apiClient.post<AuthResponse>("/authentication/register", credentials)
   return response.data
 }
 
 export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
-  const response = await apiClient.post<AuthResponse>("/auth/login", credentials)
+  const response = await apiClient.post<AuthResponse>("/authentication/login", credentials)
   return response.data
 }
 
 export const logout = async (): Promise<void> => {
-  await apiClient.post("/auth/logout")
+  await apiClient.post("/authentication/logout")
   localStorage.removeItem("token")
 }
 
