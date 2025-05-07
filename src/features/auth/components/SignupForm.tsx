@@ -1,8 +1,8 @@
 "use client"
 
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
+import { AlertCircle, ArrowLeft, ArrowRight, ChevronRight, Loader2 } from "lucide-react"
 import { Link } from "react-router-dom"
-import { Alert, AlertDescription } from "../../../components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
 import { cn } from "../../../lib/utils"
 import { UserRole } from "../../../types/user.types"
@@ -21,14 +21,15 @@ export function SignupForm() {
     isLoading,
     error,
     updateFormData,
-    // goToNextStep,
+    goToNextStep,
     goToPreviousStep,
     handleSubmit,
+    skipAndCreateAccount,
   } = useMultiStepSignup()
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="space-y-2 mb-2 text-center">
+      <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
           Create an Account
         </h1>
@@ -39,7 +40,11 @@ export function SignupForm() {
 
       {error && (
         <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {typeof error === "string" ? error : "An error occurred during signup. Please try again."}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -67,32 +72,50 @@ export function SignupForm() {
           </div>
 
           <div className="flex justify-between pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={goToPreviousStep}
-              disabled={currentStep === "account" || isLoading}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
+            {currentStep === "account" ? (
+              <div></div> // Empty div to maintain flex spacing
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goToPreviousStep}
+                disabled={isLoading}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            )}
 
-            <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : currentStep === "account" ? (
-                <>
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              ) : (
-                "Create Account"
-              )}
-            </Button>
+            {currentStep === "account" ? (
+              <Button type="submit" onClick={goToNextStep} disabled={isLoading} className="flex items-center gap-2">
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={skipAndCreateAccount}
+                  disabled={isLoading}
+                  className="flex items-center gap-2"
+                >
+                  Skip and Create Account
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </form>
       </div>

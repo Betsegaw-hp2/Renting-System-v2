@@ -17,9 +17,10 @@ export const useSignupForm = () => {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
+  const [confirm_password, setConfirmPassword] = useState("")
+  const [first_name, setFirstName] = useState("")
+  const [last_name, setLastName] = useState("")
+  const [username, setUsername] = useState("")
   const [role, setRole] = useState<UserRole>(UserRole.TENANT)
   const [validationErrors, setValidationErrors] = useState<ValidationError>({})
 
@@ -27,7 +28,7 @@ export const useSignupForm = () => {
     e.preventDefault()
 
     // Validate form
-    const errors = validateSignupForm(email, password, confirmPassword, firstName, lastName, role)
+    const errors = validateSignupForm(email, password, confirm_password, first_name, last_name, username, role)
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors)
@@ -40,11 +41,10 @@ export const useSignupForm = () => {
     const credentials: SignupCredentials = {
       email,
       password,
-      firstName,
-      lastName,
+      first_name,
+      last_name,
+      username,
       role,
-      phoneNumber: "",
-      agreeToTerms: false
     }
 
     const resultAction = await dispatch(signupUser(credentials))
@@ -59,12 +59,14 @@ export const useSignupForm = () => {
     setEmail,
     password,
     setPassword,
-    confirmPassword,
+    confirm_password,
     setConfirmPassword,
-    firstName,
+    first_name,
     setFirstName,
-    lastName,
+    last_name,
     setLastName,
+    username,
+    setUsername,
     role,
     setRole,
     handleSubmit,

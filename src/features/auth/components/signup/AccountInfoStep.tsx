@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
+import { AtSign, Eye, EyeOff, Lock, Mail, User } from "lucide-react"
 import { useState } from "react"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
@@ -33,8 +33,8 @@ export function AccountInfoStep({ formData, errors, updateFormData }: AccountInf
             <Input
               id="firstName"
               placeholder="Enter your first name"
-              value={formData.firstName}
-              onChange={(e) => updateFormData("firstName", e.target.value)}
+              value={formData.first_name}
+              onChange={(e) => updateFormData("first_name", e.target.value)}
               className={`pl-10 ${errors.firstName ? "border-red-500" : ""}`}
             />
           </div>
@@ -52,13 +52,32 @@ export function AccountInfoStep({ formData, errors, updateFormData }: AccountInf
             <Input
               id="lastName"
               placeholder="Enter your last name"
-              value={formData.lastName}
-              onChange={(e) => updateFormData("lastName", e.target.value)}
+              value={formData.last_name}
+              onChange={(e) => updateFormData("last_name", e.target.value)}
               className={`pl-10 ${errors.lastName ? "border-red-500" : ""}`}
             />
           </div>
           {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="username" className="text-sm font-medium">
+          Username
+        </Label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+            <AtSign className="h-4 w-4" />
+          </div>
+          <Input
+            id="username"
+            placeholder="Choose a username"
+            value={formData.username}
+            onChange={(e) => updateFormData("username", e.target.value)}
+            className={`pl-10 ${errors.username ? "border-red-500" : ""}`}
+          />
+        </div>
+        {errors.username && <p className="text-sm text-red-500">{errors.username}</p>}
       </div>
 
       <div className="space-y-2">

@@ -1,29 +1,32 @@
-export interface User {
+export type UserRole = "admin" | "renter" | "owner";
+
+export const UserRole = {
+	ADMIN: "admin" as "admin",
+	TENANT: "renter" as "renter",
+	PROPERTY_OWNER: "owner" as "owner",
+};
+  
+  export interface User {
 	id: string
 	email: string
-	firstName: string
-	lastName: string
+	first_name: string
+	last_name: string
+	username: string
 	role: UserRole
-	avatar?: string
-	createdAt: string
-	isActive: boolean
+	profile_picture?: string
+	is_verified: boolean
+	is_member: boolean
+	created_at: string
+	updated_at: string
   }
   
-  export const UserRole = {
-	ADMIN: "ADMIN",
-	TENANT: "TENANT",
-	PROPERTY_OWNER: "PROPERTY_OWNER",
-  } as const;
-  
-  export type UserRole = typeof UserRole[keyof typeof UserRole];
-
   export interface SignupCredentials {
 	email: string
 	password: string
-	firstName: string
-	lastName: string
+	first_name: string
+	last_name: string
 	role: UserRole
-	phoneNumber: string
+	username: string
   }
   
   export interface LoginCredentials {

@@ -1,14 +1,39 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import { getAuthToken, removeAuthToken, setAuthToken } from "../../../lib/cookies"
 import type { AuthState, LoginCredentials, User } from "../../../types/user.types"
 import * as authApi from "../api/authApi"
 import type { SignupFormData } from "../types/signup.types"
 
+
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem("token"),
-  isAuthenticated: !!localStorage.getItem("token"),
+  token: getAuthToken() || null,
+  isAuthenticated: !!getAuthToken(),
   isLoading: false,
   error: null,
+}
+
+// Helper function to extract error message from different error formats
+const getErrorMessage = (error: any): string => {
+  if (typeof error === "string") return error
+
+  if (error?.response?.data?.message) return error.response.data.message
+  
+  if (error?.response?.data?.error) return error.response.data.error
+  
+  if (error?.message) return error.message
+
+  // If error is an object but not in expected format, stringify it safely
+  if (typeof error === "object" && error !== null) {
+    try {
+      const errObj = JSON.stringify(error)
+      return `Request failed: ${errObj}`
+    } catch (e) {
+      return "An unknown error occurred"
+    }
+  }
+
+  return "An unknown error occurred"
 }
 
 export const signupUser = createAsyncThunk(
@@ -19,42 +44,20 @@ export const signupUser = createAsyncThunk(
       const signupCredentials = {
         email: credentials.email,
         password: credentials.password,
-        firstName: credentials.firstName,
-        lastName: credentials.lastName,
+        first_name: credentials.first_name,
+        last_name: credentials.last_name,
+        username: credentials.username,
         role: credentials.role,
-        phoneNumber: credentials.phoneNumber,
-        // Include role-specific fields
-        ...(credentials.role === "TENANT"
-          ? {
-              preferredLocation: credentials.preferredLocation,
-              budget: credentials.budget,
-              moveInDate: credentials.moveInDate,
-            }
-          : {
-              // Location
-              address: credentials.address,
-              city: credentials.city,
-              state: credentials.state,
-              zipCode: credentials.zipCode,
-
-              // Property info
-              companyName: credentials.companyName,
-              businessType: credentials.businessType,
-              propertyTypes: credentials.propertyTypes,
-              propertiesOwned: credentials.propertiesOwned,
-
-              // KYC
-              idType: credentials.idType,
-              idNumber: credentials.idNumber,
-              dateOfBirth: credentials.dateOfBirth,
-            }),
       }
 
       const response = await authApi.signup(signupCredentials)
-      localStorage.setItem("token", response.token)
+
+      // Store token in cookie
+      setAuthToken(response.token, true)
+
       return response
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Signup failed")
+      return rejectWithValue(getErrorMessage(error))
     }
   },
 )
@@ -65,22 +68,16 @@ export interface LoginUserParams extends LoginCredentials {
 
 export const loginUser = createAsyncThunk(
   "auth/login",
-  async ({ email, password, rememberMe }: LoginUserParams, { rejectWithValue }) => {
+  async ({ email, password, rememberMe = false }: LoginUserParams, { rejectWithValue }) => {
     try {
       const response = await authApi.login({ email, password })
 
-      // If rememberMe is true, store the token in localStorage, otherwise in sessionStorage
-      if (rememberMe) {
-        localStorage.setItem("token", response.token)
-      } else {
-        sessionStorage.setItem("token", response.token)
-        // Remove from localStorage if it exists there
-        localStorage.removeItem("token")
-      }
+      // Store token in cookie with rememberMe option
+      setAuthToken(response.token, rememberMe)
 
       return response
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Login failed")
+      return rejectWithValue(getErrorMessage(error))
     }
   },
 )
@@ -88,11 +85,11 @@ export const loginUser = createAsyncThunk(
 export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {
     await authApi.logout()
-    localStorage.removeItem("token")
-    sessionStorage.removeItem("token")
+    removeAuthToken()
+
     return null
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Logout failed")
+    return rejectWithValue(getErrorMessage(error))
   }
 })
 
@@ -101,7 +98,7 @@ export const fetchCurrentUser = createAsyncThunk("auth/fetchCurrentUser", async 
     const user = await authApi.getCurrentUser()
     return user
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || "Failed to fetch user")
+    return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch user")
   }
 })
 
@@ -122,7 +119,7 @@ const authSlice = createSlice({
     builder.addCase(signupUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
       state.isLoading = false
       state.isAuthenticated = true
-      state.user = action.payload.user
+      state.user = {...action.payload}
       state.token = action.payload.token
     })
     builder.addCase(signupUser.rejected, (state, action) => {
@@ -138,7 +135,7 @@ const authSlice = createSlice({
     builder.addCase(loginUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
       state.isLoading = false
       state.isAuthenticated = true
-      state.user = action.payload.user
+      state.user = {...action.payload}
       state.token = action.payload.token
     })
     builder.addCase(loginUser.rejected, (state, action) => {

@@ -4,8 +4,8 @@ export const validateEmail = (email: string): boolean => {
   }
   
   export const validatePassword = (password: string): boolean => {
-	// At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-	const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+	// At least 8 characters, 1 uppercase, 1 lowercase, 1 number, atleast on special character
+	const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
 	return passwordRegex.test(password)
   }
   
@@ -18,6 +18,7 @@ export const validateEmail = (email: string): boolean => {
 	password?: string
 	firstName?: string
 	lastName?: string
+	username?: string
 	role?: string
 	confirmPassword?: string
   }
@@ -28,6 +29,7 @@ export const validateEmail = (email: string): boolean => {
 	confirmPassword: string,
 	firstName: string,
 	lastName: string,
+	username: string,
 	role: string,
   ): ValidationError => {
 	const errors: ValidationError = {}
@@ -41,7 +43,7 @@ export const validateEmail = (email: string): boolean => {
 	if (!validateRequired(password)) {
 	  errors.password = "Password is required"
 	} else if (!validatePassword(password)) {
-	  errors.password = "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number"
+	  errors.password = "Password must be at least 8 characters with 1 uppercase, 1 special character, 1 lowercase, and 1 number"
 	}
   
 	if (password !== confirmPassword) {
@@ -54,6 +56,10 @@ export const validateEmail = (email: string): boolean => {
   
 	if (!validateRequired(lastName)) {
 	  errors.lastName = "Last name is required"
+	}
+  
+	if (!validateRequired(username)) {
+	  errors.username = "Username is required"
 	}
   
 	if (!validateRequired(role)) {

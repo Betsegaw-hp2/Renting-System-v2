@@ -15,8 +15,9 @@ const initialFormData: SignupFormData = {
   email: "",
   password: "",
   confirmPassword: "",
-  firstName: "",
-  lastName: "",
+  first_name: "",
+  last_name: "",
+  username: "",
   role: UserRole.TENANT,
   preferredLocation: "",
   budget: "",
@@ -25,14 +26,12 @@ const initialFormData: SignupFormData = {
   city: "",
   state: "",
   zipCode: "",
-  companyName: "",
-  businessType: "",
   propertyTypes: [],
   propertiesOwned: "",
   idType: "",
   idNumber: "",
   dateOfBirth: "",
-  phoneNumber: "",
+  phone: "",
   agreeToTerms: false,
 }
 
@@ -58,108 +57,52 @@ export const useMultiStepSignup = () => {
     }
   }
 
-  const validateStep = (): boolean => {
+  const validateAccountStep = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (currentStep === "account") {
-      if (!validateRequired(formData.email)) {
-        newErrors.email = "Email is required"
-      } else if (!validateEmail(formData.email)) {
-        newErrors.email = "Please enter a valid email address"
-      }
-
-      if (!validateRequired(formData.password)) {
-        newErrors.password = "Password is required"
-      } else if (!validatePassword(formData.password)) {
-        newErrors.password = "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number"
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match"
-      }
-
-      if (!validateRequired(formData.firstName)) {
-        newErrors.firstName = "First name is required"
-      }
-
-      if (!validateRequired(formData.lastName)) {
-        newErrors.lastName = "Last name is required"
-      }
+    if (!validateRequired(formData.email)) {
+      newErrors.email = "Email is required"
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address"
     }
 
-    if (currentStep === "tenant-details") {
-      if (!validateRequired(formData.preferredLocation || "")) {
-        newErrors.preferredLocation = "Preferred location is required"
-      }
-
-      if (!validateRequired(formData.budget || "")) {
-        newErrors.budget = "Budget is required"
-      }
-
-      if (!validateRequired(formData.moveInDate || "")) {
-        newErrors.moveInDate = "Move-in date is required"
-      }
-
-      if (!validateRequired(formData.phoneNumber)) {
-        newErrors.phoneNumber = "Phone number is required"
-      }
-
-      if (!formData.agreeToTerms) {
-        newErrors.agreeToTerms = "You must agree to the terms and conditions"
-      }
+    if (!validateRequired(formData.password)) {
+      newErrors.password = "Password is required"
+    } else if (!validatePassword(formData.password)) {
+      newErrors.password = "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number"
     }
 
-    if (currentStep === "owner-details") {
-      // Validate location fields
-      if (!validateRequired(formData.address || "")) {
-        newErrors.address = "Address is required"
-      }
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match"
+    }
 
-      if (!validateRequired(formData.city || "")) {
-        newErrors.city = "City is required"
-      }
+    if (!validateRequired(formData.first_name)) {
+      newErrors.firstName = "First name is required"
+    }
 
-      if (!validateRequired(formData.state || "")) {
-        newErrors.state = "State is required"
-      }
+    if (!validateRequired(formData.last_name)) {
+      newErrors.lastName = "Last name is required"
+    }
 
-      if (!validateRequired(formData.zipCode || "")) {
-        newErrors.zipCode = "Zip code is required"
-      }
+    if (!validateRequired(formData.username)) {
+      newErrors.username = "Username is required"
+    }
 
-      // Validate property info fields
-      if (!validateRequired(formData.businessType || "")) {
-        newErrors.businessType = "Business type is required"
-      }
+    if (!validateRequired(formData.role)) {
+      newErrors.role = "Please select a role"
+    }
 
-      if (!validateRequired(formData.propertiesOwned || "")) {
-        newErrors.propertiesOwned = "Number of properties is required"
-      }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
-      if (!formData.propertyTypes?.length) {
-        newErrors.propertyTypes = "Please select at least one property type"
-      }
+  const validateDetailsStep = (): boolean => {
+    const newErrors: Record<string, string> = {}
 
-      // Validate KYC fields
-      if (!validateRequired(formData.idType || "")) {
-        newErrors.idType = "ID type is required"
-      }
-
-      if (!validateRequired(formData.idNumber || "")) {
-        newErrors.idNumber = "ID number is required"
-      }
-
-      if (!validateRequired(formData.dateOfBirth || "")) {
-        newErrors.dateOfBirth = "Date of birth is required"
-      }
-
-      if (!validateRequired(formData.phoneNumber)) {
-        newErrors.phoneNumber = "Phone number is required"
-      }
-
-      if (!formData.agreeToTerms) {
-        newErrors.agreeToTerms = "You must agree to the terms and conditions"
-      }
+    if (formData.role === UserRole.TENANT) {
+      // Tenant validation is optional now since we have a skip button
+    } else if (formData.role === UserRole.PROPERTY_OWNER) {
+      // Property owner validation is optional now since we have a skip button
     }
 
     setErrors(newErrors)
@@ -167,9 +110,9 @@ export const useMultiStepSignup = () => {
   }
 
   const goToNextStep = () => {
-    if (!validateStep()) return
-
     if (currentStep === "account") {
+      if (!validateAccountStep()) return
+
       // Determine next step based on selected role
       if (formData.role === UserRole.TENANT) {
         setCurrentStep("tenant-details")
@@ -188,10 +131,29 @@ export const useMultiStepSignup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateStep()) return
+    if (currentStep === "account") {
+      goToNextStep()
+      return
+    }
 
-    // Only submit if we're on the role-specific step
+    // For second step, validate and submit
     if (currentStep === "tenant-details" || currentStep === "owner-details") {
+      if (!validateDetailsStep()) return
+
+      await submitSignup()
+    }
+  }
+
+  const skipAndCreateAccount = async () => {
+    // Validate only the account step
+    if (!validateAccountStep()) return
+
+    // Submit with just the account information
+    await submitSignup()
+  }
+
+  const submitSignup = async () => {
+    try {
       const { confirmPassword, ...signupData } = formData
 
       const resultAction = await dispatch(signupUser(signupData))
@@ -199,8 +161,9 @@ export const useMultiStepSignup = () => {
       if (signupUser.fulfilled.match(resultAction)) {
         navigate("/dashboard")
       }
-    } else {
-      goToNextStep()
+    } catch (err) {
+      console.error("Error during signup:", err)
+      // The error will be handled by the Redux slice and displayed in the component
     }
   }
 
@@ -214,5 +177,6 @@ export const useMultiStepSignup = () => {
     goToNextStep,
     goToPreviousStep,
     handleSubmit,
+    skipAndCreateAccount,
   }
 }

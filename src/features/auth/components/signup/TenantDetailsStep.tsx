@@ -25,8 +25,12 @@ export function TenantDetailsStep({ formData, errors, updateFormData }: TenantDe
 
   return (
     <div className="space-y-6">
+      <div className="mb-4 p-3 bg-blue-50 rounded-md text-sm text-blue-800">
+        <p>These preferences are optional. You can skip this step and complete your profile later.</p>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="preferredLocation">Preferred Location</Label>
+        <Label htmlFor="preferredLocation">Preferred Location (Optional)</Label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
             <MapPin className="h-4 w-4" />
@@ -43,7 +47,7 @@ export function TenantDetailsStep({ formData, errors, updateFormData }: TenantDe
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="budget">Monthly Budget</Label>
+        <Label htmlFor="budget">Monthly Budget (Optional)</Label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
             <DollarSign className="h-4 w-4" />
@@ -65,7 +69,7 @@ export function TenantDetailsStep({ formData, errors, updateFormData }: TenantDe
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="moveInDate">Preferred Move-in Date</Label>
+        <Label htmlFor="moveInDate">Preferred Move-in Date (Optional)</Label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
             <Calendar className="h-4 w-4" />
@@ -82,7 +86,7 @@ export function TenantDetailsStep({ formData, errors, updateFormData }: TenantDe
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phoneNumber">Phone Number</Label>
+        <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
             <Phone className="h-4 w-4" />
@@ -91,8 +95,8 @@ export function TenantDetailsStep({ formData, errors, updateFormData }: TenantDe
             id="phoneNumber"
             type="tel"
             placeholder="Enter your phone number"
-            value={formData.phoneNumber}
-            onChange={(e) => updateFormData("phoneNumber", e.target.value)}
+            value={formData.phone || ""}
+            onChange={(e) => updateFormData("phone", e.target.value)}
             className={`pl-10 ${errors.phoneNumber ? "border-red-500" : ""}`}
           />
         </div>

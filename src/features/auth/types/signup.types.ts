@@ -5,8 +5,9 @@ export interface SignupFormData {
   email: string
   password: string
   confirmPassword: string
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
+  username: string
   role: UserRole
 
   // Step 2: Tenant-specific fields
@@ -24,8 +25,6 @@ export interface SignupFormData {
   // Property info
   propertyTypes?: string[]
   propertiesOwned?: string
-  companyName?: string
-  businessType?: string
 
   // KYC verification
   idType?: string
@@ -33,8 +32,8 @@ export interface SignupFormData {
   dateOfBirth?: string
 
   // Common fields
-  phoneNumber: string
-  agreeToTerms: boolean
+  phone?: string
+  agreeToTerms?: boolean
 }
 
 export type SignupStep = "account" | "tenant-details" | "owner-details"
@@ -46,15 +45,15 @@ export interface StepConfig {
 
 export const SIGNUP_STEPS: Record<SignupStep, StepConfig> = {
   account: {
-	title: "Account Information",
-	description: "Create your account and select your role",
+    title: "Basic Information",
+    description: "Create your account with essential information",
   },
   "tenant-details": {
-	title: "Tenant Information",
-	description: "Tell us about your rental preferences",
+    title: "Tenant Preferences",
+    description: "Tell us about your rental preferences (optional)",
   },
   "owner-details": {
-	title: "Property Owner Verification",
-	description: "Provide your property details and verify your identity",
+    title: "Property Details",
+    description: "Provide your property details (optional)",
   },
 }

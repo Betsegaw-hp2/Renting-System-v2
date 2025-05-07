@@ -27,7 +27,6 @@ export function StepIndicator({ currentStep, role }: StepIndicatorProps) {
         {steps.map((step, index) => {
           const isCompleted = index < currentStepIndex
           const isCurrent = index === currentStepIndex
-
           return (
             <div key={step} className="flex items-center">
               {/* Step circle */}
@@ -67,17 +66,21 @@ export function StepIndicator({ currentStep, role }: StepIndicatorProps) {
 
       {/* Step labels */}
       <div className="mt-4 flex justify-between px-6">
-        {steps.map((step, index) => (
-          <div
-            key={`label-${step}`}
-            className={cn(
-              "text-center transition-colors duration-200",
-              index <= currentStepIndex ? "text-blue-600 font-medium" : "text-gray-400",
-            )}
-          >
-            {SIGNUP_STEPS[step].title}
-          </div>
-        ))}
+        {steps.map((step, index) => {
+          const stepLabel = step === "account" ? "Basic Info" : SIGNUP_STEPS[step].title
+
+          return (
+            <div
+              key={`label-${step}`}
+              className={cn(
+                "text-center transition-colors duration-200",
+                index <= currentStepIndex ? "text-blue-600 font-medium" : "text-gray-400",
+              )}
+            >
+              {stepLabel}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

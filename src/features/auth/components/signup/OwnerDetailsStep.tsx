@@ -86,8 +86,11 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
 
   return (
     <div className="space-y-6">
+      <div className="mb-4 p-3 bg-blue-50 rounded-md text-sm text-blue-800">
+        <p>These details are optional. You can skip this step and complete your profile later.</p>
+      </div>
       <Tabs defaultValue="location" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6 py-6">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="location" className="flex items-center gap-2 py-3">
             <MapPin className="h-4 w-4" />
             <span>Location</span>
@@ -105,7 +108,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
         {/* Location Tab */}
         <TabsContent value="location" className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="address">Street Address</Label>
+            <Label htmlFor="address">Street Address (Optional)</Label>
             <Input
               id="address"
               placeholder="Enter your street address"
@@ -118,7 +121,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">City (Optional)</Label>
               <Input
                 id="city"
                 placeholder="Enter your city"
@@ -130,7 +133,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state">State (Optional)</Label>
               <Select value={formData.state || ""} onValueChange={(value) => updateFormData("state", value)}>
                 <SelectTrigger id="state" className={errors.state ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select state" />
@@ -148,7 +151,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="zipCode">Zip Code</Label>
+            <Label htmlFor="zipCode">Zip Code (Optional)</Label>
             <Input
               id="zipCode"
               placeholder="Enter your zip code"
@@ -160,7 +163,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                 <Phone className="h-4 w-4" />
@@ -169,8 +172,8 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
                 id="phoneNumber"
                 type="tel"
                 placeholder="Enter your phone number"
-                value={formData.phoneNumber}
-                onChange={(e) => updateFormData("phoneNumber", e.target.value)}
+                value={formData.phone || ""}
+                onChange={(e) => updateFormData("phone", e.target.value)}
                 className={`pl-10 ${errors.phoneNumber ? "border-red-500" : ""}`}
               />
             </div>
@@ -181,22 +184,22 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
         {/* Property Info Tab */}
         <TabsContent value="property" className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="companyName">Company Name</Label>
+            <Label htmlFor="companyName">Company Name (Optional)</Label>
             <Input
               id="companyName"
               placeholder="Enter your company name (if applicable)"
-              value={formData.companyName || ""}
-              onChange={(e) => updateFormData("companyName", e.target.value)}
+              // value={formData.companyName || ""}
+              // onChange={(e) => updateFormData("companyName", e.target.value)}
               className={errors.companyName ? "border-red-500" : ""}
             />
             {errors.companyName && <p className="text-sm text-red-500">{errors.companyName}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="businessType">Business Type</Label>
+            <Label htmlFor="businessType">Business Type (Optional)</Label>
             <Select
-              value={formData.businessType || ""}
-              onValueChange={(value) => updateFormData("businessType", value)}
+              // value={formData.businessType || ""}
+              // onValueChange={(value) => updateFormData("businessType", value)}
             >
               <SelectTrigger id="businessType" className={errors.businessType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select your business type" />
@@ -213,7 +216,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label>Property Types</Label>
+            <Label>Property Types (Optional)</Label>
             <div className="grid grid-cols-2 gap-2 mt-2 border rounded-md p-3 bg-gray-50">
               {propertyTypes.map((type) => (
                 <div key={type} className="flex items-center space-x-2">
@@ -242,7 +245,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="propertiesOwned">Number of Properties</Label>
+            <Label htmlFor="propertiesOwned">Number of Properties (Optional)</Label>
             <Select
               value={formData.propertiesOwned || ""}
               onValueChange={(value) => updateFormData("propertiesOwned", value)}
@@ -273,7 +276,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="idType">ID Type</Label>
+            <Label htmlFor="idType">ID Type (Optional)</Label>
             <Select value={formData.idType || ""} onValueChange={(value) => updateFormData("idType", value)}>
               <SelectTrigger id="idType" className={errors.idType ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select ID type" />
@@ -290,7 +293,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="idNumber">ID Number</Label>
+            <Label htmlFor="idNumber">ID Number (Optional)</Label>
             <Input
               id="idNumber"
               placeholder="Enter your ID number"
@@ -302,7 +305,7 @@ export function OwnerDetailsStep({ formData, errors, updateFormData }: OwnerDeta
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+            <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
             <Input
               id="dateOfBirth"
               type="date"

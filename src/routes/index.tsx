@@ -6,7 +6,7 @@ import ProtectedRoute from "./protectedRoute"
 const SignupPage = lazy(() => import("../features/auth/pages/SignupPage"))
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
 const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPasswordPage"))
-// const HomePage = lazy(() => import("../pages/Home"))
+const HomePage = lazy(() => import("../pages/Home"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
 
 // Loading fallback
@@ -21,7 +21,7 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <Suspense fallback={<LoadingFallback />}>
-        {/* <HomePage /> */}
+        <HomePage />
       </Suspense>
     ),
   },
@@ -55,8 +55,17 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <Suspense fallback={<LoadingFallback />}>
           {/* <DashboardPage /> */}
+          <h1>Dashboard</h1>
         </Suspense>
       </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/browse",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <HomePage />
+      </Suspense>
     ),
   },
 ])

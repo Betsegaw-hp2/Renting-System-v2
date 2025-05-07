@@ -5,13 +5,15 @@ import { Provider } from "react-redux"
 import { ThemeProvider } from "./components/layout/ThemeProvider"
 import { Toaster } from "./components/ui/toaster"
 import { fetchCurrentUser } from "./features/auth/slices/authSlice"
+import { getAuthToken } from "./lib/cookies"
 import Routes from "./routes"
 import { store } from "./store"
+
 
 function App() {
   useEffect(() => {
     // Check if user is logged in on app startup
-    if (localStorage.getItem("token")) {
+    if (getAuthToken()) {
       store.dispatch(fetchCurrentUser())
     }
   }, [])
