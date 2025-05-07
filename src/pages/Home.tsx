@@ -1,16 +1,15 @@
 "use client"
 
-import type React from "react"
-
-import { Calendar, CreditCard, HomeIcon, Key, Search, Star } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import type { CategoryCount, FeaturedListing, Testimonial } from "../api/publicApi"
-import { publicApi } from "../api/publicApi"
-import { CategoryCard } from "../components/categories/CategoryCard"
-import { ListingCard } from "../components/listings/ListingCard"
+import { Search, CreditCard, Key, Star, Calendar, MapPin, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
+import { ListingCard } from "../components/listings/ListingCard"
+import { CategoryCard } from "../components/categories/CategoryCard"
+import { publicApi } from "../api/publicApi"
+import type { FeaturedListing, Testimonial, CategoryCount } from "../api/publicApi"
+import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs"
 
 export default function HomePage() {
   const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
@@ -18,7 +17,14 @@ export default function HomePage() {
   const [categories, setCategories] = useState<CategoryCount[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [searchLocation, setSearchLocation] = useState("")
+  const [location, setLocation] = useState("")
+  const [category, setCategory] = useState("all")
+  const [dateRange, setDateRange] = useState({ start: "", end: "" })
+  const [categorySlide, setCategorySlide] = useState(0)
+  const [listingSlide, setListingSlide] = useState(0)
+  const [testimonialSlide, setTestimonialSlide] = useState(0)
+  const categoriesPerSlide = 3 // Number of categories per slide
+  const listingsPerSlide = 4 // Number of listings per slide
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -44,10 +50,9 @@ export default function HomePage() {
     fetchHomeData()
   }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSearch = () => {
     // Navigate to search results page
-    window.location.href = `/browse?query=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(searchLocation)}`
+    window.location.href = `/browse?category=${category}&location=${encodeURIComponent(location)}&start=${dateRange.start}&end=${dateRange.end}`
   }
 
   return (
@@ -57,6 +62,19 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-2 h-6 w-6 text-blue-600"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
               <span className="text-xl font-bold text-blue-600">All-in-One Rental Place</span>
             </Link>
 
@@ -88,77 +106,103 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-blue-50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Rent Anything, Anytime, Anywhere</h1>
-              <p className="text-gray-600 mb-8 text-lg">
-                From apartments and cars to equipment and event spaces - find, book, and rent with confidence on our
-                all-in-one platform.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                  <Link to="/browse">Browse Rentals</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/list-property">List Your Item</Link>
-                </Button>
+      <section className="bg-gray-50 py-12 md:py-20">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  Find Your Perfect Rental in One Place
+                </h1>
+                <p className="max-w-[600px] text-gray-500 md:text-xl">
+                  Discover homes, vehicles, equipment, event spaces, and more. Rent with confidence and enjoy a seamless
+                  experience.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Link
+                  to="/browse"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  Browse Rentals
+                </Link>
+                <Link
+                  to="/list-property"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  List Your Property
+                </Link>
               </div>
             </div>
-            <div className="relative">
-              <div className="bg-white rounded-lg shadow-xl p-4 aspect-video flex items-center justify-center">
-                <img src="/placeholder.svg?height=400&width=600" alt="Rental marketplace" className="rounded-md" />
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-full py-1 px-4 shadow-md flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                <span className="text-sm font-medium">4.9 average rating</span>
+            <div className="flex items-center justify-center">
+              <div className="relative h-[300px] w-full overflow-hidden rounded-xl bg-gray-100 sm:h-[350px] lg:h-[400px]">
+                <img
+                  src="/placeholder.svg?height=400&width=600"
+                  alt="Rental platform showcase"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute bottom-4 left-4 rounded-lg bg-white px-3 py-2 shadow-md">
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-medium">4.9 average rating</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Search Section */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4">
-            <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="What are you looking for?"
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <HomeIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Location"
-                  className="pl-10"
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                />
-              </div>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </form>
+      {/* Search Box */}
+      <div className="container mx-auto -mt-8 max-w-4xl rounded-xl border bg-white p-4 shadow-md z-10 relative">
+        <Tabs defaultValue={category} className="w-full" onValueChange={setCategory}>
+          <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="homes">Homes</TabsTrigger>
+            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+            <TabsTrigger value="equipment">Equipment</TabsTrigger>
+            <TabsTrigger value="spaces">Spaces</TabsTrigger>
+          </TabsList>
+          <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+            <div className="relative flex-1">
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                type="text"
+                placeholder={`Location for ${category === "all" ? "rental" : category}`}
+                className="pl-10"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <div className="relative flex-1">
+              <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Start date - End date"
+                className="pl-10"
+                // This would typically be connected to a date picker component
+                onChange={(e) => {
+                  // Simple parsing for demo purposes
+                  const dates = e.target.value.split("-")
+                  if (dates.length === 2) {
+                    setDateRange({
+                      start: dates[0].trim(),
+                      end: dates[1].trim(),
+                    })
+                  }
+                }}
+              />
+            </div>
+            <Button className="flex-shrink-0" onClick={handleSearch}>
+              <Search className="mr-2 h-4 w-4" />
+              Search
+            </Button>
           </div>
-        </div>
-      </section>
+        </Tabs>
+      </div>
 
       {/* Categories Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="my-10 py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-2">Browse by Category</h2>
@@ -166,8 +210,8 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {[...Array(6)].map((_, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, index) => (
                 <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
                   <div className="bg-gray-200 rounded-full h-16 w-16 mx-auto mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
@@ -176,15 +220,56 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {categories.map((category) => (
-                <CategoryCard
-                  key={category.category}
-                  category={category.category}
-                  count={category.count}
-                  icon={category.icon}
-                />
-              ))}
+            <div className="relative max-w-6xl mx-auto">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${categorySlide * 100}%)` }}
+                >
+                  {Array.from({ length: Math.ceil(categories.length / categoriesPerSlide) }).map((_, slideIndex) => (
+                    <div key={slideIndex} className="flex-none w-full">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {categories
+                          .slice(slideIndex * categoriesPerSlide, (slideIndex + 1) * categoriesPerSlide)
+                          .map((category) => (
+                            <CategoryCard
+                              key={category.category}
+                              category={category.category}
+                              count={category.count}
+                              icon={category.icon}
+                            />
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-center mt-6 space-x-2">
+                {Array.from({ length: Math.ceil(categories.length / categoriesPerSlide) }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCategorySlide(index)}
+                    className={`h-2 w-2 rounded-full ${categorySlide === index ? "bg-blue-600" : "bg-gray-300"}`}
+                    aria-label={`Go to category slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCategorySlide((prev) => Math.max(0, prev - 1))}
+                className={`absolute top-1/2 -left-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${categorySlide === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={categorySlide === 0}
+              >
+                <ChevronLeft className="h-6 w-6 text-gray-600" />
+              </button>
+              <button
+                onClick={() => setCategorySlide((prev) => Math.min(Math.ceil(categories.length / categoriesPerSlide) - 1, prev + 1))}
+                className={`absolute top-1/2 -right-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${categorySlide === Math.ceil(categories.length / categoriesPerSlide) - 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={categorySlide === Math.ceil(categories.length / categoriesPerSlide) - 1}
+              >
+                <ChevronRight className="h-6 w-6 text-gray-600" />
+              </button>
             </div>
           )}
         </div>
@@ -201,7 +286,7 @@ export default function HomePage() {
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+                <div key={index} className="bg-white rounded-lg shadow-md animate-pulse">
                   <div className="h-48 bg-gray-200"></div>
                   <div className="p-4">
                     <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
@@ -217,17 +302,53 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredListings.slice(0, 4).map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
+            <div className="relative max-w-6xl mx-auto">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${listingSlide * 100}%)` }}
+                >
+                  {Array.from({ length: Math.ceil(featuredListings.length / listingsPerSlide) }).map((_, slideIndex) => (
+                    <div key={slideIndex} className="flex-none w-full">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {featuredListings
+                          .slice(slideIndex * listingsPerSlide, (slideIndex + 1) * listingsPerSlide)
+                          .map((listing) => (
+                            <ListingCard key={listing.id} listing={listing} />
+                          ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-center mt-6 space-x-2">
+                {Array.from({ length: Math.ceil(featuredListings.length / listingsPerSlide) }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setListingSlide(index)}
+                    className={`h-2 w-2 rounded-full ${listingSlide === index ? "bg-blue-600" : "bg-gray-300"}`}
+                    aria-label={`Go to listing slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => setListingSlide((prev) => Math.max(0, prev - 1))}
+                className={`absolute top-1/2 -left-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${listingSlide === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={listingSlide === 0}
+              >
+                <ChevronLeft className="h-6 w-6 text-gray-600" />
+              </button>
+              <button
+                onClick={() => setListingSlide((prev) => Math.min(Math.ceil(featuredListings.length / listingsPerSlide) - 1, prev + 1))}
+                className={`absolute top-1/2 -right-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${listingSlide === Math.ceil(featuredListings.length / listingsPerSlide) - 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={listingSlide === Math.ceil(featuredListings.length / listingsPerSlide) - 1}
+              >
+                <ChevronRight className="h-6 w-6 text-gray-600" />
+              </button>
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-            {!isLoading &&
-              featuredListings.slice(4, 8).map((listing) => <ListingCard key={listing.id} listing={listing} />)}
-          </div>
 
           <div className="text-center mt-10">
             <Button asChild variant="outline">
@@ -296,55 +417,86 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                  <div className="flex items-center mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-4 w-4 bg-gray-200 rounded-full mr-1"></div>
-                    ))}
-                  </div>
-                  <div className="h-24 bg-gray-200 rounded mb-4"></div>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-                    <div>
-                      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
+            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 animate-pulse">
+              <div className="flex items-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-4 w-4 bg-gray-200 rounded-full mr-1"></div>
+                ))}
+              </div>
+              <div className="h-24 bg-gray-200 rounded mb-4"></div>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16"></div>
                 </div>
-              ))}
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial) => (
-                <div key={testimonial.id} className="bg-white p-6 rounded-lg shadow-md">
-                  <div className="flex items-center mb-4">
-                    {[...Array(5)].map((_, index) => (
-                      <Star
-                        key={index}
-                        className={`h-4 w-4 ${index < testimonial.rating ? "text-yellow-400" : "text-gray-300"}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-4">"{testimonial.comment}"</p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full mr-3">
-                      {testimonial.avatar && (
-                        <img
-                          src={testimonial.avatar || "/placeholder.svg"}
-                          alt={testimonial.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      )}
+            <div className="relative max-w-4xl mx-auto">
+              <div className="overflow-hidden">
+                <div
+                  className="flex transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${testimonialSlide * 100}%)` }}
+                >
+                  {testimonials.map((testimonial, _index) => (
+                    <div key={testimonial.id} className="flex-none w-full">
+                      <div className="bg-white p-8 rounded-lg shadow-md mx-4">
+                        <div className="flex items-center mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${i < testimonial.rating ? "text-yellow-400" : "text-gray-300"}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-gray-600 mb-6 text-lg italic">"{testimonial.comment}"</p>
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full mr-4">
+                            {testimonial.avatar && (
+                              <img
+                                src={testimonial.avatar || "/placeholder.svg"}
+                                alt={testimonial.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-lg">{testimonial.name}</h4>
+                            <p className="text-sm text-gray-500">{testimonial.role}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-semibold">{testimonial.name}</h4>
-                      <p className="text-sm text-gray-500">{testimonial.role}</p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="flex justify-center mt-6 space-x-2">
+                {testimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setTestimonialSlide(index)}
+                    className={`h-2 w-2 rounded-full ${testimonialSlide === index ? "bg-blue-600" : "bg-gray-300"}`}
+                    aria-label={`Go to testimonial ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => setTestimonialSlide((prev) => Math.max(0, prev - 1))}
+                className={`absolute top-1/2 -left-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${testimonialSlide === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={testimonialSlide === 0}
+              >
+                <ChevronLeft className="h-6 w-6 text-gray-600" />
+              </button>
+              <button
+                onClick={() => setTestimonialSlide((prev) => Math.min(testimonials.length - 1, prev + 1))}
+                className={`absolute top-1/2 -right-4 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md ${testimonialSlide === testimonials.length - 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"}`}
+                disabled={testimonialSlide === testimonials.length - 1}
+              >
+                <ChevronRight className="h-6 w-6 text-gray-600" />
+              </button>
             </div>
           )}
         </div>
@@ -362,7 +514,7 @@ export default function HomePage() {
               <Button asChild className="bg-white text-blue-600 hover:bg-blue-50">
                 <Link to="/signup">Sign Up Now</Link>
               </Button>
-              <Button asChild variant="outline" className="border-white text-white hover:bg-blue-700">
+              <Button asChild className="bg-slate-700 border-white text-white hover:bg-slate-600">
                 <Link to="/browse">Browse Listings</Link>
               </Button>
             </div>
