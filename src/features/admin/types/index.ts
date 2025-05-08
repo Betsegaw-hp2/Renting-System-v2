@@ -9,6 +9,27 @@ export interface AdminDashboardStats {
   pendingReports: number
   newUsersThisMonth: number
   newListingsThisMonth: number
+  totalBookings: number
+  newBookingsThisMonth: number
+  totalRevenue: number
+  revenueThisMonth: number
+  verifiedUsers: number
+}
+
+export interface AdminAnalytics {
+  userGrowth: { name: string; users: number }[]
+  listingsByCategory: { name: string; value: number }[]
+  bookingTrends: { name: string; bookings: number; revenue: number }[]
+  usersByRole: {
+    admin: number
+    owner: number
+    renter: number
+  }
+  listingsByStatus: {
+    available: number
+    booked: number
+    inactive: number
+  }
 }
 
 export interface AdminTableColumn {
