@@ -48,15 +48,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024
       setIsMobile(mobile)
-      if (mobile && sidebarOpen) {
+
+      // Only auto-close sidebar on initial load for mobile, not on every resize
+      if (mobile && !isMobile) {
         setSidebarOpen(false)
+      } else if (!mobile && isMobile) {
+        setSidebarOpen(true)
       }
     }
 
     checkScreenSize()
     window.addEventListener("resize", checkScreenSize)
     return () => window.removeEventListener("resize", checkScreenSize)
-  }, [sidebarOpen])
+  }, [isMobile])
 
   const navItems = [
     {
@@ -100,7 +104,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   const userInitials = user ? getInitials(`${user.first_name} ${user.last_name}`) : "AU"
-  const userName = user ? `${user.first_name} ${user.last_name}` : "Admin User"
+  const userName = user ? `${user.last_name} ${user.last_name}` : "Admin User"
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
@@ -111,10 +115,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "relative flex h-full flex-col bg-[#111827] transition-all duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-[#111827] transition-all duration-300 ease-in-out lg:relative",
           sidebarOpen ? "w-64" : "w-20",
-          isMobile && "fixed inset-y-0 left-0 z-50",
-          isMobile && !sidebarOpen && "-translate-x-full",
+          !sidebarOpen && isMobile && "-translate-x-full",
         )}
       >
         {/* Sidebar Header */}
@@ -131,7 +134,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* Collapse Button */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-white text-gray-600 shadow-md hover:bg-gray-100 focus:outline-none"
+          className={cn(
+            "absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-white text-gray-600 shadow-md hover:bg-gray-100 focus:outline-none",
+            isMobile && !sidebarOpen && "right-[-40px] z-50",
+          )}
           aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         >
           {sidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -180,13 +186,24 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
+      {/* Overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={toggleSidebar} aria-hidden="true" />
+      )}
+
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
           <div className="flex items-center">
             {isMobile && (
-              <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={toggleSidebar}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mr-2 lg:hidden"
+                onClick={toggleSidebar}
+                aria-label="Toggle sidebar"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             )}
