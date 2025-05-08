@@ -2,7 +2,7 @@
 
 import { ArrowUpDown, Edit, Filter, FolderPlus, ImageIcon, MoreHorizontal, Search, Trash } from "lucide-react"
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,35 +74,40 @@ export default function CategoriesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
+  // Refs for file inputs to clear them properly
+  const createImageInputRef = useRef<HTMLInputElement>(null)
+  const updateImageInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true)
-        const { pagination, sorting, filters } = tableState
-
-        const params: any = {
-          limit: pagination.pageSize,
-          offset: pagination.pageIndex * pagination.pageSize,
-          search: filters.search || undefined,
-          sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
-        }
-
-        const data = await adminApi.getCategories(params)
-        setCategories(data)
-      } catch (error) {
-        console.error("Error fetching categories:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch categories. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchCategories()
-  }, [tableState, toast])
+  }, [tableState])
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true)
+      const { pagination, sorting, filters } = tableState
+
+      const params: any = {
+        limit: pagination.pageSize,
+        offset: pagination.pageIndex * pagination.pageSize,
+        search: filters.search || undefined,
+        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+      }
+
+      const data = await adminApi.getCategories(params)
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch categories. Please try again.",
+        variant: "destructive",
+      })
+      setCategories([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTableState((prev) => ({
@@ -145,14 +150,11 @@ export default function CategoriesPage() {
         [name]: value,
       }))
 
-      // Auto-generate slug from name if slug field is empty
-      if (name === "name" && !editCategory.slug) {
+      // Auto-generate slug from name if slug field is empty or if we're editing the name and the slug was auto-generated
+      if (name === "name" && (!editCategory.slug || editCategory.slug === generateSlug(editCategory.name))) {
         setEditCategory((prev) => ({
           ...prev!,
-          slug: value
-            .toLowerCase()
-            .replace(/\s+/g, "-")
-            .replace(/[^a-z0-9-]/g, ""),
+          slug: generateSlug(value),
         }))
       }
     } else {
@@ -161,23 +163,43 @@ export default function CategoriesPage() {
         [name]: value,
       }))
 
-      // Auto-generate slug from name if slug field is empty
-      if (name === "name" && !newCategory.slug) {
+      // Auto-generate slug from name if slug field is empty or if we're editing the name and the slug was auto-generated
+      if (name === "name" && (!newCategory.slug || newCategory.slug === generateSlug(newCategory.name))) {
         setNewCategory((prev) => ({
           ...prev,
-          slug: value
-            .toLowerCase()
-            .replace(/\s+/g, "-")
-            .replace(/[^a-z0-9-]/g, ""),
+          slug: generateSlug(value),
         }))
       }
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "")
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     if (e.target.files && e.target.files[0]) {
       setCategoryImage(e.target.files[0])
     }
+  }
+
+  const clearImageSelection = () => {
+    setCategoryImage(null)
+    if (createImageInputRef.current) {
+      createImageInputRef.current.value = ""
+    }
+    if (updateImageInputRef.current) {
+      updateImageInputRef.current.value = ""
+    }
+  }
+
+  const resetForm = () => {
+    setNewCategory({ name: "", description: "", slug: "" })
+    setEditCategory(null)
+    clearImageSelection()
   }
 
   const validateCategory = (category: { name: string; description: string; slug: string }) => {
@@ -225,24 +247,19 @@ export default function CategoriesPage() {
         formData.append("image", categoryImage)
       }
 
-      await adminApi.createCategory(formData)
+      const result = await adminApi.createCategory(formData)
 
-      // Reset form and refresh categories
-      setNewCategory({ name: "", description: "", slug: "" })
-      setCategoryImage(null)
-      setIsDialogOpen(false)
-
-      // Refresh categories list
-      const { pagination, sorting, filters } = tableState
-      const params: any = {
-        limit: pagination.pageSize,
-        offset: pagination.pageIndex * pagination.pageSize,
-        search: filters.search || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+      // If we got a result back, add it to the categories list
+      if (result && result.id) {
+        setCategories((prev) => [result, ...prev])
+      } else {
+        // Otherwise, refresh the categories list
+        await fetchCategories()
       }
 
-      const data = await adminApi.getCategories(params)
-      setCategories(data)
+      // Reset form
+      resetForm()
+      setIsDialogOpen(false)
 
       toast({
         title: "Success",
@@ -265,27 +282,23 @@ export default function CategoriesPage() {
 
     try {
       setIsSubmitting(true)
-      await adminApi.updateCategory(editCategory.id, {
+      const result = await adminApi.updateCategory(editCategory.id, {
         name: editCategory.name,
         description: editCategory.description,
         slug: editCategory.slug,
       })
 
-      // Reset form and refresh categories
-      setEditCategory(null)
-      setIsEditDialogOpen(false)
-
-      // Refresh categories list
-      const { pagination, sorting, filters } = tableState
-      const params: any = {
-        limit: pagination.pageSize,
-        offset: pagination.pageIndex * pagination.pageSize,
-        search: filters.search || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+      // If we got a result back, update the category in the list
+      if (result && result.id) {
+        setCategories((prev) => prev.map((cat) => (cat.id === result.id ? { ...cat, ...result } : cat)))
+      } else {
+        // Otherwise, refresh the categories list
+        await fetchCategories()
       }
 
-      const data = await adminApi.getCategories(params)
-      setCategories(data)
+      // Reset form
+      resetForm()
+      setIsEditDialogOpen(false)
 
       toast({
         title: "Success",
@@ -310,21 +323,12 @@ export default function CategoriesPage() {
       setIsSubmitting(true)
       await adminApi.deleteCategory(categoryToDelete)
 
-      // Reset state and refresh categories
+      // Remove the category from the list
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryToDelete))
+
+      // Reset state
       setCategoryToDelete(null)
       setIsDeleteDialogOpen(false)
-
-      // Refresh categories list
-      const { pagination, sorting, filters } = tableState
-      const params: any = {
-        limit: pagination.pageSize,
-        offset: pagination.pageIndex * pagination.pageSize,
-        search: filters.search || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
-      }
-
-      const data = await adminApi.getCategories(params)
-      setCategories(data)
 
       toast({
         title: "Success",
@@ -337,6 +341,9 @@ export default function CategoriesPage() {
         description: "Failed to delete category. Please try again.",
         variant: "destructive",
       })
+
+      // Refresh categories list in case of error
+      await fetchCategories()
     } finally {
       setIsSubmitting(false)
     }
@@ -354,24 +361,23 @@ export default function CategoriesPage() {
 
     try {
       setIsSubmitting(true)
-      await adminApi.updateCategoryImage(categoryForImage, categoryImage)
+      const formData = new FormData()
+      formData.append("image", categoryImage)
 
-      // Reset state and refresh categories
-      setCategoryForImage(null)
-      setCategoryImage(null)
-      setIsImageDialogOpen(false)
+      const result = await adminApi.updateCategoryImage(categoryForImage, formData)
 
-      // Refresh categories list
-      const { pagination, sorting, filters } = tableState
-      const params: any = {
-        limit: pagination.pageSize,
-        offset: pagination.pageIndex * pagination.pageSize,
-        search: filters.search || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+      // If we got a result back, update the category in the list
+      if (result && result.id) {
+        setCategories((prev) => prev.map((cat) => (cat.id === result.id ? { ...cat, ...result } : cat)))
+      } else {
+        // Otherwise, refresh the categories list
+        await fetchCategories()
       }
 
-      const data = await adminApi.getCategories(params)
-      setCategories(data)
+      // Reset state
+      setCategoryForImage(null)
+      clearImageSelection()
+      setIsImageDialogOpen(false)
 
       toast({
         title: "Success",
@@ -394,7 +400,13 @@ export default function CategoriesPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open)
+              if (!open) resetForm()
+            }}
+          >
             <DialogTrigger asChild>
               <Button>
                 <FolderPlus className="mr-2 h-4 w-4" />
@@ -438,18 +450,25 @@ export default function CategoriesPage() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="image">Category Image</Label>
+                  <Label htmlFor="create-image">Category Image</Label>
                   <div className="flex items-center gap-2">
-                    <Input id="image" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                    <Input
+                      id="create-image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(e)}
+                      className="hidden"
+                      ref={createImageInputRef}
+                    />
                     <Label
-                      htmlFor="image"
+                      htmlFor="create-image"
                       className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium hover:bg-accent hover:text-accent-foreground"
                     >
                       <ImageIcon className="h-4 w-4" />
                       {categoryImage ? categoryImage.name : "Choose image"}
                     </Label>
                     {categoryImage && (
-                      <Button variant="ghost" size="sm" onClick={() => setCategoryImage(null)}>
+                      <Button variant="ghost" size="sm" onClick={clearImageSelection}>
                         Clear
                       </Button>
                     )}
@@ -457,7 +476,14 @@ export default function CategoriesPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDialogOpen(false)
+                    resetForm()
+                  }}
+                  disabled={isSubmitting}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleCreateCategory} disabled={isSubmitting}>
@@ -569,20 +595,20 @@ export default function CategoriesPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                ) : categories && categories.length === 0 ? (
+                ) : categories.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No categories found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  categories && categories.map((category) => (
+                  categories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {category.imageUrl ? (
                             <img
-                              src={category.imageUrl || "/placeholder.svg"}
+                              src={category.imageUrl || "/placeholder.svg?height=100&width=100"}
                               alt={category.name}
                               className="h-10 w-10 rounded object-cover"
                             />
@@ -625,6 +651,7 @@ export default function CategoriesPage() {
                             <DropdownMenuItem
                               onClick={() => {
                                 setCategoryForImage(category.id)
+                                clearImageSelection()
                                 setIsImageDialogOpen(true)
                               }}
                             >
@@ -655,8 +682,8 @@ export default function CategoriesPage() {
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               Showing {tableState.pagination.pageIndex * tableState.pagination.pageSize + 1} to{" "}
-              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, categories && categories.length || 0)}{" "}
-              of {categories && categories.length || 0} categories
+              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, categories.length || 0)}{" "}
+              of {categories.length || 0} categories
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -672,7 +699,7 @@ export default function CategoriesPage() {
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex + 1)}
                 disabled={
-                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= (categories && categories.length || 0) ||
+                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= (categories.length || 0) ||
                   loading
                 }
               >
@@ -684,7 +711,13 @@ export default function CategoriesPage() {
       </div>
 
       {/* Edit Category Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open)
+          if (!open) resetForm()
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
@@ -723,7 +756,14 @@ export default function CategoriesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false)
+                resetForm()
+              }}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button onClick={handleEditCategory} disabled={isSubmitting}>
@@ -770,7 +810,16 @@ export default function CategoriesPage() {
       </AlertDialog>
 
       {/* Update Image Dialog */}
-      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+      <Dialog
+        open={isImageDialogOpen}
+        onOpenChange={(open) => {
+          setIsImageDialogOpen(open)
+          if (!open) {
+            setCategoryForImage(null)
+            clearImageSelection()
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Category Image</DialogTitle>
@@ -778,24 +827,25 @@ export default function CategoriesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="category-image">Category Image</Label>
+              <Label htmlFor="update-image">Category Image</Label>
               <div className="flex items-center gap-2">
                 <Input
-                  id="category-image"
+                  id="update-image"
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={(e) => handleImageChange(e, true)}
                   className="hidden"
+                  ref={updateImageInputRef}
                 />
                 <Label
-                  htmlFor="category-image"
+                  htmlFor="update-image"
                   className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium hover:bg-accent hover:text-accent-foreground"
                 >
                   <ImageIcon className="h-4 w-4" />
                   {categoryImage ? categoryImage.name : "Choose image"}
                 </Label>
                 {categoryImage && (
-                  <Button variant="ghost" size="sm" onClick={() => setCategoryImage(null)}>
+                  <Button variant="ghost" size="sm" onClick={clearImageSelection}>
                     Clear
                   </Button>
                 )}
@@ -803,10 +853,18 @@ export default function CategoriesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsImageDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsImageDialogOpen(false)
+                setCategoryForImage(null)
+                clearImageSelection()
+              }}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleUpdateCategoryImage} disabled={isSubmitting}>
+            <Button onClick={handleUpdateCategoryImage} disabled={isSubmitting || !categoryImage}>
               {isSubmitting ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>

@@ -18,8 +18,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Check if a specific role is required
-  console.info(user)
+
   if (requiredRole && user?.role !== requiredRole) {
     // Redirect to dashboard if user doesn't have the required role
     return <Navigate to="/dashboard" replace />

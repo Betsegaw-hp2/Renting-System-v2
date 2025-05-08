@@ -1,6 +1,6 @@
 "use client"
 
-import { LogOut, Menu, User } from "lucide-react"
+import { LogOut, Menu, Settings, User } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link } from "react-router-dom"
 import { logoutUser } from "../../features/auth/slices/authSlice"
@@ -9,11 +9,11 @@ import type { RootState } from "../../store"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 
 interface HeaderProps {
@@ -37,6 +37,8 @@ export function Header({ toggleSidebar, showSidebarToggle = false }: HeaderProps
       .toUpperCase()
   }
 
+  const isAdmin = user?.role === "admin"
+
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background px-4 md:px-6">
       <div className="flex items-center gap-2">
@@ -47,7 +49,7 @@ export function Header({ toggleSidebar, showSidebarToggle = false }: HeaderProps
           </Button>
         )}
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold">HomeRent</span>
+          <span className="text-xl font-bold">All-in-One Rental Place</span>
         </Link>
       </div>
       <div className="flex items-center gap-4">
@@ -67,11 +69,19 @@ export function Header({ toggleSidebar, showSidebarToggle = false }: HeaderProps
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link to="/profile" className="flex items-center gap-2">
+                <Link to={isAdmin ? "/admin/settings" : "/profile"} className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

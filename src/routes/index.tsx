@@ -1,3 +1,4 @@
+import type React from "react"
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import ProtectedRoute from "./protectedRoute"
@@ -9,13 +10,15 @@ const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPassw
 const HomePage = lazy(() => import("../pages/Home"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
 
-
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
 const AdminUsersPage = lazy(() => import("../features/admin/pages/UsersPage"))
 const AdminListingsPage = lazy(() => import("../features/admin/pages/ListingsPage"))
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
+const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
+
+// const TenantProfilePage = lazy(() => import("../features/tenant/pages/ProfilePage"))
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -26,8 +29,8 @@ const LoadingFallback = () => (
 
 // Admin route guard
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  // return <ProtectedRoute requiredRole="admin">{children}</ProtectedRoute>
-  return <ProtectedRoute>{children}</ProtectedRoute>
+  // return <ProtectedRoute requiredRole={UserRole.ADMIN}>{children}</ProtectedRoute>
+  return <ProtectedRoute >{children}</ProtectedRoute>
 }
 
 const router = createBrowserRouter([
@@ -82,8 +85,19 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
-   // Admin routes
-   {
+  // Add the route for the tenant profile page
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          {/* <TenantProfilePage /> */}
+        </Suspense>
+      </ProtectedRoute>
+    ),
+  },
+  // Admin routes
+  {
     path: "/admin/dashboard",
     element: (
       <AdminRoute>
@@ -129,6 +143,16 @@ const router = createBrowserRouter([
       <AdminRoute>
         <Suspense fallback={<LoadingFallback />}>
           <AdminReportsPage />
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "/admin/settings",
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminSettingsPage />
         </Suspense>
       </AdminRoute>
     ),

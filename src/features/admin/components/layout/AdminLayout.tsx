@@ -1,16 +1,16 @@
 "use client"
 
-import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, Settings, Users } from "lucide-react"
+import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, LogOut, Settings, Users } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { Link, useLocation } from "react-router-dom"
+import { Header } from "../../../../components/layout/Header"
 import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar"
+import { Button } from "../../../../components/ui/button"
 import { cn } from "../../../../lib/utils"
 import type { RootState } from "../../../../store"
-
-// Add the import for Header
-import { Header } from "../../../../components/layout/Header"
+import { logoutUser } from "../../../auth/slices/authSlice"
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -18,6 +18,7 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation()
+  const dispatch = useDispatch()
   const user = useSelector((state: RootState) => state.auth.user)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
@@ -82,6 +83,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       .toUpperCase()
   }
 
+  const handleLogout = () => {
+    dispatch(logoutUser() as any)
+  }
+
   const userInitials = user ? getInitials(`${user.first_name} ${user.last_name}`) : "AU"
   const userName = user ? `${user.first_name} ${user.last_name}` : "Admin User"
 
@@ -90,22 +95,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-[#111827] transition-all duration-300 ease-in-out lg:relative",
+          "fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-primary text-primary-foreground transition-all duration-300 ease-in-out lg:relative",
           sidebarOpen ? "w-64" : "w-20",
           !sidebarOpen && isMobile && "-translate-x-full",
         )}
       >
         {/* Sidebar Header */}
-        <div className="flex h-16 items-center justify-between border-b border-gray-700 px-4">
+        <div className="flex h-16 items-center justify-between border-b border-primary-foreground/10 px-4">
           <Link to="/admin/dashboard" className="flex items-center">
             {sidebarOpen ? (
-              <span className="text-xl font-bold text-white">Admin Panel</span>
+              <span className="text-xl font-bold text-primary-foreground">Admin Panel</span>
             ) : (
-              <span className="text-xl font-bold text-white">AP</span>
+              <span className="text-xl font-bold text-primary-foreground">AP</span>
             )}
           </Link>
         </div>
@@ -114,7 +119,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <button
           onClick={toggleSidebar}
           className={cn(
-            "absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-white text-gray-600 shadow-md hover:bg-gray-100 focus:outline-none",
+            "absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full bg-background text-foreground shadow-md hover:bg-accent focus:outline-none",
             isMobile && !sidebarOpen && "right-[-40px] z-50",
           )}
           aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
@@ -132,15 +137,17 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 className={cn(
                   "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   location.pathname === item.path
-                    ? "bg-gray-700 text-white"
-                    : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                    ? "bg-primary-foreground/10 text-primary-foreground"
+                    : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground",
                 )}
               >
                 <item.icon
                   className={cn(
                     "h-5 w-5 flex-shrink-0",
                     sidebarOpen && "mr-3",
-                    location.pathname === item.path ? "text-white" : "text-gray-400 group-hover:text-white",
+                    location.pathname === item.path
+                      ? "text-primary-foreground"
+                      : "text-primary-foreground/70 group-hover:text-primary-foreground",
                   )}
                 />
                 {sidebarOpen && <span>{item.label}</span>}
@@ -150,7 +157,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="border-t border-gray-700 p-4">
+        <div className="border-t border-primary-foreground/10 p-4 mt-auto">
           <div className="flex items-center">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.profile_picture || "/placeholder.svg"} alt={userName} />
@@ -158,10 +165,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </Avatar>
             {sidebarOpen && (
               <div className="ml-3">
-                <p className="text-sm font-medium text-white">{userName}</p>
+                <p className="text-sm font-medium text-primary-foreground">{userName}</p>
               </div>
             )}
           </div>
+          {sidebarOpen && (
+            <Button
+              variant="ghost"
+              className="mt-2 w-full justify-start text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </div>
       </aside>
 
@@ -173,10 +190,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <Header toggleSidebar={toggleSidebar} showSidebarToggle={true} />
+        <Header toggleSidebar={toggleSidebar} showSidebarToggle={isMobile} />
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-gray-50 p-6">{children}</main>
+        <main className="flex-1 overflow-auto bg-background p-6">{children}</main>
       </div>
     </div>
   )
