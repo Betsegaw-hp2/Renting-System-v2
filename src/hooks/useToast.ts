@@ -10,7 +10,9 @@ type ToastProps = {
   title?: string
   description?: string
   action?: React.ReactNode
-  duration?: number
+  duration?: number,
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
 type ToastActionProps = Omit<ToastProps, "id">
@@ -28,10 +30,10 @@ export function useToast() {
     setToasts((toasts) => toasts.filter((toast) => toast.id !== id))
   }, [])
 
-  const toast = useCallback(({ title, description, action, duration = 5000 }: ToastActionProps) => {
+  const toast = useCallback(({ title, description, action, duration = 5000, variant }: ToastActionProps) => {
     const id = generateId()
 
-    setToasts((toasts) => [...toasts, { id, title, description, action, duration }])
+    setToasts((toasts) => [...toasts, { id, title, description, action, duration, variant }])
 
     return id
   }, [])
