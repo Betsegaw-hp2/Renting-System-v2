@@ -1,3 +1,5 @@
+import type { Location } from "./location.types";
+
 export type UserRole = "admin" | "renter" | "owner";
 
 export const UserRole = {
@@ -20,6 +22,9 @@ export const UserRole = {
 	updated_at: string
   }
   
+  export interface UserWithLocation extends User {
+	location: Location | null
+  }
   export interface SignupCredentials {
 	email: string
 	password: string

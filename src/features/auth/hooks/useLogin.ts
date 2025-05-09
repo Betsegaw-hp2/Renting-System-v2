@@ -3,10 +3,10 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useDispatch, useSelector } from "react-redux"
+import { useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateEmail, validateRequired } from "../../../lib/validation"
-import type { AppDispatch, RootState } from "../../../store"
+import type { AppDispatch } from "../../../store"
 import { loginUser } from "../slices/authSlice"
 
 export const useLogin = () => {
@@ -14,14 +14,13 @@ export const useLogin = () => {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
-  const { isLoading, error } = useSelector((state: RootState) => state.auth)
 
-  const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {}
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
 
     if (!validateRequired(email)) {
       newErrors.email = "Email is required"
@@ -42,10 +41,17 @@ export const useLogin = () => {
 
     if (!validateForm()) return
 
-    const resultAction = await dispatch(loginUser({ email, password, rememberMe }))
+    const resultAction = await dispatch(
+      loginUser({
+        email,
+        password,
+        rememberMe,
+      }),
+    )
 
     if (loginUser.fulfilled.match(resultAction)) {
-      navigate("/dashboard")
+      // Updated to redirect to the new homepage instead of dashboard
+      navigate("/home")
     }
   }
 
@@ -59,8 +65,8 @@ export const useLogin = () => {
     showPassword,
     setShowPassword,
     errors,
-    isLoading,
-    error,
+    isLoading: false,
+    error: null,
     handleSubmit,
   }
 }

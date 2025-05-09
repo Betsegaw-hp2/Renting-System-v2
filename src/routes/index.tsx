@@ -1,14 +1,16 @@
 import type React from "react"
 import { lazy, Suspense } from "react"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
 import ProtectedRoute from "./protectedRoute"
 
 // Lazy-loaded components
 const SignupPage = lazy(() => import("../features/auth/pages/SignupPage"))
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
 const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPasswordPage"))
-const HomePage = lazy(() => import("../pages/Home"))
-// const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
+const LandingPage = lazy(() => import("../pages/LandingPage"))
+const HomePage = lazy(() => import("../pages/HomePage"))
+const BrowsePage = lazy(() => import("../pages/BrowsePage"))
+
 
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
@@ -33,13 +35,28 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <ProtectedRoute >{children}</ProtectedRoute>
 }
 
+// Authenticated redirect component
+const AuthenticatedRedirect = () => {
+  return <Navigate to="/home" replace />
+}
+
 const router = createBrowserRouter([
   {
     path: "/",
     element: (
       <Suspense fallback={<LoadingFallback />}>
+        <LandingPage />
+      </Suspense>
+    ),
+  },
+  {
+  path: "/home",
+  element: (
+    <ProtectedRoute>
+      <Suspense fallback={<LoadingFallback />}>
         <HomePage />
       </Suspense>
+    </ProtectedRoute>
     ),
   },
   {
@@ -81,7 +98,7 @@ const router = createBrowserRouter([
     path: "/browse",
     element: (
       <Suspense fallback={<LoadingFallback />}>
-        <HomePage />
+        <BrowsePage />
       </Suspense>
     ),
   },

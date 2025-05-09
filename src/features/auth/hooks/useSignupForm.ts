@@ -50,7 +50,7 @@ export const useSignupForm = () => {
     const resultAction = await dispatch(signupUser(credentials))
 
     if (signupUser.fulfilled.match(resultAction)) {
-      navigate("/dashboard")
+      navigate("/home")
     }
   }
 
