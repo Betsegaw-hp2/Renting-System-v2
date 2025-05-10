@@ -23,7 +23,6 @@ import { useNavigate } from "react-router-dom"
 
 import { mockHomeApi } from "../api/mockHomeApi"
 import { Header } from "../components/layout/Header"
-import { ListingCard } from "../components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
@@ -230,13 +229,13 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {recommendedListings.map((listing) => (
+                      {/* {recommendedListings.map((listing) => (
                         <ListingCard
                           key={listing.id}
                           listing={listing}
                           showFavorite={permissions.isTenant}
                         />
-                      ))}
+                      ))} */}
                     </div>
                   )}
 
@@ -266,11 +265,12 @@ export default function HomePage() {
                           </Card>
                         ))
                       : trendingListings.map((listing) => (
-                          <ListingCard
-                            key={listing.id}
-                            listing={listing}
-                            showFavorite={permissions.isTenant}
-                          />
+                          // <ListingCard
+                          //   key={listing.id}
+                          //   listing={listing}
+                          //   showFavorite={permissions.isTenant}
+                          // />
+                          <></>
                         ))}
                   </div>
                 </div>
@@ -851,12 +851,13 @@ export default function HomePage() {
                     ) : recommendedListings.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {recommendedListings.slice(0, 3).map((listing) => (
-                          <ListingCard
-                            key={listing.id}
-                            listing={listing}
-                            showFavorite={true}
-                            isFavorite={true}
-                          />
+                          // <ListingCard
+                          //   key={listing.id}
+                          //   listing={listing}
+                          //   showFavorite={true}
+                          //   isFavorite={true}
+                          // />
+                          <h1>listing</h1>
                         ))}
                       </div>
                     ) : (

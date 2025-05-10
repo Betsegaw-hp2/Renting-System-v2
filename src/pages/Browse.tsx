@@ -1,16 +1,17 @@
 "use client"
 
-import { AlertCircle, Loader2 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import type { FeaturedListing } from "../api/publicApi"
-import { publicApi } from "../api/publicApi"
-import { Footer } from "../components/layout/Footer"
+import { useState, useEffect } from "react"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { Header } from "../components/layout/Header"
-import { ListingCard } from "../components/listings/ListingCard"
+import { Footer } from "../components/layout/Footer"
 import { SearchFilters, type SearchFilters as SearchFiltersType } from "../components/search/SearchFilters"
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
+import { ListingCard } from "../components/listings/ListingCard"
+import { publicApi } from "../api/publicApi"
+import type { FeaturedListing } from "../api/publicApi"
 import { Button } from "../components/ui/button"
+import { Link } from "react-router-dom"
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
+import { AlertCircle, Loader2 } from "lucide-react"
 
 export default function BrowsePage() {
   const [searchParams] = useSearchParams()
