@@ -145,7 +145,7 @@ export function Header({
               </Button>
             )}
             <Link to="/" className="flex items-center gap-2">
-              <span className={`text-xl font-bold ${getLogoClasses()}`}>HomeRent</span>
+              <span className={`text-xl font-bold ${getLogoClasses()}`}>All-In-One</span>
             </Link>
 
             {/* Navigation links based on user role */}
@@ -261,6 +261,9 @@ export function Header({
                   </Link>
                   <Link to="/about" className={`text-sm font-medium ${getLinkClasses()}`}>
                     About Us
+                  </Link>
+                  <Link to="/contact" className={`text-sm font-medium ${getLinkClasses()}`}>
+                    Contact Us
                   </Link>
                 </>
               )}

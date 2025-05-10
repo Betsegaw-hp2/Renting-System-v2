@@ -1,6 +1,7 @@
 import type React from "react"
 import { Link } from "react-router-dom"
 import { cn } from "../../lib/utils"
+import { Header } from "./Header"
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -11,40 +12,7 @@ interface AuthLayoutProps {
 export function AuthLayout({ children, className, showFooter = true }: AuthLayoutProps) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b px-4 py-4 lg:px-6">
-        <div className="container mx-auto flex items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold">All-in-One Rental Place</span>
-          </Link>
-
-          <nav className="hidden space-x-6 md:flex">
-            <Link to="/browse" className="text-sm font-medium transition-colors hover:text-blue-600">
-              Browse Homes
-            </Link>
-            <Link to="/how-it-works" className="text-sm font-medium transition-colors hover:text-blue-600">
-              How It Works
-            </Link>
-            <Link to="/about" className="text-sm font-medium transition-colors hover:text-blue-600">
-              About Us
-            </Link>
-            <Link to="/contact" className="text-sm font-medium transition-colors hover:text-blue-600">
-              Contact
-            </Link>
-          </nav>
-
-          <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-sm font-medium transition-colors hover:text-blue-600">
-              Log In
-            </Link>
-            <Link
-              to="/signup"
-              className="rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className={cn("flex-1 bg-gray-50 dark:bg-gray-900", className)}>
         <div className="container mx-auto py-12">
