@@ -11,8 +11,6 @@ const SignupPage = lazy(() => import("../features/auth/pages/SignupPage"))
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
 const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPasswordPage"))
 const LandingPage = lazy(() => import("../pages/LandingPage"))
-const HomePage = lazy(() => import("../pages/HomePage"))
-const BrowsePage = lazy(() => import("../pages/BrowsePage"))
 const ListingDetailsPage = lazy(() => import("../pages/ListingDetailsPage"))
 const BookingPage = lazy(() => import("../pages/BookingPage"))
 
@@ -31,6 +29,13 @@ const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPag
 // // Owner pages
 // const OwnerListingsPage = lazy(() => import("../features/owner/pages/ListingsPage"))
 // const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
+const HomePage = lazy(() => import("../pages/Home"))
+const BrowsePage = lazy(() => import("../pages/Browse"))
+const AboutPage = lazy(() => import("../pages/About"))
+const ContactPage = lazy(() => import("../pages/Contact"))
+// const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
+// We'll need to create a ListingDetailsPage component
+// const ListingDetailsPage = lazy(() => import("../pages/ListingDetails"))
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -256,6 +261,12 @@ const router = createBrowserRouter([
         </Suspense>
       </AdminRoute>
     ),
+  },
+
+  // Fallback route
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 
   // Fallback route
