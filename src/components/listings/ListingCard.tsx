@@ -5,7 +5,9 @@ import type React from "react"
 import { Heart, Star } from "lucide-react"
 import { Link } from "react-router-dom"
 import type { FeaturedListing } from "../../api/publicApi"
+import { usePermissions } from "../../hooks/usePermissions"
 import type { ListingWithCategory } from "../../types/listing.types"
+import { RoleBasedAccessControl } from "../auth/RoleBasedAccessControl"
 import { Button } from "../ui/button"
 
 // Create a union type to accept both ListingWithCategory and FeaturedListing
@@ -17,6 +19,8 @@ type ListingCardProps = {
 }
 
 export function ListingCard({ listing, showFavorite = false, isFavorite = false, onFavoriteToggle }: ListingCardProps) {
+  const permissions = usePermissions()
+
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -98,9 +102,26 @@ export function ListingCard({ listing, showFavorite = false, isFavorite = false,
             <span className="font-bold text-lg">${listing.price.toLocaleString()}</span>
             <span className="text-gray-600 text-sm">/{priceUnit}</span>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to={`/listings/${listing.id}`}>View Details</Link>
-          </Button>
+          <div className="flex gap-2">
+            {/* Only show Book button for tenants */}
+            <RoleBasedAccessControl
+              requiredPermission="can_book_properties"
+              fallback={
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/listings/${listing.id}`}>View Details</Link>
+                </Button>
+              }
+            >
+              <div className="flex gap-2">
+                <Button asChild size="sm">
+                  <Link to={`/listings/${listing.id}/book`}>Book</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/listings/${listing.id}`}>View Details</Link>
+                </Button>
+              </div>
+            </RoleBasedAccessControl>
+          </div>
         </div>
       </div>
     </div>

@@ -27,8 +27,8 @@ export const removeCookie = (name: string) => {
 export const TOKEN_COOKIE_NAME = "auth_token"
 
 // Set auth token
-export const setAuthToken = (token: string, rememberMe = false) => {
-  const options = rememberMe ? { ...cookieOptions } : { ...cookieOptions, expires: undefined } // Session cookie if not rememberMe
+export const setAuthToken = (token: string, remember_me = false) => {
+  const options = remember_me ? { ...cookieOptions } : { ...cookieOptions, expires: undefined } // Session cookie if not remember_me
 
   setCookie(TOKEN_COOKIE_NAME, token, options)
 }

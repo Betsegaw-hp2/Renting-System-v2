@@ -3,21 +3,21 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateEmail, validateRequired } from "../../../lib/validation"
-import type { AppDispatch } from "../../../store"
+import type { AppDispatch, RootState } from "../../../store"
 import { loginUser } from "../slices/authSlice"
 
 export const useLogin = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
+  const { is_loading, error } = useSelector((state: RootState) => state.auth)
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const dispatch = useDispatch<AppDispatch>()
-  const navigate = useNavigate()
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -39,19 +39,14 @@ export const useLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) return
+    if (!validateForm()) {
+      return
+    }
 
-    const resultAction = await dispatch(
-      loginUser({
-        email,
-        password,
-        rememberMe,
-      }),
-    )
+    const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
     if (loginUser.fulfilled.match(resultAction)) {
-      // Updated to redirect to the new homepage instead of dashboard
-      navigate("/home")
+      navigate("/dashboard")
     }
   }
 
@@ -62,11 +57,9 @@ export const useLogin = () => {
     setPassword,
     rememberMe,
     setRememberMe,
-    showPassword,
-    setShowPassword,
-    errors,
-    isLoading: false,
-    error: null,
     handleSubmit,
+    isLoading: is_loading, // Map snake_case to camelCase for backward compatibility
+    error,
+    errors,
   }
 }

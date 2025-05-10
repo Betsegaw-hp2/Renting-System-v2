@@ -2,18 +2,33 @@
 
 import type React from "react"
 
-import { ChevronLeft, ChevronRight, DollarSign, Filter, Home, MapPin, Search, Tag, X } from "lucide-react"
+import {
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  Filter,
+  Home,
+  MapPin,
+  Search,
+  Tag,
+  X,
+} from "lucide-react"
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import type { FeaturedListing } from "../api/publicApi"
 import { publicApi } from "../api/publicApi"
 import { Header } from "../components/layout/Header"
 import { ListingCard } from "../components/listings/ListingCard"
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "../components/ui/checkbox"
 import { Input } from "../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { Slider } from "../components/ui/slider"
+import { usePermissions } from "../hooks/usePermissions"
+import type { RootState } from "../store"
 
 export default function BrowsePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -25,6 +40,9 @@ export default function BrowsePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [sortBy, setSortBy] = useState("relevance")
   const [sidebarVisible, setSidebarVisible] = useState(true)
+  const permissions = usePermissions()
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const navigate = useNavigate()
 
   // Categories for filter
   const categories = [
@@ -130,6 +148,16 @@ export default function BrowsePage() {
     setSidebarVisible(!sidebarVisible)
   }
 
+  const handleFavoriteToggle = (id: string) => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: `/listings/${id}` } })
+      return
+    }
+
+    // Handle favorite toggle logic
+    console.log(`Toggle favorite for listing ${id}`)
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header
@@ -140,6 +168,21 @@ export default function BrowsePage() {
       />
 
       <main className="flex-1 bg-gray-50 flex">
+        {/* Role-specific alerts */}
+        {isAuthenticated && (permissions.isAdmin || permissions.isOwner) && (
+          <div className="container mx-auto px-4 mt-6 absolute top-16 left-0 right-0 z-10">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Role Restriction Notice</AlertTitle>
+              <AlertDescription>
+                {permissions.isAdmin
+                  ? "As an administrator, you cannot book properties. Please create a tenant account if you wish to make bookings."
+                  : "As a property owner, you cannot book properties with this account. Please create a tenant account if you wish to make bookings."}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {/* Filter Sidebar */}
         <aside
           className={`bg-white border-r border-gray-200 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-all duration-300 ${
@@ -307,7 +350,13 @@ export default function BrowsePage() {
               ) : listings.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {listings.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} showFavorite={true} />
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      showFavorite={isAuthenticated && permissions.isTenant}
+                      onFavoriteToggle={handleFavoriteToggle}
+                      showBookButton={permissions.canBookProperties}
+                    />
                   ))}
                 </div>
               ) : (

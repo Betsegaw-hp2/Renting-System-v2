@@ -42,7 +42,7 @@ export const useMultiStepSignup = () => {
 
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
-  const { isLoading, error } = useSelector((state: RootState) => state.auth)
+  const { is_loading, error } = useSelector((state: RootState) => state.auth)
 
   const updateFormData = (field: keyof SignupFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -132,6 +132,7 @@ export const useMultiStepSignup = () => {
     e.preventDefault()
 
     if (currentStep === "account") {
+      // Using goToNextStep directly here to handle the continue button
       goToNextStep()
       return
     }
@@ -171,10 +172,10 @@ export const useMultiStepSignup = () => {
     currentStep,
     formData,
     errors,
-    isLoading,
+    isLoading: is_loading, // Map snake_case to camelCase for backward compatibility
     error,
     updateFormData,
-    goToNextStep,
+    goToNextStep, // Keep this for potential future use
     goToPreviousStep,
     handleSubmit,
     skipAndCreateAccount,

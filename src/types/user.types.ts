@@ -1,50 +1,75 @@
 import type { Location } from "./location.types";
 
-export type UserRole = "admin" | "renter" | "owner";
-
 export const UserRole = {
-	ADMIN: "admin" as "admin",
-	TENANT: "renter" as "renter",
-	PROPERTY_OWNER: "owner" as "owner",
-};
-  
-  export interface User {
-	id: string
-	email: string
-	first_name: string
-	last_name: string
-	username: string
-	role: UserRole
-	profile_picture?: string
-	is_verified: boolean
-	is_member: boolean
-	created_at: string
-	updated_at: string
-  }
-  
-  export interface UserWithLocation extends User {
-	location: Location | null
-  }
-  export interface SignupCredentials {
-	email: string
-	password: string
-	first_name: string
-	last_name: string
-	role: UserRole
-	username: string
-  }
-  
-  export interface LoginCredentials {
-	email: string
-	password: string
-	rememberMe?: boolean
-  }
-  
-  export interface AuthState {
-	user: User | null
-	token: string | null
-	isAuthenticated: boolean
-	isLoading: boolean
-	error: string | null
-  }
-  
+  ADMIN: "admin",
+  TENANT: "renter",
+  PROPERTY_OWNER: "owner",
+} as const;
+
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+// Role-based permissions
+export const ROLE_PERMISSIONS = {
+  [UserRole.TENANT]: {
+    can_book_properties: true,
+    can_list_properties: false,
+    can_access_admin_panel: false,
+    can_manage_users: false,
+    can_manage_categories: false,
+  },
+  [UserRole.PROPERTY_OWNER]: {
+    can_book_properties: false, // Owners cannot book properties
+    can_list_properties: true, // Only owners can list properties
+    can_access_admin_panel: false,
+    can_manage_users: false,
+    can_manage_categories: false,
+  },
+  [UserRole.ADMIN]: {
+    can_book_properties: false, // Admins cannot book properties
+    can_list_properties: false,
+    can_access_admin_panel: true,
+    can_manage_users: true,
+    can_manage_categories: true,
+  },
+}
+
+export interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  username: string
+  role: UserRole
+  profile_picture?: string
+  is_verified: boolean
+  is_member: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UserWithLocation extends User {
+  location: Location | null
+}
+
+export interface SignupCredentials {
+  email: string
+  password: string
+  first_name: string
+  last_name: string
+  role: UserRole
+  username: string
+}
+
+export interface LoginCredentials {
+  email: string
+  password: string
+  remember_me?: boolean
+}
+
+export interface AuthState {
+  user: User | null
+  token: string | null
+  is_authenticated: boolean
+  is_loading: boolean
+  error: string | null
+}

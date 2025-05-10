@@ -4,12 +4,11 @@ import type { AuthState, LoginCredentials, User } from "../../../types/user.type
 import * as authApi from "../api/authApi"
 import type { SignupFormData } from "../types/signup.types"
 
-
 const initialState: AuthState = {
   user: null,
   token: getAuthToken() || null,
-  isAuthenticated: !!getAuthToken(),
-  isLoading: false,
+  is_authenticated: !!getAuthToken(),
+  is_loading: false,
   error: null,
 }
 
@@ -17,11 +16,11 @@ const initialState: AuthState = {
 const getErrorMessage = (error: any): string => {
   if (typeof error === "string") return error
 
-  if (error?.response?.data?.message) return error.response.data.message
-  
-  if (error?.response?.data?.error) return error.response.data.error
-  
   if (error?.message) return error.message
+
+  if (error?.response?.data?.message) return error.response.data.message
+
+  if (error?.response?.data?.error) return error.response.data.error
 
   // If error is an object but not in expected format, stringify it safely
   if (typeof error === "object" && error !== null) {
@@ -63,17 +62,17 @@ export const signupUser = createAsyncThunk(
 )
 
 export interface LoginUserParams extends LoginCredentials {
-  rememberMe?: boolean
+  remember_me?: boolean
 }
 
 export const loginUser = createAsyncThunk(
   "auth/login",
-  async ({ email, password, rememberMe = false }: LoginUserParams, { rejectWithValue }) => {
+  async ({ email, password, remember_me = false }: LoginUserParams, { rejectWithValue }) => {
     try {
       const response = await authApi.login({ email, password })
 
-      // Store token in cookie with rememberMe option
-      setAuthToken(response.token, rememberMe)
+      // Store token in cookie with remember_me option
+      setAuthToken(response.token, remember_me)
 
       return response
     } catch (error: any) {
@@ -86,9 +85,10 @@ export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWith
   try {
     await authApi.logout()
     removeAuthToken()
-
     return null
   } catch (error: any) {
+    // Even if the API call fails, we still want to remove the token locally
+    removeAuthToken()
     return rejectWithValue(getErrorMessage(error))
   }
 })
@@ -98,7 +98,11 @@ export const fetchCurrentUser = createAsyncThunk("auth/fetchCurrentUser", async 
     const user = await authApi.getCurrentUser()
     return user
   } catch (error: any) {
-    return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch user")
+    // If we get a 401 Unauthorized, remove the token
+    if (error?.response?.status === 401) {
+      removeAuthToken()
+    }
+    return rejectWithValue(getErrorMessage(error))
   }
 })
 
@@ -113,57 +117,68 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     // Signup
     builder.addCase(signupUser.pending, (state) => {
-      state.isLoading = true
+      state.is_loading = true
       state.error = null
     })
     builder.addCase(signupUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
-      state.isLoading = false
-      state.isAuthenticated = true
-      state.user = {...action.payload}
+      state.is_loading = false
+      state.is_authenticated = true
+      state.user = action.payload.user
       state.token = action.payload.token
     })
     builder.addCase(signupUser.rejected, (state, action) => {
-      state.isLoading = false
+      state.is_loading = false
       state.error = action.payload as string
     })
 
     // Login
     builder.addCase(loginUser.pending, (state) => {
-      state.isLoading = true
+      state.is_loading = true
       state.error = null
     })
     builder.addCase(loginUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
-      state.isLoading = false
-      state.isAuthenticated = true
-      state.user = {...action.payload}
+      state.is_loading = false
+      state.is_authenticated = true
+      state.user = action.payload.user
       state.token = action.payload.token
     })
     builder.addCase(loginUser.rejected, (state, action) => {
-      state.isLoading = false
+      state.is_loading = false
       state.error = action.payload as string
     })
 
     // Logout
+    builder.addCase(logoutUser.pending, (state) => {
+      state.is_loading = true
+    })
     builder.addCase(logoutUser.fulfilled, (state) => {
       state.user = null
       state.token = null
-      state.isAuthenticated = false
+      state.is_authenticated = false
+      state.is_loading = false
+    })
+    builder.addCase(logoutUser.rejected, (state) => {
+      // Even if the API call fails, we still want to log out locally
+      state.user = null
+      state.token = null
+      state.is_authenticated = false
+      state.is_loading = false
     })
 
     // Fetch current user
     builder.addCase(fetchCurrentUser.pending, (state) => {
-      state.isLoading = true
+      state.is_loading = true
     })
     builder.addCase(fetchCurrentUser.fulfilled, (state, action: PayloadAction<User>) => {
-      state.isLoading = false
+      state.is_loading = false
       state.user = action.payload
-      state.isAuthenticated = true
+      state.is_authenticated = true
     })
     builder.addCase(fetchCurrentUser.rejected, (state) => {
-      state.isLoading = false
+      state.is_loading = false
       state.user = null
       state.token = null
-      state.isAuthenticated = false
+      state.is_authenticated = false
     })
   },
 })

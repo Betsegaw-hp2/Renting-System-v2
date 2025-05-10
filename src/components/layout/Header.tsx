@@ -2,14 +2,16 @@
 
 import type React from "react"
 
-import { UserRole } from "@/types/user.types"
 import {
+  BookOpen,
   Building2,
+  Calendar,
   FileText,
-  History,
+  Heart,
   Home,
   LogOut,
   Menu,
+  MessageSquare,
   PieChart,
   Search,
   Settings,
@@ -23,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { logoutUser } from "../../features/auth/slices/authSlice"
 import { NotificationBell } from "../../features/notifications/components/NotificationBell"
+import { usePermissions } from "../../hooks/usePermissions"
 import type { RootState } from "../../store"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Button } from "../ui/button"
@@ -57,7 +60,8 @@ export function Header({
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
+  const permissions = usePermissions()
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileSearchVisible, setMobileSearchVisible] = useState(false)
 
@@ -85,10 +89,6 @@ export function Header({
       .join("")
       .toUpperCase()
   }
-
-  const isAdmin = user?.role === UserRole.ADMIN
-  const isOwner = user?.role === UserRole.PROPERTY_OWNER
-  const isTenant = user?.role === UserRole.TENANT
 
   // Determine header background and text colors based on variant and scroll state
   const getHeaderClasses = () => {
@@ -118,6 +118,9 @@ export function Header({
 
   // Determine button variant based on header variant and scroll state
   const getButtonVariant = (isOutline = false) => {
+    if (variant === "transparent" && !isScrolled) {
+      return isOutline ? "outline" : "ghost"
+    }
     return isOutline ? "outline" : "default"
   }
 
@@ -146,93 +149,122 @@ export function Header({
             </Link>
 
             {/* Navigation links based on user role */}
-            {isAuthenticated && (
-              <nav className="hidden md:flex items-center ml-8 space-x-4">
-                <Link to="/home" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
-                  <Home className="h-4 w-4" />
-                  <span>Home</span>
-                </Link>
-
-                <Link to="/browse" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
-                  <Search className="h-4 w-4" />
-                  <span>Browse</span>
-                </Link>
-
-                {isAdmin && (
-                  <>
-                    <Link
-                      to="/admin/dashboard"
-                      className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                    >
-                      <PieChart className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
-                    <Link
-                      to="/admin/users"
-                      className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>Users</span>
-                    </Link>
-                    <Link
-                      to="/admin/listings"
-                      className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span>Listings</span>
-                    </Link>
-                    <Link
-                      to="/admin/categories"
-                      className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                    >
-                      <Tag className="h-4 w-4" />
-                      <span>Categories</span>
-                    </Link>
-                  </>
-                )}
-
-                {isOwner && (
-                  <>
-                    <Link to="/listings" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
-                      <Building2 className="h-4 w-4" />
-                      <span>My Properties</span>
-                    </Link>
-                    <Link
-                      to="/rentals/history"
-                      className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                    >
-                      <History className="h-4 w-4" />
-                      <span>Rental History</span>
-                    </Link>
-                  </>
-                )}
-
-                {isTenant && (
-                  <Link
-                    to="/rentals/history"
-                    className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                  >
-                    <History className="h-4 w-4" />
-                    <span>Rental History</span>
+            <nav className="hidden md:flex items-center ml-8 space-x-4">
+              {is_authenticated ? (
+                <>
+                  <Link to="/home" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
                   </Link>
-                )}
-              </nav>
-            )}
 
-            {!isAuthenticated && (
-              <nav className="hidden md:flex items-center ml-8 space-x-4">
-                <Link to="/browse" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
-                  <Search className="h-4 w-4" />
-                  <span>Browse</span>
-                </Link>
-                <Link to="/how-it-works" className={`text-sm font-medium ${getLinkClasses()}`}>
-                  How It Works
-                </Link>
-                <Link to="/about" className={`text-sm font-medium ${getLinkClasses()}`}>
-                  About Us
-                </Link>
-              </nav>
-            )}
+                  <Link to="/browse" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
+                    <Search className="h-4 w-4" />
+                    <span>Browse</span>
+                  </Link>
+
+                  {/* Admin-specific links */}
+                  {permissions.isAdmin && (
+                    <>
+                      <Link
+                        to="/admin/dashboard"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <PieChart className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                      <Link
+                        to="/admin/users"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Users</span>
+                      </Link>
+                      <Link
+                        to="/admin/listings"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span>Listings</span>
+                      </Link>
+                      <Link
+                        to="/admin/categories"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <Tag className="h-4 w-4" />
+                        <span>Categories</span>
+                      </Link>
+                    </>
+                  )}
+
+                  {/* Owner-specific links */}
+                  {permissions.isOwner && (
+                    <>
+                      <Link
+                        to="/owner/properties"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <Building2 className="h-4 w-4" />
+                        <span>My Properties</span>
+                      </Link>
+                      <Link
+                        to="/owner/bookings"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>Booking Requests</span>
+                      </Link>
+                      <Link
+                        to="/owner/messages"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Messages</span>
+                      </Link>
+                    </>
+                  )}
+
+                  {/* Tenant-specific links */}
+                  {permissions.isTenant && (
+                    <>
+                      <Link
+                        to="/tenant/bookings"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        <span>My Bookings</span>
+                      </Link>
+                      <Link
+                        to="/tenant/saved"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <Heart className="h-4 w-4" />
+                        <span>Saved</span>
+                      </Link>
+                      <Link
+                        to="/tenant/messages"
+                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Messages</span>
+                      </Link>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Link to="/browse" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
+                    <Search className="h-4 w-4" />
+                    <span>Browse</span>
+                  </Link>
+                  <Link to="/how-it-works" className={`text-sm font-medium ${getLinkClasses()}`}>
+                    How It Works
+                  </Link>
+                  <Link to="/about" className={`text-sm font-medium ${getLinkClasses()}`}>
+                    About Us
+                  </Link>
+                </>
+              )}
+            </nav>
           </div>
 
           <div className="flex items-center gap-4">
@@ -285,11 +317,13 @@ export function Header({
               </div>
             )}
 
-            {isAuthenticated && (
-              <NotificationBell />
+            {is_authenticated && (
+              <div className={variant === "transparent" && !isScrolled ? "text-white" : ""}>
+                <NotificationBell />
+              </div>
             )}
 
-            {isAuthenticated && user ? (
+            {is_authenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -308,12 +342,22 @@ export function Header({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link to={isAdmin ? "/admin/settings" : "/profile"} className="flex items-center gap-2">
+                    <Link
+                      to={
+                        permissions.isAdmin
+                          ? "/admin/profile"
+                          : permissions.isOwner
+                            ? "/owner/profile"
+                            : "/tenant/profile"
+                      }
+                      className="flex items-center gap-2"
+                    >
                       <User className="h-4 w-4" />
                       <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
+
+                  {permissions.isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin/settings" className="flex items-center gap-2">
                         <Settings className="h-4 w-4" />
@@ -321,6 +365,27 @@ export function Header({
                       </Link>
                     </DropdownMenuItem>
                   )}
+
+                  {/* Allow owners and admins to switch to tenant account if they have one */}
+                  {(permissions.isOwner || permissions.isAdmin) && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/switch-to-tenant" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span>Switch to Tenant Account</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Allow tenants to create an owner account */}
+                  {permissions.isTenant && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/become-owner" className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <span>Become a Property Owner</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
