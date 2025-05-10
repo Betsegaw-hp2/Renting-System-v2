@@ -10,18 +10,17 @@ import type { AppDispatch, RootState } from "../../../store"
 import { loginUser } from "../slices/authSlice"
 
 export const useLogin = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate()
+  const { is_loading, error } = useSelector((state: RootState) => state.auth)
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const dispatch = useDispatch<AppDispatch>()
-  const navigate = useNavigate()
-  const { isLoading, error } = useSelector((state: RootState) => state.auth)
-
-  const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {}
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {}
 
     if (!validateRequired(email)) {
       newErrors.email = "Email is required"
@@ -40,9 +39,11 @@ export const useLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm()) return
+    if (!validateForm()) {
+      return
+    }
 
-    const resultAction = await dispatch(loginUser({ email, password, rememberMe }))
+    const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
     if (loginUser.fulfilled.match(resultAction)) {
       navigate("/dashboard")
@@ -56,11 +57,9 @@ export const useLogin = () => {
     setPassword,
     rememberMe,
     setRememberMe,
-    showPassword,
-    setShowPassword,
-    errors,
-    isLoading,
-    error,
     handleSubmit,
+    isLoading: is_loading, // Map snake_case to camelCase for backward compatibility
+    error,
+    errors,
   }
 }

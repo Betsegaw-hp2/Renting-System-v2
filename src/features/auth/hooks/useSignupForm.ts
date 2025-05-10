@@ -13,13 +13,13 @@ import { signupUser } from "../slices/authSlice"
 export const useSignupForm = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
-  const { isLoading, error } = useSelector((state: RootState) => state.auth)
+  const { is_loading, error } = useSelector((state: RootState) => state.auth)
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirm_password, setConfirmPassword] = useState("")
-  const [first_name, setFirstName] = useState("")
-  const [last_name, setLastName] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [username, setUsername] = useState("")
   const [role, setRole] = useState<UserRole>(UserRole.TENANT)
   const [validationErrors, setValidationErrors] = useState<ValidationError>({})
@@ -28,7 +28,7 @@ export const useSignupForm = () => {
     e.preventDefault()
 
     // Validate form
-    const errors = validateSignupForm(email, password, confirm_password, first_name, last_name, username, role)
+    const errors = validateSignupForm(email, password, confirmPassword, firstName, lastName, username, role)
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors)
@@ -41,8 +41,8 @@ export const useSignupForm = () => {
     const credentials: SignupCredentials = {
       email,
       password,
-      first_name,
-      last_name,
+      first_name: firstName,
+      last_name: lastName,
       username,
       role,
     }
@@ -59,18 +59,18 @@ export const useSignupForm = () => {
     setEmail,
     password,
     setPassword,
-    confirm_password,
+    confirmPassword,
     setConfirmPassword,
-    first_name,
+    firstName,
     setFirstName,
-    last_name,
+    lastName,
     setLastName,
     username,
     setUsername,
     role,
     setRole,
     handleSubmit,
-    isLoading,
+    isLoading: is_loading, // Map snake_case to camelCase for backward compatibility
     error,
     validationErrors,
   }

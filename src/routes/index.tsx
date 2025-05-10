@@ -1,14 +1,20 @@
 import type React from "react"
 import { lazy, Suspense } from "react"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
+import { PropertyListingForm } from "../features/owner/components/PropertyListingForm"
+import { AccessDeniedPage } from "../pages/AccessDeniedPage"
+import { UserRole } from "../types/user.types"
 import ProtectedRoute from "./protectedRoute"
 
 // Lazy-loaded components
 const SignupPage = lazy(() => import("../features/auth/pages/SignupPage"))
 const LoginPage = lazy(() => import("../features/auth/pages/LoginPage"))
 const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPasswordPage"))
-const HomePage = lazy(() => import("../pages/Home"))
-// const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
+const LandingPage = lazy(() => import("../pages/LandingPage"))
+const HomePage = lazy(() => import("../pages/HomePage"))
+const BrowsePage = lazy(() => import("../pages/BrowsePage"))
+const ListingDetailsPage = lazy(() => import("../pages/ListingDetailsPage"))
+const BookingPage = lazy(() => import("../pages/BookingPage"))
 
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
@@ -18,7 +24,13 @@ const AdminCategoriesPage = lazy(() => import("../features/admin/pages/Categorie
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
 
+// Tenant pages
 // const TenantProfilePage = lazy(() => import("../features/tenant/pages/ProfilePage"))
+// const TenantBookingsPage = lazy(() => import("../features/tenant/pages/RentalHistoryPage"))
+
+// // Owner pages
+// const OwnerListingsPage = lazy(() => import("../features/owner/pages/ListingsPage"))
+// const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
 
 // Loading fallback
 const LoadingFallback = () => (
@@ -27,18 +39,59 @@ const LoadingFallback = () => (
   </div>
 )
 
-// Admin route guard
+// Role-specific route guards
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  // return <ProtectedRoute requiredRole={UserRole.ADMIN}>{children}</ProtectedRoute>
-  return <ProtectedRoute >{children}</ProtectedRoute>
+  return <ProtectedRoute requiredRole={UserRole.ADMIN}>{children}</ProtectedRoute>
+}
+
+const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
+  return <ProtectedRoute requiredRole={UserRole.PROPERTY_OWNER}>{children}</ProtectedRoute>
+}
+
+const TenantRoute = ({ children }: { children: React.ReactNode }) => {
+  return <ProtectedRoute requiredRole={UserRole.TENANT}>{children}</ProtectedRoute>
+}
+
+// Permission-specific route guards
+const BookingRoute = ({ children }: { children: React.ReactNode }) => {
+  return <ProtectedRoute requiredPermission="can_book_properties">{children}</ProtectedRoute>
+}
+
+const ListingRoute = ({ children }: { children: React.ReactNode }) => {
+  return <ProtectedRoute requiredPermission="can_list_properties">{children}</ProtectedRoute>
 }
 
 const router = createBrowserRouter([
+  // Public routes
   {
     path: "/",
     element: (
       <Suspense fallback={<LoadingFallback />}>
-        <HomePage />
+        <LandingPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/browse",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <BrowsePage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/listings/:id",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ListingDetailsPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/access-denied",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <AccessDeniedPage />
       </Suspense>
     ),
   },
@@ -66,37 +119,84 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+
+  // Protected routes
   {
-    path: "/dashboard",
+    path: "/home",
     element: (
       <ProtectedRoute>
         <Suspense fallback={<LoadingFallback />}>
-          {/* <DashboardPage /> */}
-          <h1>Dashboard</h1>
+          <HomePage />
         </Suspense>
       </ProtectedRoute>
     ),
   },
+
+  // Tenant-specific routes
   {
-    path: "/browse",
+    path: "/tenant/profile",
     element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <HomePage />
-      </Suspense>
-    ),
-  },
-  // Add the route for the tenant profile page
-  {
-    path: "/profile",
-    element: (
-      <ProtectedRoute>
+      <TenantRoute>
         <Suspense fallback={<LoadingFallback />}>
           {/* <TenantProfilePage /> */}
         </Suspense>
-      </ProtectedRoute>
+      </TenantRoute>
     ),
   },
-  // Admin routes
+  {
+    path: "/tenant/bookings",
+    element: (
+      <TenantRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          {/* <TenantBookingsPage /> */}
+        </Suspense>
+      </TenantRoute>
+    ),
+  },
+  {
+    path: "/listings/:id/book",
+    element: (
+      <BookingRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <BookingPage />
+        </Suspense>
+      </BookingRoute>
+    ),
+  },
+
+  // Owner-specific routes
+  {
+    path: "/owner/listings",
+    element: (
+      <OwnerRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          {/* <OwnerListingsPage /> */}
+        </Suspense>
+      </OwnerRoute>
+    ),
+  },
+  {
+    path: "/owner/listings/new",
+    element: (
+      <ListingRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <PropertyListingForm />
+        </Suspense>
+      </ListingRoute>
+    ),
+  },
+  {
+    path: "/owner/bookings",
+    element: (
+      <OwnerRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          {/* <OwnerBookingsPage /> */}
+        </Suspense>
+      </OwnerRoute>
+    ),
+  },
+
+  // Admin-specific routes
   {
     path: "/admin/dashboard",
     element: (
@@ -156,6 +256,12 @@ const router = createBrowserRouter([
         </Suspense>
       </AdminRoute>
     ),
+  },
+
+  // Fallback route
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 ])
 

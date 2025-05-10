@@ -1,22 +1,30 @@
 export interface Location {
-	id: string
-	userId: string
-	address: string
-	city: string
-	country: string
-	phone: string
-	postalCode: string
-	region: string
-	createdAt: string
-	updatedAt: string
-  }
-  
-  export interface LocationPayload {
-	address: string
-	city: string
-	country: string
-	phone: string
-	postal_code: string
-	region: string
-  }
-  
+  id: string
+  user_id: string
+  address: string
+  city: string
+  country: string
+  region: string
+  postal_code: string
+  phone: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateLocation {
+  address: string
+  city: string
+  country: string
+  region: string
+  postal_code: string
+  phone: string
+}
+
+export interface UpdateLocation {
+  address?: string
+  city?: string
+  country?: string
+  region?: string
+  postal_code?: string
+  phone?: string
+}
