@@ -1,18 +1,18 @@
 "use client"
 
 import {
-	AlertTriangle,
-	Bath,
-	Bed,
-	Calendar,
-	Heart,
-	Home,
-	MapPin,
-	MessageSquare,
-	Share,
-	Square,
-	Star,
-	Users,
+  AlertTriangle,
+  Bath,
+  Bed,
+  Calendar,
+  Heart,
+  Home,
+  MapPin,
+  MessageSquare,
+  Share,
+  Square,
+  Star,
+  Users,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
@@ -33,7 +33,7 @@ export default function ListingDetailsPage() {
   const [listing, setListing] = useState<FeaturedListing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const { is_authenticated } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function ListingDetailsPage() {
   }, [id])
 
   const handleFavoriteToggle = () => {
-    if (!isAuthenticated) {
+    if (!is_authenticated) {
       navigate("/login", { state: { from: `/listings/${id}` } })
       return
     }
@@ -72,7 +72,7 @@ export default function ListingDetailsPage() {
   }
 
   const handleBookNow = () => {
-    if (!isAuthenticated) {
+    if (!is_authenticated) {
       navigate("/login", { state: { from: `/listings/${id}/book` } })
       return
     }
@@ -81,7 +81,7 @@ export default function ListingDetailsPage() {
   }
 
   const handleContactOwner = () => {
-    if (!isAuthenticated) {
+    if (!is_authenticated) {
       navigate("/login", { state: { from: `/listings/${id}` } })
       return
     }
@@ -96,7 +96,7 @@ export default function ListingDetailsPage() {
 
       <main className="flex-1 bg-gray-50">
         {/* Role-specific alerts */}
-        {isAuthenticated && (permissions.isAdmin || permissions.isOwner) && (
+        {is_authenticated && (permissions.isAdmin || permissions.isOwner) && (
           <div className="container mx-auto px-4 mt-6">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -142,7 +142,7 @@ export default function ListingDetailsPage() {
                   <h1 className="text-3xl font-bold mb-2">{listing.title}</h1>
                   <p className="text-gray-600 flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
-                    {listing.city}, {listing.region}
+                    {/* {listing.city}, {listing.region} */}
                   </p>
                 </div>
                 <div className="flex items-center mt-4 md:mt-0 space-x-4">
@@ -168,15 +168,15 @@ export default function ListingDetailsPage() {
                 {/* Main Image */}
                 <div className="md:col-span-2">
                   <div className="aspect-video rounded-lg overflow-hidden">
-                    <img
+                    {/* <img
                       src={listing.media[0]?.media_url || "/placeholder.svg?height=400&width=600"}
                       alt={listing.title}
                       className="w-full h-full object-cover"
-                    />
+                    /> */}
                   </div>
 
                   {/* Thumbnail Images */}
-                  {listing.media.length > 1 && (
+                  {/* {listing.media.length > 1 && (
                     <div className="grid grid-cols-4 gap-2 mt-2">
                       {listing.media.slice(1, 5).map((media, index) => (
                         <div key={index} className="aspect-video rounded-lg overflow-hidden">
@@ -188,7 +188,7 @@ export default function ListingDetailsPage() {
                         </div>
                       ))}
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {/* Booking Card */}
@@ -210,7 +210,7 @@ export default function ListingDetailsPage() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                           <span>Category</span>
-                          <span className="font-medium">{listing.category.name}</span>
+                          <span className="font-medium">{listing.category}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span>Availability</span>
@@ -294,7 +294,7 @@ export default function ListingDetailsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
                     <Home className="h-6 w-6 text-blue-600 mr-3" />
                     <div>
-                      <p className="font-medium">{listing.category.name}</p>
+                      <p className="font-medium">{listing.category}</p>
                       <p className="text-sm text-gray-500">Property type</p>
                     </div>
                   </div>
@@ -317,7 +317,8 @@ export default function ListingDetailsPage() {
                   <span className="text-gray-500">Map view will be displayed here</span>
                 </div>
                 <p className="mt-4 text-gray-700">
-                  {listing.city}, {listing.region}. The exact location will be provided after booking.
+                  {/* {listing.city}, {listing.region}. */}
+                   The exact location will be provided after booking.
                 </p>
               </div>
 
