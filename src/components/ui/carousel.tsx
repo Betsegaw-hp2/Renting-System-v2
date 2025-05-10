@@ -6,9 +6,10 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "./button"
 
+// Context to share carousel state
 const CarouselContext = React.createContext<{
-  api: any
   currentSlide: number
+  setCurrentSlide: (index: number) => void
   scrollPrev: () => void
   scrollNext: () => void
   canScrollPrev: boolean
@@ -17,43 +18,44 @@ const CarouselContext = React.createContext<{
 
 function useCarousel() {
   const context = React.useContext(CarouselContext)
-
   if (!context) {
     throw new Error("useCarousel must be used within a <Carousel />")
   }
-
   return context
 }
 
 const Carousel = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
-    opts?: any
     orientation?: "horizontal" | "vertical"
-    setApi?: (api: any) => void
   }
->(({ opts, orientation = "horizontal", setApi, className, children, ...props }, ref) => {
-  const [carouselRef, setCarouselRef] = React.useState<HTMLDivElement | null>(null)
-  const [api, setInternalApi] = React.useState<any | null>(null)
+>(({ orientation = "horizontal", className, children, ...props }, ref) => {
+  const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [currentSlide, setCurrentSlide] = React.useState(0)
+  const [totalSlides, setTotalSlides] = React.useState(0)
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
-  const [canScrollNext, setCanScrollNext] = React.useState(false)
+  const [canScrollNext, setCanScrollNext] = React.useState(true)
 
-  const onSelect = React.useCallback(() => {
-    if (!api) return
-
-    setCurrentSlide(api.selectedScrollSnap())
-    setCanScrollPrev(api.canScrollPrev())
-    setCanScrollNext(api.canScrollNext())
-  }, [api])
+  React.useEffect(() => {
+    if (containerRef.current) {
+      const items = containerRef.current.querySelectorAll('[role="group"]')
+      setTotalSlides(items.length)
+      setCanScrollNext(currentSlide < items.length - 1)
+      setCanScrollPrev(currentSlide > 0)
+    }
+  }, [currentSlide, children])
 
   const scrollPrev = React.useCallback(() => {
-    api?.scrollPrev()
-  }, [api])
+    if (currentSlide > 0) {
+      setCurrentSlide((prev) => prev - 1)
+    }
+  }, [currentSlide])
 
   const scrollNext = React.useCallback(() => {
-    api?.scrollNext()
-  }, [api])
+    if (currentSlide < totalSlides - 1) {
+      setCurrentSlide((prev) => prev + 1)
+    }
+  }, [currentSlide, totalSlides])
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -68,44 +70,16 @@ const Carousel = React.forwardRef<
     [scrollPrev, scrollNext],
   )
 
-  React.useEffect(() => {
-    if (!carouselRef) return
-
-    // Simulate a simple carousel behavior
-    const interval = setInterval(() => {
-      if (canScrollNext) {
-        scrollNext()
-      } else {
-        // Reset to first slide
-        setCurrentSlide(0)
-        carouselRef.scrollTo({ left: 0, behavior: "smooth" })
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [carouselRef, canScrollNext, scrollNext])
-
-  React.useEffect(() => {
-    if (!api) return
-
-    onSelect()
-    api.on("select", onSelect)
-
-    return () => {
-      api.off("select", onSelect)
-    }
-  }, [api, onSelect])
-
   const contextValue = React.useMemo(
     () => ({
-      api,
       currentSlide,
+      setCurrentSlide,
       scrollPrev,
       scrollNext,
       canScrollPrev,
       canScrollNext,
     }),
-    [api, currentSlide, scrollPrev, scrollNext, canScrollPrev, canScrollNext],
+    [currentSlide, scrollPrev, scrollNext, canScrollPrev, canScrollNext],
   )
 
   return (
@@ -118,7 +92,9 @@ const Carousel = React.forwardRef<
         aria-roledescription="carousel"
         {...props}
       >
-        {children}
+        <div ref={containerRef} className="overflow-hidden">
+          {children}
+        </div>
       </div>
     </CarouselContext.Provider>
   )
@@ -132,7 +108,7 @@ const CarouselContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HT
     return (
       <div
         ref={ref}
-        className={cn("relative flex transition-transform duration-300 ease-in-out", className)}
+        className={cn("relative flex transition-transform duration-500 ease-in-out", className)}
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
         {...props}
       />
@@ -148,7 +124,7 @@ const CarouselItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
         ref={ref}
         role="group"
         aria-roledescription="slide"
-        className={cn("min-w-0 shrink-0 grow-0 basis-full", className)}
+        className={cn("min-w-0 shrink-0 grow-0 basis-full px-4", className)}
         {...props}
       />
     )
@@ -166,7 +142,7 @@ const CarouselPrevious = React.forwardRef<HTMLButtonElement, React.ComponentProp
         variant={variant}
         size={size}
         className={cn(
-          "absolute left-2 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full",
+          "absolute left-4 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full",
           !canScrollPrev && "opacity-50 cursor-not-allowed",
           className,
         )}
@@ -192,7 +168,7 @@ const CarouselNext = React.forwardRef<HTMLButtonElement, React.ComponentProps<ty
         variant={variant}
         size={size}
         className={cn(
-          "absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full",
+          "absolute right-4 top-1/2 z-10 h-8 w-8 -translate-y-1/2 rounded-full",
           !canScrollNext && "opacity-50 cursor-not-allowed",
           className,
         )}
@@ -210,7 +186,7 @@ CarouselNext.displayName = "CarouselNext"
 
 const CarouselDots = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { count: number }>(
   ({ className, count, ...props }, ref) => {
-    const { currentSlide, api } = useCarousel()
+    const { currentSlide, setCurrentSlide } = useCarousel()
 
     return (
       <div ref={ref} className={cn("flex justify-center gap-1 mt-4", className)} {...props}>
@@ -221,7 +197,7 @@ const CarouselDots = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
               "h-2 w-2 rounded-full transition-colors",
               currentSlide === index ? "bg-primary" : "bg-gray-300",
             )}
-            onClick={() => api?.scrollTo(index)}
+            onClick={() => setCurrentSlide(index)}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
@@ -231,4 +207,12 @@ const CarouselDots = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
 )
 CarouselDots.displayName = "CarouselDots"
 
-export { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, CarouselDots, useCarousel }
+export {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+  CarouselDots,
+  useCarousel,
+}
