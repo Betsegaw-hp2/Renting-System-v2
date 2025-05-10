@@ -1,6 +1,4 @@
 "use client"
-
-
 import { Star } from "lucide-react"
 import { Link } from "react-router-dom"
 import type { FeaturedListing } from "../../api/publicApi"
@@ -8,7 +6,7 @@ import { Button } from "../ui/button"
 
 // Create a union type to accept both ListingWithCategory and FeaturedListing
 type ListingCardProps = {
-  listing: ListingWithCategory | FeaturedListing
+  listing: FeaturedListing
   showFavorite?: boolean
   isFavorite?: boolean
   onFavoriteToggle?: (id: string) => void

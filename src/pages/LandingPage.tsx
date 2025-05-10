@@ -2,35 +2,56 @@
 
 import type React from "react"
 
-import { Calendar, CreditCard, HomeIcon, Key, Search, Star } from "lucide-react"
-import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { Link, useNavigate } from "react-router-dom"
-import type { CategoryCount, FeaturedListing, Testimonial } from "../api/publicApi"
+import { Calendar, CreditCard, Key, Search, Star } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Link } from "react-router-dom"
+import type { FeaturedListing, Testimonial } from "../api/publicApi"
 import { publicApi } from "../api/publicApi"
 import { CategoryCard } from "../components/categories/CategoryCard"
+import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { ListingCard } from "../components/listings/ListingCard"
+import { SearchFilters, type SearchFilters as SearchFiltersType } from "../components/search/SearchFilters"
 import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import type { RootState } from "../store"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselDots,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../components/ui/carousel"
 
 export default function HomePage() {
-  const navigate = useNavigate()
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
   const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [categories, setCategories] = useState<CategoryCount[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [searchLocation, setSearchLocation] = useState("")
+  const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
 
-  // Redirect authenticated users to home page
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/home")
+  // Refs for scroll behavior
+  const howItWorksRef = useRef<HTMLElement>(null)
+
+  // Scroll to section
+  const scrollToSection = (ref: React.RefObject<HTMLElement | HTMLDivElement>) => {
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth" })
     }
-  }, [isAuthenticated, navigate])
+  }
+
+  // 
+  type CategoryCount = {
+    id: string;
+    name: string
+    slug: string
+    description: string;
+    image_url: string;
+    created_at: string;
+    updated_at: string;
+    icon?: string;
+  }
+  
+  
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -44,6 +65,7 @@ export default function HomePage() {
         ])
 
         setFeaturedListings(listingsData)
+        setFilteredListings(listingsData)
         setTestimonials(testimonialsData)
         setCategories(categoriesData)
       } catch (error) {
@@ -56,90 +78,90 @@ export default function HomePage() {
     fetchHomeData()
   }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Navigate to search results page
-    navigate(`/browse?query=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(searchLocation)}`)
+  const handleSearch = (filters: SearchFiltersType) => {
+    // Filter listings based on search criteria
+    const filtered = featuredListings.filter((listing) => {
+      // Filter by search query
+      const matchesQuery =
+        !filters.query ||
+        listing.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+        listing.description.toLowerCase().includes(filters.query.toLowerCase()) ||
+        listing.category.toLowerCase().includes(filters.query.toLowerCase())
+
+      // Filter by category
+      const matchesCategory =
+        !filters.category ||
+        filters.category === "all" ||
+        listing.category.toLowerCase() === filters.category.toLowerCase()
+
+      // Filter by date range (if applicable)
+      // This is a simplified example - in a real app, you'd need to check if the listing is available during the selected date range
+      const matchesDateRange = true
+
+      return matchesQuery && matchesCategory && matchesDateRange
+    })
+
+    setFilteredListings(filtered)
   }
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Use our dynamic Header component with transparent variant */}
-      <Header variant="transparent" />
+      {/* Header */}
+      <Header />
 
       {/* Hero Section */}
-      <section className="bg-blue-600 py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Rent Anything, Anytime, Anywhere</h1>
-              <p className="text-blue-100 mb-8 text-lg">
-                From apartments and cars to equipment and event spaces - find, book, and rent with confidence on our
-                all-in-one platform.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button asChild className="bg-white text-blue-600 hover:bg-blue-50">
-                  <Link to="/browse">Browse Rentals</Link>
-                </Button>
-                <Button asChild variant="outline" className="border-white text-white hover:bg-blue-700">
-                  <Link to="/list-property">List Your Item</Link>
-                </Button>
+      <section className="bg-gray-50 py-12 md:py-20">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
+            <div className="flex flex-col justify-center space-y-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  Find Your Perfect Rental in One Place
+                </h1>
+                <p className="max-w-[600px] text-gray-500 md:text-xl">
+                  Discover homes, vehicles, equipment, event spaces, and more. Rent with confidence and enjoy a seamless
+                  experience.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Link
+                  to="/browse"
+                  className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  Browse Rentals
+                </Link>
+                <Link
+                  to="/list-property"
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  List Your Property
+                </Link>
               </div>
             </div>
-            <div className="relative">
-              <div className="bg-white rounded-lg shadow-xl p-4 aspect-video flex items-center justify-center">
-                <img src="/placeholder.svg?height=400&width=600" alt="Rental marketplace" className="rounded-md" />
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-full py-1 px-4 shadow-md flex items-center">
-                <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                <span className="text-sm font-medium">4.9 average rating</span>
+            <div className="flex items-center justify-center">
+              <div className="relative h-[300px] w-full overflow-hidden rounded-xl bg-gray-100 sm:h-[350px] lg:h-[400px]">
+                <img
+                  src="/placeholder.svg?height=400&width=600"
+                  alt="Rental platform showcase"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute bottom-4 left-4 rounded-lg bg-white px-3 py-2 shadow-md">
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-medium">4.9 average rating</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Search Section */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 -mt-16">
-            <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="What are you looking for?"
-                  className="pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <HomeIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Location"
-                  className="pl-10"
-                  value={searchLocation}
-                  onChange={(e) => setSearchLocation(e.target.value)}
-                />
-              </div>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </form>
-          </div>
-        </div>
-      </section>
+      {/* Search Box */}
+      <SearchFilters className="max-w-4xl mx-auto -mt-8" />
 
-      {/* Rest of the landing page content remains the same */}
       {/* Categories Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="my-10 py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-2">Browse by Category</h2>
@@ -147,8 +169,8 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {[...Array(6)].map((_, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, index) => (
                 <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
                   <div className="bg-gray-200 rounded-full h-16 w-16 mx-auto mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
@@ -157,16 +179,19 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {categories.map((category) => (
-                <CategoryCard
-                  key={category.category}
-                  category={category.category}
-                  count={category.count}
-                  icon={category.icon}
-                />
-              ))}
-            </div>
+            <Carousel className="w-full">
+              <CarouselContent>
+                {categories.map((category) => (
+                  <CarouselItem key={category.slug} className="md:basis-1/3 lg:basis-1/3">
+                    <div className="p-1">
+                      <CategoryCard category={category} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
+            </Carousel>
           )}
         </div>
       </section>
@@ -197,18 +222,29 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          ) : filteredListings.length > 0 ? (
+            <Carousel className="w-full">
+              <CarouselContent>
+                {filteredListings.map((listing) => (
+                  <CarouselItem key={listing.id} className="md:basis-1/2 lg:basis-1/4">
+                    <div className="p-1">
+                      <ListingCard listing={listing} />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
+              <CarouselDots count={Math.ceil(filteredListings.length / 4)} className="mt-4" />
+            </Carousel>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredListings.slice(0, 4).map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
+            <div className="text-center py-8">
+              <p className="text-gray-500">No listings found matching your search criteria.</p>
+              <Button variant="outline" className="mt-4" onClick={() => setFilteredListings(featuredListings)}>
+                Reset Filters
+              </Button>
             </div>
           )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-            {!isLoading &&
-              featuredListings.slice(4, 8).map((listing) => <ListingCard key={listing.id} listing={listing} />)}
-          </div>
 
           <div className="text-center mt-10">
             <Button asChild variant="outline">
@@ -219,7 +255,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-gray-50">
+      <section ref={howItWorksRef} id="how-it-works" className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-2">How It Works</h2>
@@ -277,56 +313,61 @@ export default function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                  <div className="flex items-center mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-4 w-4 bg-gray-200 rounded-full mr-1"></div>
-                    ))}
-                  </div>
-                  <div className="h-24 bg-gray-200 rounded mb-4"></div>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
-                    <div>
-                      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
+            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 animate-pulse">
+              <div className="flex items-center mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-4 w-4 bg-gray-200 rounded-full mr-1"></div>
+                ))}
+              </div>
+              <div className="h-24 bg-gray-200 rounded mb-4"></div>
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gray-200 rounded-full mr-3"></div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16"></div>
                 </div>
-              ))}
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial) => (
-                <div key={testimonial.id} className="bg-white p-6 rounded-lg shadow-md">
-                  <div className="flex items-center mb-4">
-                    {[...Array(5)].map((_, index) => (
-                      <Star
-                        key={index}
-                        className={`h-4 w-4 ${index < testimonial.rating ? "text-yellow-400" : "text-gray-300"}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-4">"{testimonial.comment}"</p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full mr-3">
-                      {testimonial.avatar && (
-                        <img
-                          src={testimonial.avatar || "/placeholder.svg"}
-                          alt={testimonial.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      )}
+            <Carousel className="w-full max-w-4xl mx-auto">
+              <CarouselContent>
+                {testimonials.map((testimonial) => (
+                  <CarouselItem key={testimonial.id}>
+                    <div className="p-1">
+                      <div className="bg-white p-8 rounded-lg shadow-md">
+                        <div className="flex items-center mb-4">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${i < testimonial.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-gray-600 mb-6 text-lg italic">"{testimonial.comment}"</p>
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full mr-4">
+                            {testimonial.avatar && (
+                              <img
+                                src={testimonial.avatar || "/placeholder.svg"}
+                                alt={testimonial.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-lg">{testimonial.name}</h4>
+                            <p className="text-sm text-gray-500">{testimonial.role}</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-semibold">{testimonial.name}</h4>
-                      <p className="text-sm text-gray-500">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-12" />
+              <CarouselNext className="-right-12" />
+              <CarouselDots count={testimonials.length} className="mt-4" />
+            </Carousel>
           )}
         </div>
       </section>
@@ -343,7 +384,7 @@ export default function HomePage() {
               <Button asChild className="bg-white text-blue-600 hover:bg-blue-50">
                 <Link to="/signup">Sign Up Now</Link>
               </Button>
-              <Button asChild variant="outline" className="border-white text-white hover:bg-blue-700">
+              <Button asChild className="bg-slate-700 border-white text-white hover:bg-slate-600">
                 <Link to="/browse">Browse Listings</Link>
               </Button>
             </div>
@@ -352,130 +393,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-lg font-bold mb-4">All-in-One Rental Place</h3>
-              <p className="text-gray-400 mb-4">
-                Find anything you need to rent on our easy-to-use platform. We connect renters and owners for a seamless
-                rental experience across multiple categories.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">Quick Links</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="/browse" className="text-gray-400 hover:text-white">
-                    Browse Rentals
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/how-it-works" className="text-gray-400 hover:text-white">
-                    How It Works
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="text-gray-400 hover:text-white">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="text-gray-400 hover:text-white">
-                    Contact
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog" className="text-gray-400 hover:text-white">
-                    Blog
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">For Owners</h3>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="/owner-dashboard" className="text-gray-400 hover:text-white">
-                    Owner Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/list-item" className="text-gray-400 hover:text-white">
-                    List Your Item
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/pricing" className="text-gray-400 hover:text-white">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/resources" className="text-gray-400 hover:text-white">
-                    Resources
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/faq" className="text-gray-400 hover:text-white">
-                    FAQ
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold mb-4">Contact Us</h3>
-              <p className="text-gray-400 mb-2">
-                <a href="mailto:support@rentalplace.com" className="hover:text-white">
-                  support@rentalplace.com
-                </a>
-              </p>
-              <p className="text-gray-400 mb-4">
-                <a href="tel:+15551234567" className="hover:text-white">
-                  +1 (555) 123-4567
-                </a>
-              </p>
-              <p className="text-gray-400">Send us a message</p>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 pt-8">
-            <p className="text-gray-400 text-sm text-center">
-              © {new Date().getFullYear()} All-in-One Rental Place. All rights reserved.
-            </p>
-            <div className="flex justify-center mt-4 space-x-4 text-sm">
-              <Link to="/terms" className="text-gray-400 hover:text-white">
-                Terms of Service
-              </Link>
-              <Link to="/privacy" className="text-gray-400 hover:text-white">
-                Privacy Policy
-              </Link>
-              <Link to="/cookie" className="text-gray-400 hover:text-white">
-                Cookie Policy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer scrollToSection={scrollToSection} howItWorksRef={howItWorksRef} />
     </div>
   )
 }

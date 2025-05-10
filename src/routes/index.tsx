@@ -29,8 +29,8 @@ const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPag
 // // Owner pages
 // const OwnerListingsPage = lazy(() => import("../features/owner/pages/ListingsPage"))
 // const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
-const HomePage = lazy(() => import("../pages/Home"))
-const BrowsePage = lazy(() => import("../pages/Browse"))
+const HomePage = lazy(() => import("../pages/HomePage"))
+const BrowsePage = lazy(() => import("../pages/BrowsePage"))
 const AboutPage = lazy(() => import("../pages/About"))
 const ContactPage = lazy(() => import("../pages/Contact"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
@@ -81,6 +81,22 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <BrowsePage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/about",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <AboutPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/contact",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <ContactPage />
       </Suspense>
     ),
   },

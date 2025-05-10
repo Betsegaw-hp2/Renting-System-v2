@@ -28,12 +28,12 @@ export default function BookingPage() {
   const [endDate, setEndDate] = useState("")
   const [guests, setGuests] = useState(1)
   const [totalPrice, setTotalPrice] = useState(0)
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { is_authenticated, user } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
 
   useEffect(() => {
     // Redirect if not authenticated or not a tenant
-    if (!isAuthenticated) {
+    if (!is_authenticated) {
       navigate("/login", { state: { from: location.pathname } })
       return
     }
@@ -81,7 +81,7 @@ export default function BookingPage() {
     }
 
     fetchListing()
-  }, [id, isAuthenticated, permissions, navigate, location.pathname])
+  }, [id, is_authenticated, permissions, navigate, location.pathname])
 
   const calculateTotalPrice = (basePrice: number, start: Date, end: Date) => {
     const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
@@ -120,7 +120,7 @@ export default function BookingPage() {
 
       <main className="flex-1 bg-gray-50">
         {/* Role-specific alerts */}
-        {isAuthenticated && !permissions.canBookProperties && (
+        {is_authenticated && !permissions.canBookProperties && (
           <div className="container mx-auto px-4 mt-6">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -170,20 +170,20 @@ export default function BookingPage() {
                     <CardContent>
                       <div className="flex items-start gap-4">
                         <div className="w-24 h-24 rounded-md overflow-hidden flex-shrink-0">
-                          <img
+                          {/* <img
                             src={listing.media[0]?.media_url || "/placeholder.svg?height=100&width=100"}
                             alt={listing.title}
                             className="w-full h-full object-cover"
-                          />
+                          /> */}
                         </div>
                         <div>
                           <h3 className="font-bold text-lg">{listing.title}</h3>
                           <p className="text-gray-600 flex items-center text-sm">
                             <MapPin className="h-4 w-4 mr-1" />
-                            {listing.city}, {listing.region}
+                            {/* {listing.city}, {listing.region} */}
                           </p>
                           <p className="text-sm text-gray-500 mt-2">
-                            {listing.category.name} •
+                            {listing.category} •
                             {listing.features?.bedrooms && ` ${listing.features.bedrooms} bedrooms • `}
                             {listing.features?.bathrooms && ` ${listing.features.bathrooms} bathrooms`}
                           </p>
@@ -260,7 +260,7 @@ export default function BookingPage() {
                           <Input
                             id="cardName"
                             placeholder="John Doe"
-                            defaultValue={user ? `${user.firstName} ${user.lastName}` : ""}
+                            defaultValue={user ? `${user.first_name} ${user.last_name}` : ""}
                             required
                           />
                         </div>

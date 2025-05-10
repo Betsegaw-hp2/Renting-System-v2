@@ -1,378 +1,306 @@
 "use client"
 
-import type React from "react"
-
-import {
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  DollarSign,
-  Filter,
-  Home,
-  MapPin,
-  Search,
-  Tag,
-  X,
-} from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import type { FeaturedListing } from "../api/publicApi"
 import { publicApi } from "../api/publicApi"
+import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { ListingCard } from "../components/listings/ListingCard"
+import { SearchFilters, type SearchFilters as SearchFiltersType } from "../components/search/SearchFilters"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
 import { Button } from "../components/ui/button"
-import { Checkbox } from "../components/ui/checkbox"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Slider } from "../components/ui/slider"
-import { usePermissions } from "../hooks/usePermissions"
-import type { RootState } from "../store"
 
 export default function BrowsePage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [listings, setListings] = useState<FeaturedListing[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
-  const [location, setLocation] = useState(searchParams.get("location") || "")
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState("relevance")
-  const [sidebarVisible, setSidebarVisible] = useState(true)
-  const permissions = usePermissions()
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const [listings, setListings] = useState<FeaturedListing[]>([])
+  const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Categories for filter
-  const categories = [
-    { id: "apartment", name: "Apartments" },
-    { id: "house", name: "Houses" },
-    { id: "condo", name: "Condos" },
-    { id: "vehicle", name: "Vehicles" },
-    { id: "equipment", name: "Equipment" },
-    { id: "event", name: "Event Spaces" },
-  ]
+  // Get search params
+  const queryParam = searchParams.get("query") || ""
+  const categoryParam = searchParams.get("category") || ""
+  const dateRangeParam = searchParams.get("dateRange") || "any"
+  const useMockApiParam = searchParams.get("mock") !== "false" // Default to true if not specified
+
+  // Date range options mapping
+  const getDateRangeFromValue = (value: string) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    switch (value) {
+      case "today":
+        return {
+          label: "Today",
+          startDate: today,
+          endDate: today,
+        }
+      case "7days":
+        return {
+          label: "Last 7 days",
+          startDate: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
+          endDate: today,
+        }
+      case "30days":
+        return {
+          label: "Last 30 days",
+          startDate: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000),
+          endDate: today,
+        }
+      case "90days":
+        return {
+          label: "Last 90 days",
+          startDate: new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000),
+          endDate: today,
+        }
+      case "next7days":
+        return {
+          label: "Next 7 days",
+          startDate: today,
+          endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
+        }
+      case "next30days":
+        return {
+          label: "Next 30 days",
+          startDate: today,
+          endDate: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000),
+        }
+      case "next90days":
+        return {
+          label: "Next 90 days",
+          startDate: today,
+          endDate: new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000),
+        }
+      default:
+        return {
+          label: "Any time",
+          startDate: undefined,
+          endDate: undefined,
+        }
+    }
+  }
 
   useEffect(() => {
-    // Check if we should hide sidebar by default on mobile
-    const checkMobileView = () => {
-      if (window.innerWidth < 768) {
-        setSidebarVisible(false)
-      }
-    }
-
-    checkMobileView()
-    window.addEventListener("resize", checkMobileView)
-
-    return () => {
-      window.removeEventListener("resize", checkMobileView)
-    }
-  }, [])
-
-  useEffect(() => {
-    const fetchListings = async () => {
+    const fetchAndFilterListings = async () => {
       setIsLoading(true)
+      setError(null)
+
       try {
-        // Get initial query parameters from URL
-        const query = searchParams.get("query") || ""
-        const locationParam = searchParams.get("location") || ""
+        // Get date range from param
+        const dateRange = getDateRangeFromValue(dateRangeParam)
 
-        // Fetch listings based on search parameters
-        const results = await publicApi.getFeaturedListings()
+        console.log("Fetching listings with params:", {
+          query: queryParam,
+          category: categoryParam,
+          dateRange,
+          useMockApi: false, // Force use of real API
+        })
 
-        // Filter results based on search query and location
-        let filteredResults = results
+        // Always use the search API with appropriate filters
+        const searchResults = await publicApi.searchListings(
+          queryParam,
+          categoryParam || undefined,
+          dateRange.startDate,
+          dateRange.endDate,
+          false, // Force use of real API, not mock data
+        )
 
-        if (query) {
-          filteredResults = filteredResults.filter(
-            (listing) =>
-              listing.title.toLowerCase().includes(query.toLowerCase()) ||
-              listing.description.toLowerCase().includes(query.toLowerCase()),
-          )
-        }
-
-        if (locationParam) {
-          filteredResults = filteredResults.filter(
-            (listing) =>
-              listing.city.toLowerCase().includes(locationParam.toLowerCase()) ||
-              listing.region.toLowerCase().includes(locationParam.toLowerCase()),
-          )
-        }
-
-        setListings(filteredResults)
+        console.log(`Fetched ${searchResults.length} listings from API`)
+        setListings(searchResults)
+        setFilteredListings(searchResults)
       } catch (error) {
         console.error("Error fetching listings:", error)
+        setError("Failed to load listings from the API. Please try again later.")
+        setFilteredListings([])
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchListings()
-  }, [searchParams])
+    fetchAndFilterListings()
+  }, [queryParam, categoryParam, dateRangeParam])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  // Update the handleSearch function to not use mock data
+  const handleSearch = async (filters: SearchFiltersType) => {
+    setIsLoading(true)
+    setError(null)
 
-    // Update URL search parameters
-    const params = new URLSearchParams()
-    if (searchQuery) params.set("query", searchQuery)
-    if (location) params.set("location", location)
+    try {
+      // Update URL with search params (without navigating)
+      const params = new URLSearchParams(window.location.search)
 
-    setSearchParams(params)
-  }
+      if (filters.query) {
+        params.set("query", filters.query)
+      } else {
+        params.delete("query")
+      }
 
-  const handleFilterApply = () => {
-    // Apply filters to the current listings
-    // In a real implementation, this would make an API call with filter parameters
+      if (filters.category) {
+        params.set("category", filters.category)
+      } else {
+        params.delete("category")
+      }
 
-    // For mobile view, hide sidebar after applying filters
-    if (window.innerWidth < 768) {
-      setSidebarVisible(false)
+      // Get the date range value from the label
+      const dateRangeValue = DATE_RANGES.find((range) => range.label === filters.dateRange.label)?.value || "any"
+
+      if (dateRangeValue !== "any") {
+        params.set("dateRange", dateRangeValue)
+      } else {
+        params.delete("dateRange")
+      }
+
+      // Always set mock to false to use real API
+      params.set("mock", "false")
+
+      window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
+
+      console.log("Searching with filters:", filters)
+
+      // Fetch new results based on filters
+      const searchResults = await publicApi.searchListings(
+        filters.query,
+        filters.category || undefined,
+        filters.dateRange.startDate,
+        filters.dateRange.endDate,
+        false, // Force use of real API
+      )
+
+      console.log(`Search returned ${searchResults.length} results`)
+      setFilteredListings(searchResults)
+    } catch (error) {
+      console.error("Error searching listings:", error)
+      setError("An error occurred while searching. Please try again.")
+      setFilteredListings([])
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleClearFilters = () => {
-    setPriceRange([0, 5000])
-    setSelectedCategories([])
-    setSortBy("relevance")
+  // Prepare initial values for the search form
+  const initialSearchValues: Partial<SearchFiltersType> = {
+    query: queryParam,
+    category: categoryParam,
+    dateRange: getDateRangeFromValue(dateRangeParam),
+    useMockApi: useMockApiParam,
   }
 
-  const toggleCategory = (categoryId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
-    )
-  }
-
-  const toggleSidebar = () => {
-    setSidebarVisible(!sidebarVisible)
-  }
-
-  const handleFavoriteToggle = (id: string) => {
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: `/listings/${id}` } })
-      return
-    }
-
-    // Handle favorite toggle logic
-    console.log(`Toggle favorite for listing ${id}`)
-  }
+  // Constants for date range options
+  const DATE_RANGES = [
+    { label: "Any time", value: "any" },
+    { label: "Today", value: "today" },
+    { label: "Last 7 days", value: "7days" },
+    { label: "Last 30 days", value: "30days" },
+    { label: "Last 90 days", value: "90days" },
+    { label: "Next 7 days", value: "next7days" },
+    { label: "Next 30 days", value: "next30days" },
+    { label: "Next 90 days", value: "next90days" },
+  ]
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header
-        showSearch={true}
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchSubmit={handleSearch}
-      />
+    <div className="flex flex-col min-h-screen">
+      <Header />
 
-      <main className="flex-1 bg-gray-50 flex">
-        {/* Role-specific alerts */}
-        {isAuthenticated && (permissions.isAdmin || permissions.isOwner) && (
-          <div className="container mx-auto px-4 mt-6 absolute top-16 left-0 right-0 z-10">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Role Restriction Notice</AlertTitle>
-              <AlertDescription>
-                {permissions.isAdmin
-                  ? "As an administrator, you cannot book properties. Please create a tenant account if you wish to make bookings."
-                  : "As a property owner, you cannot book properties with this account. Please create a tenant account if you wish to make bookings."}
-              </AlertDescription>
+      {/* Hero Section - Simplified for Browse Page */}
+      <section className="bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold mb-2">Browse Rentals</h1>
+          <p className="text-gray-600 mb-4">Find exactly what you need from our diverse selection</p>
+        </div>
+      </section>
+
+      {/* Search Filters */}
+      <div className="container mx-auto px-4 -mt-4 mb-8">
+        <SearchFilters
+          onSearch={handleSearch}
+          className="mb-8"
+          showAdvanced={true}
+          initialValues={initialSearchValues}
+        />
+      </div>
+
+      {/* Results */}
+      <main className="flex-1 bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
-          </div>
-        )}
+          )}
 
-        {/* Filter Sidebar */}
-        <aside
-          className={`bg-white border-r border-gray-200 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto transition-all duration-300 ${
-            sidebarVisible ? "w-64 md:w-80" : "w-0"
-          }`}
-        >
-          <div className={`p-4 ${!sidebarVisible ? "hidden" : ""}`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Filters</h2>
-              <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-8 px-2">
-                <X className="h-4 w-4 mr-1" />
-                Clear
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">
+              {filteredListings.length} {filteredListings.length === 1 ? "Result" : "Results"} Found
+            </h2>
+
+            {(queryParam || categoryParam || dateRangeParam !== "any") && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.history.replaceState({}, "", window.location.pathname)
+                  navigate(window.location.pathname)
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+              <p className="text-gray-600">Loading listings...</p>
+            </div>
+          ) : filteredListings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredListings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+              <h3 className="text-xl font-medium mb-2">No listings found</h3>
+              <p className="text-gray-500 mb-6">Try adjusting your search filters to find what you're looking for.</p>
+              <Button
+                onClick={() => {
+                  window.history.replaceState({}, "", window.location.pathname)
+                  navigate(window.location.pathname)
+                }}
+              >
+                Reset All Filters
               </Button>
             </div>
-
-            {/* Sort By */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-2">Sort by</h3>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Relevance</SelectItem>
-                  <SelectItem value="price_low">Price: Low to High</SelectItem>
-                  <SelectItem value="price_high">Price: High to Low</SelectItem>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Price Range */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-2 flex items-center">
-                <DollarSign className="h-4 w-4 mr-1" />
-                Price Range
-              </h3>
-              <div className="px-2">
-                <Slider
-                  defaultValue={[0, 5000]}
-                  max={5000}
-                  step={100}
-                  value={priceRange}
-                  onValueChange={(value) => setPriceRange(value as [number, number])}
-                />
-                <div className="flex justify-between mt-2 text-sm text-gray-500">
-                  <span>${priceRange[0]}</span>
-                  <span>${priceRange[1]}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-2 flex items-center">
-                <Tag className="h-4 w-4 mr-1" />
-                Categories
-              </h3>
-              <div className="space-y-2">
-                {categories.map((category) => (
-                  <div key={category.id} className="flex items-center">
-                    <Checkbox
-                      id={`category-${category.id}`}
-                      checked={selectedCategories.includes(category.id)}
-                      onCheckedChange={() => toggleCategory(category.id)}
-                    />
-                    <label
-                      htmlFor={`category-${category.id}`}
-                      className="ml-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {category.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Apply Filters Button - Mobile Only */}
-            <Button onClick={handleFilterApply} className="w-full md:hidden mt-4">
-              Apply Filters
-            </Button>
-          </div>
-        </aside>
-
-        {/* Toggle Sidebar Button */}
-        <button
-          onClick={toggleSidebar}
-          className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-white border border-gray-200 rounded-r-md p-2 shadow-md z-10"
-          aria-label={sidebarVisible ? "Hide filters" : "Show filters"}
-        >
-          {sidebarVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
-
-        {/* Listings Content */}
-        <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? "md:ml-0" : "ml-0"}`}>
-          {/* Search Bar */}
-          <div className="bg-white border-b border-gray-200 py-4">
-            <div className="container mx-auto px-4">
-              <form onSubmit={handleSearch} className="flex flex-wrap gap-2">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="What are you looking for?"
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <div className="relative flex-1 min-w-[200px]">
-                  <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Location"
-                    className="pl-10"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="shrink-0">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
-                </Button>
-
-                {/* Filter Button - Mobile Only */}
-                <Button variant="outline" className="md:hidden" onClick={() => setSidebarVisible(true)}>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
-                </Button>
-              </form>
-            </div>
-          </div>
-
-          {/* Listings Section */}
-          <section className="py-8">
-            <div className="container mx-auto px-4">
-              <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">
-                  {searchQuery || location ? "Search Results" : "Browse All Listings"}
-                </h1>
-                <p className="text-gray-500">
-                  {listings.length} {listings.length === 1 ? "listing" : "listings"} found
-                </p>
-              </div>
-
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(8)].map((_, index) => (
-                    <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-                      <div className="h-48 bg-gray-200"></div>
-                      <div className="p-4">
-                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-full mb-4"></div>
-                        <div className="flex justify-between">
-                          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-                          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : listings.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {listings.map((listing) => (
-                    <ListingCard
-                      key={listing.id}
-                      listing={listing}
-                      showFavorite={isAuthenticated && permissions.isTenant}
-                      onFavoriteToggle={handleFavoriteToggle}
-                      showBookButton={permissions.canBookProperties}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <h2 className="text-xl font-semibold mb-2">No listings found</h2>
-                  <p className="text-gray-500 mb-6">
-                    Try adjusting your search or filter criteria to find what you're looking for.
-                  </p>
-                  <Button onClick={handleClearFilters}>Clear All Filters</Button>
-                </div>
-              )}
-            </div>
-          </section>
+          )}
         </div>
       </main>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-blue-600 text-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to start renting?</h2>
+            <p className="text-blue-100 mb-8">
+              Join thousands of happy users who found exactly what they needed on our platform.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button asChild className="bg-white text-blue-600 hover:bg-blue-50">
+                <Link to="/signup">Sign Up Now</Link>
+              </Button>
+              <Button asChild className="bg-slate-700 border-white text-white hover:bg-slate-600">
+                <Link to="/list-property">List Your Property</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
