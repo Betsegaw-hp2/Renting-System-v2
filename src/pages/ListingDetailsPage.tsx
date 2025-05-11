@@ -77,7 +77,7 @@ export default function ListingDetailsPage() {
           if (foundListing.media && foundListing.media.length > 0) {
             setSelectedImage(foundListing.media[0].media_url)
           } else {
-            setSelectedImage("/placeholder.svg?height=600&width=800")
+            setSelectedImage("https://picsum.photos/200/300")
           }
         } else {
           setError("Listing not found")
@@ -120,7 +120,7 @@ export default function ListingDetailsPage() {
     if (listing?.media && listing.media.length > 0) {
       return listing.media.map((item) => item.media_url)
     }
-    return ["/placeholder.svg?height=600&width=800"]
+    return ["https://picsum.photos/200/300"]
   }
 
   if (isLoading) {

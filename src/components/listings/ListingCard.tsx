@@ -28,7 +28,7 @@ export function ListingCard({ listing }: ListingCardProps) {
   const { id, title, city, region, price, category, media, rating, reviewCount } = listing
 
   const formattedPrice = new Intl.NumberFormat("en-US").format(price)
-  const mainImage = media && media.length > 0 ? media[0].media_url : "/placeholder.svg?height=200&width=300"
+  const mainImage = media && media.length > 0 ? media[0].media_url : "https://picsum.photos/200/300"
   const location = `${city || ""}${city && region ? ", " : ""}${region || ""}` || "Unknown location"
 
   return (
