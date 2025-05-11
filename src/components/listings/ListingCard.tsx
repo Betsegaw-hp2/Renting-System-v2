@@ -25,17 +25,7 @@ export function ListingCard({ listing }: ListingCardProps) {
     )
   }
 
-  const {
-    id,
-    title,
-    city,
-    region,
-    price,
-    category,
-    media,
-    rating,
-    reviewCount,
-  } = listing
+  const { id, title, city, region, price, category, media, rating, reviewCount } = listing
 
   const formattedPrice = new Intl.NumberFormat("en-US").format(price)
   const mainImage = media && media.length > 0 ? media[0].media_url : "/placeholder.svg?height=200&width=300"
@@ -47,9 +37,9 @@ export function ListingCard({ listing }: ListingCardProps) {
         <span className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded">
           {category.name || "Uncategorized"}
         </span>
-        
+
         <img
-          src={mainImage}
+          src={mainImage || "/placeholder.svg"}
           alt={title || "Listing"}
           className="w-full h-48 object-cover"
           onError={(e) => {
@@ -76,7 +66,7 @@ export function ListingCard({ listing }: ListingCardProps) {
             <span className="text-gray-600 text-sm">/month</span>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link to={`/listing/${id}`}>View Details</Link>
+            <Link to={`/listings/${id}`}>View Details</Link>
           </Button>
         </div>
       </div>

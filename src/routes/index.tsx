@@ -158,9 +158,7 @@ const router = createBrowserRouter([
     path: "/tenant/profile",
     element: (
       <TenantRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <TenantProfilePage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <TenantProfilePage /> */}</Suspense>
       </TenantRoute>
     ),
   },
@@ -168,9 +166,7 @@ const router = createBrowserRouter([
     path: "/tenant/bookings",
     element: (
       <TenantRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <TenantBookingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <TenantBookingsPage /> */}</Suspense>
       </TenantRoute>
     ),
   },
@@ -190,9 +186,7 @@ const router = createBrowserRouter([
     path: "/owner/listings",
     element: (
       <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <OwnerListingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <OwnerListingsPage /> */}</Suspense>
       </OwnerRoute>
     ),
   },
@@ -210,9 +204,7 @@ const router = createBrowserRouter([
     path: "/owner/bookings",
     element: (
       <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <OwnerBookingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <OwnerBookingsPage /> */}</Suspense>
       </OwnerRoute>
     ),
   },
