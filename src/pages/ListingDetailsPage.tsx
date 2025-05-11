@@ -197,12 +197,11 @@ export default function ListingDetailsPage() {
                     <CardHeader>
                       <CardTitle className="flex justify-between items-center">
                         <span>${listing.price.toLocaleString()}</span>
-                        <span className="text-sm text-gray-500">/{listing.priceUnit}</span>
                       </CardTitle>
                       <CardDescription className="flex items-center">
                         <Star className="h-4 w-4 text-yellow-400 mr-1" />
                         <span>
-                          {listing.rating.toFixed(1)} ({listing.reviewCount} reviews)
+                          {listing.rating || 0} ({listing.reviewCount} reviews)
                         </span>
                       </CardDescription>
                     </CardHeader>
@@ -210,15 +209,11 @@ export default function ListingDetailsPage() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                           <span>Category</span>
-                          <span className="font-medium">{listing.category}</span>
+                          <span className="font-medium">{listing.category.name}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span>Availability</span>
                           <span className="font-medium">Immediate</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Minimum Stay</span>
-                          <span className="font-medium">1 {listing.priceUnit}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -294,7 +289,7 @@ export default function ListingDetailsPage() {
                   <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
                     <Home className="h-6 w-6 text-blue-600 mr-3" />
                     <div>
-                      <p className="font-medium">{listing.category}</p>
+                      <p className="font-medium">{listing.category.name}</p>
                       <p className="text-sm text-gray-500">Property type</p>
                     </div>
                   </div>
@@ -328,7 +323,7 @@ export default function ListingDetailsPage() {
                   <h2 className="text-2xl font-bold">Reviews</h2>
                   <div className="flex items-center">
                     <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                    <span className="font-medium">{listing.rating.toFixed(1)}</span>
+                    <span className="font-medium">{listing.rating || 0}</span>
                     <span className="text-gray-500 ml-1">({listing.reviewCount} reviews)</span>
                   </div>
                 </div>

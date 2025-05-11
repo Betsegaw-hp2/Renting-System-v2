@@ -412,7 +412,7 @@ export function Header({
                 </Button>
                 <Button
                   asChild
-                  className={variant === "transparent" && !isScrolled ? "bg-white text-blue-600 hover:bg-white/90" : ""}
+                  className="bg-blue-600 text-white hover:bg-blue-500"
                 >
                   <Link to="/signup">Sign up</Link>
                 </Button>

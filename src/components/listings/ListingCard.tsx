@@ -4,7 +4,6 @@ import { Link } from "react-router-dom"
 import type { FeaturedListing } from "../../api/publicApi"
 import { Button } from "../ui/button"
 
-// Create a union type to accept both ListingWithCategory and FeaturedListing
 type ListingCardProps = {
   listing: FeaturedListing
   showFavorite?: boolean
@@ -12,9 +11,7 @@ type ListingCardProps = {
   onFavoriteToggle?: (id: string) => void
 }
 
-// Add error handling for listing card rendering
 export function ListingCard({ listing }: ListingCardProps) {
-  // Handle missing listing data
   if (!listing) {
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -28,26 +25,34 @@ export function ListingCard({ listing }: ListingCardProps) {
     )
   }
 
-  const { id, title, location, price, priceUnit, category, images, rating, reviewCount, features } = listing
+  const {
+    id,
+    title,
+    city,
+    region,
+    price,
+    category,
+    media,
+    rating,
+    reviewCount,
+  } = listing
 
-  // Format price with commas
   const formattedPrice = new Intl.NumberFormat("en-US").format(price)
-
-  // Get the first image or use a placeholder
-  const mainImage = images && images.length > 0 ? images[0] : "/placeholder.svg?height=200&width=300"
+  const mainImage = media && media.length > 0 ? media[0].media_url : "/placeholder.svg?height=200&width=300"
+  const location = `${city || ""}${city && region ? ", " : ""}${region || ""}` || "Unknown location"
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:translate-y-[-4px] hover:shadow-lg">
       <div className="relative">
         <span className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-semibold px-2 py-1 rounded">
-          {category || "Uncategorized"}
+          {category.name || "Uncategorized"}
         </span>
+        
         <img
-          src={mainImage || "/placeholder.svg"}
+          src={mainImage}
           alt={title || "Listing"}
           className="w-full h-48 object-cover"
           onError={(e) => {
-            // Fallback to placeholder if image fails to load
             e.currentTarget.src = "/placeholder.svg?height=200&width=300"
           }}
         />
@@ -63,32 +68,12 @@ export function ListingCard({ listing }: ListingCardProps) {
           </span>
         </div>
         <h3 className="font-bold text-lg mb-1 line-clamp-1">{title || "Untitled Listing"}</h3>
-        <p className="text-gray-500 text-sm mb-2">{location || "Unknown location"}</p>
-
-        {/* Features section - conditionally render based on availability */}
-        {features && (
-          <div className="flex items-center text-sm text-gray-600 mb-3">
-            {features.guests && (
-              <>
-                <span className="mr-2">{features.guests} guests</span>
-                {(features.bedrooms || features.bathrooms) && <span className="mx-2">•</span>}
-              </>
-            )}
-            {features.bedrooms && (
-              <>
-                <span className="mr-2">{features.bedrooms} beds</span>
-                {features.bathrooms && <span className="mx-2">•</span>}
-              </>
-            )}
-            {features.bathrooms && <span>{features.bathrooms} baths</span>}
-            {features.area && features.area > 0 && <span>{features.area} sq ft</span>}
-          </div>
-        )}
+        <p className="text-gray-500 text-sm mb-2">{location}</p>
 
         <div className="flex justify-between items-center">
           <div>
             <span className="font-bold text-lg">${formattedPrice}</span>
-            <span className="text-gray-600 text-sm">/{priceUnit || "month"}</span>
+            <span className="text-gray-600 text-sm">/month</span>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link to={`/listing/${id}`}>View Details</Link>
