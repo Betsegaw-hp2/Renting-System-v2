@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom"
 
 import type { FeaturedListing } from "@/api/publicApi"
 import { ListingCard } from "@/components/listings/ListingCard"
+import type { RootState } from "@/store"
 import { mockHomeApi } from "../api/mockHomeApi"
 import { Header } from "../components/layout/Header"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
@@ -32,9 +33,9 @@ import { Input } from "../components/ui/input"
 import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { usePermissions } from "../hooks/usePermissions"
-import type { RootState } from "../store"
 import type { AdminStats, Booking, UserListingStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
+
 
 export default function HomePage() {
   const navigate = useNavigate()

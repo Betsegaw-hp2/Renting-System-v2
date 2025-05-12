@@ -13,6 +13,8 @@ export const useLogin = () => {
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { is_loading, error } = useSelector((state: RootState) => state.auth)
+  const [showPassword, setShowPassword] = useState(false)
+
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -58,6 +60,8 @@ export const useLogin = () => {
     rememberMe,
     setRememberMe,
     handleSubmit,
+    showPassword,
+    setShowPassword,
     isLoading: is_loading, // Map snake_case to camelCase for backward compatibility
     error,
     errors,
