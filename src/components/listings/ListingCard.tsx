@@ -43,7 +43,7 @@ export function ListingCard({ listing }: ListingCardProps) {
           alt={title || "Listing"}
           className="w-full h-48 object-cover"
           onError={(e) => {
-            e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+            e.currentTarget.src = "https://picsum.photos/200/300"
           }}
         />
         <div className="absolute top-2 right-2 bg-white rounded-full p-1">

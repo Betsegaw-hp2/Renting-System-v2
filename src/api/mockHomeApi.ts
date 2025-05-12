@@ -1,16 +1,15 @@
 import { v4 as uuidv4 } from "uuid"
 import config from "../config/api.config"
 import type {
-	AdminStats,
-	Booking,
-	Category,
-	CategoryTag,
-	ListingWithCategory,
-	Review,
-	TrendingListing,
-	UserListingStats,
+  AdminStats,
+  Booking,
+  Category,
+  CategoryTag,
+  Review,
+  UserListingStats
 } from "../types/listing.types"
 import { BookingStatus, ListingStatus, MediaTypes, PaymentStatus } from "../types/listing.types"
+import type { FeaturedListing } from "./publicApi"
 
 // Helper to simulate API delay
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -70,8 +69,8 @@ const mockCategoryTags: CategoryTag[] = [
 ]
 
 // Generate mock listings
-const generateMockListings = (count: number): ListingWithCategory[] => {
-  const listings: ListingWithCategory[] = []
+const generateMockListings = (count: number): FeaturedListing[] => {
+  const listings: FeaturedListing[] = []
 
   for (let i = 0; i < count; i++) {
     const categoryIndex = Math.floor(Math.random() * mockCategories.length)
@@ -116,7 +115,7 @@ const generateMockListings = (count: number): ListingWithCategory[] => {
     const createdAt = new Date()
     createdAt.setDate(createdAt.getDate() - Math.floor(Math.random() * 90))
 
-    const listing: ListingWithCategory = {
+    const listing: FeaturedListing = {
       id: uuidv4(),
       title: `${category.name.slice(0, -1)} ${i + 1} in Downtown`,
       description: `Beautiful ${category.name.toLowerCase().slice(0, -1)} with amazing views and modern amenities.`,
@@ -126,11 +125,12 @@ const generateMockListings = (count: number): ListingWithCategory[] => {
       region: "State",
       country: "United States",
       owner_id: i % 3 === 0 ? "3" : "1", // Assign to admin or owner
-      category_id: category.id,
       status: ListingStatus.AVAILABLE,
-      availability_start: startDate.toISOString(),
-      availability_end: endDate.toISOString(),
-      views_count: viewsCount,
+      availability: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      },
+      reviewCount: Math.floor(Math.random() * 100) + 1,
       created_at: createdAt.toISOString(),
       updated_at: new Date().toISOString(),
       category: {
@@ -149,11 +149,11 @@ const generateMockListings = (count: number): ListingWithCategory[] => {
 }
 
 // Generate mock trending listings
-const generateTrendingListings = (listings: ListingWithCategory[]): TrendingListing[] => {
+const generateTrendingListings = (listings: FeaturedListing[]) => {
   return listings.slice(0, 5).map((listing) => {
     const bookingsCount = Math.floor(Math.random() * 20) + 5
     const interactionsCount = Math.floor(Math.random() * 100) + 20
-    const trendingScore = (listing.views_count * 0.3 + bookingsCount * 0.5 + interactionsCount * 0.2) / 100
+    const trendingScore = (listing?.reviewCount || 0 * 0.3 + bookingsCount * 0.5 + interactionsCount * 0.2) / 100
 
     return {
       ...listing,
@@ -249,7 +249,7 @@ const mockTrendingListings = generateTrendingListings(mockListings)
 // Mock API implementation
 export const mockHomeApi = {
   // Get recommended listings for a user
-  getRecommendedListings: async (userId: string, limit = 8): Promise<ListingWithCategory[]> => {
+  getRecommendedListings: async (userId: string, limit = 8): Promise<FeaturedListing[]> => {
     await delay(config.mockApiDelay)
 
     // In a real implementation, this would use the user's preferences and history
@@ -258,13 +258,13 @@ export const mockHomeApi = {
   },
 
   // Get trending listings
-  getTrendingListings: async (limit = 4): Promise<TrendingListing[]> => {
+  getTrendingListings: async (limit = 4): Promise<FeaturedListing[]> => {
     await delay(config.mockApiDelay)
     return mockTrendingListings.slice(0, limit)
   },
 
   // Get user's listings (for owners)
-  getUserListings: async (userId: string, limit = 10): Promise<ListingWithCategory[]> => {
+  getUserListings: async (userId: string, limit = 10): Promise<FeaturedListing[]> => {
     await delay(config.mockApiDelay)
 
     // Filter listings by owner_id
@@ -289,7 +289,7 @@ export const mockHomeApi = {
     return {
       total_listings: userListings.length,
       active_listings: activeListings.length,
-      total_views: userListings.reduce((sum, listing) => sum + listing.views_count, 0),
+      total_views: userListings.reduce((sum, listing) => sum + (listing?.reviewCount||0), 0),
       total_bookings: Math.floor(Math.random() * 50) + 10,
       average_rating: 4.7,
       total_reviews: Math.floor(Math.random() * 30) + 5,
@@ -323,7 +323,7 @@ export const mockHomeApi = {
   },
 
   // Search listings
-  searchListings: async (query: string, filters?: Record<string, any>): Promise<ListingWithCategory[]> => {
+  searchListings: async (query: string, filters?: Record<string, any>): Promise<FeaturedListing[]> => {
     await delay(config.mockApiDelay)
 
     // Simple search implementation for mock purposes

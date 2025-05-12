@@ -2,9 +2,11 @@
 
 import type React from "react"
 
+import type { RootState } from "@/store"
 import { Calendar, CreditCard, Key, Search, Star } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { Link, useNavigate } from "react-router-dom"
 import type { FeaturedListing, Testimonial } from "../api/publicApi"
 import { publicApi } from "../api/publicApi"
 import { CategoryCard } from "../components/categories/CategoryCard"
@@ -23,8 +25,10 @@ import {
 } from "../components/ui/carousel"
 
 export default function HomePage() {
+  const navigate = useNavigate()
   const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
   const [categories, setCategories] = useState<CategoryCount[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
@@ -54,6 +58,11 @@ export default function HomePage() {
   
 
   useEffect(() => {
+    if (is_authenticated) {
+      navigate("/home")
+      return
+    }
+
     const fetchHomeData = async () => {
       setIsLoading(true)
       try {

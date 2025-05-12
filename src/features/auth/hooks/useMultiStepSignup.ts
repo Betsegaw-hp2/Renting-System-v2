@@ -160,7 +160,7 @@ export const useMultiStepSignup = () => {
       const resultAction = await dispatch(signupUser(signupData))
 
       if (signupUser.fulfilled.match(resultAction)) {
-        navigate("/dashboard")
+        navigate("/home")
       }
     } catch (err) {
       console.error("Error during signup:", err)

@@ -46,7 +46,7 @@ export const useLogin = () => {
     const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
     if (loginUser.fulfilled.match(resultAction)) {
-      navigate("/dashboard")
+      navigate("/home")
     }
   }
 

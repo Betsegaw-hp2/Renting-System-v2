@@ -21,6 +21,8 @@ import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
+import type { FeaturedListing } from "@/api/publicApi"
+import { ListingCard } from "@/components/listings/ListingCard"
 import { mockHomeApi } from "../api/mockHomeApi"
 import { Header } from "../components/layout/Header"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
@@ -31,16 +33,16 @@ import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { usePermissions } from "../hooks/usePermissions"
 import type { RootState } from "../store"
-import type { AdminStats, Booking, ListingWithCategory, TrendingListing, UserListingStats } from "../types/listing.types"
+import type { AdminStats, Booking, UserListingStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
 
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
-  const [recommendedListings, setRecommendedListings] = useState<ListingWithCategory[]>([])
-  const [trendingListings, setTrendingListings] = useState<TrendingListing[]>([])
-  const [userListings, setUserListings] = useState<ListingWithCategory[]>([])
+  const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
+  const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
+  const [userListings, setUserListings] = useState<FeaturedListing[]>([])
   const [rentalHistory, setRentalHistory] = useState<Booking[]>([])
   const [userStats, setUserStats] = useState<UserListingStats | null>(null)
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null)
@@ -229,13 +231,13 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {/* {recommendedListings.map((listing) => (
+                      {recommendedListings.map((listing) => (
                         <ListingCard
                           key={listing.id}
                           listing={listing}
                           showFavorite={permissions.isTenant}
                         />
-                      ))} */}
+                      ))}
                     </div>
                   )}
 
@@ -265,12 +267,11 @@ export default function HomePage() {
                           </Card>
                         ))
                       : trendingListings.map((listing) => (
-                          // <ListingCard
-                          //   key={listing.id}
-                          //   listing={listing}
-                          //   showFavorite={permissions.isTenant}
-                          // />
-                          <></>
+                          <ListingCard
+                            key={listing.id}
+                            listing={listing}
+                            showFavorite={permissions.isTenant}
+                          />
                         ))}
                   </div>
                 </div>
@@ -851,13 +852,12 @@ export default function HomePage() {
                     ) : recommendedListings.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {recommendedListings.slice(0, 3).map((listing) => (
-                          // <ListingCard
-                          //   key={listing.id}
-                          //   listing={listing}
-                          //   showFavorite={true}
-                          //   isFavorite={true}
-                          // />
-                          <h1>listing</h1>
+                          <ListingCard
+                            key={listing.id}
+                            listing={listing}
+                            showFavorite={true}
+                            isFavorite={true}
+                          />
                         ))}
                       </div>
                     ) : (
