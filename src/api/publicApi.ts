@@ -105,11 +105,31 @@ export interface ApiCategoryResponse {
   updated_at: string
 }
 
+export interface Booking {
+  id: string
+  listing_id: string
+  renter_id: string
+  owner_id: string
+  start_date: string
+  end_date: string
+  total_amount: number
+  status: "pending" | "booked" | "completed" | "cancelled"
+  payment_status: "pending" | "completed" | "in_escrow" | "disputed" | "failed"
+  payment_reference: string
+  created_at: string
+  updated_at: string
+}
+
+
+
+
+
 // Create axios instance for public API endpoints
 const publicAxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
   },
 })
 
@@ -172,14 +192,60 @@ function getCategoryIcon(slug: string): string {
 
 // Public API service
 export const publicApi = {
+  // Get User bookings
+
+  getUserBookings: async (listingId: string, bookingId: string, userId: string): Promise<Booking[]> => {
+    try {
+      console.log(`Fetching bookings for user ${userId} from real API`);
+
+      const response = await publicAxiosInstance.get<Booking[]>(`/listings/${listingId}/bookings/${bookingId}`);
+
+      console.log(`Received ${response.data.length} bookings from API`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user bookings:", error);
+      throw error;
+    }
+  },
+
+  createBooking: async (listingId: string, payload: { start_date: string; end_date: string; total_amount: number }) => {
+    try {
+      const response = await publicAxiosInstance.post(`/listings/${listingId}/bookings`, payload)
+      return response.data // contains booking and listing
+    } catch (error) {
+      console.error("Booking failed:", error)
+      throw error
+    }
+  },
+
+  getRecommendedListings: async (userId: string): Promise<FeaturedListing[]> => {
+    try {
+      console.log(`Fetching recommended listings for user ${userId} from real API`)
+
+      const response = await publicAxiosInstance.get<ApiListingResponse[]>(
+        `/users/${userId}/listings/recommendations`,
+        {
+          params: { limit: 8 }, // Optional: adjust or remove based on backend
+        }
+      )
+
+      console.log(`Received ${response.data.length} recommended listings`)
+      return response.data.map(convertApiListingToFeaturedListing)
+    } catch (error) {
+      console.error("Error fetching recommended listings:", error)
+      throw error
+    }
+  },
+
+
   // Get featured listings for the homepage
   getFeaturedListings: async (useMockApi = config.useMockApi): Promise<FeaturedListing[]> => {
     try {
-      if (useMockApi) {
-        console.log("Using mock API for featured listings")
-        // Commenting out mock API usage
-        // return mockPublicApi.getFeaturedListings()
-      }
+      // if (useMockApi) {
+      //   console.log("Using mock API for featured listings")
+      //   // Commenting out mock API usage
+      //   // return mockPublicApi.getFeaturedListings()
+      // }
 
       console.log("Fetching featured listings from real API")
       // Use the /listings/popular endpoint from the API
@@ -244,6 +310,7 @@ export const publicApi = {
       throw error
     }
   },
+
 
   // Update searchListings to properly use the API endpoints
   searchListings: async (
