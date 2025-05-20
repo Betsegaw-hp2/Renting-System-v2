@@ -2,6 +2,7 @@ import axios from "axios"
 import { format } from "date-fns"
 import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
+import { getAuthToken } from "@/lib/cookies"
 
 // Types for public API responses
 export interface FeaturedListing {
@@ -122,19 +123,26 @@ export interface Booking {
 
 
 
-
-
 // Create axios instance for public API endpoints
-const publicAxiosInstance = axios.create({
+export const publicAxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
+    Authorization: `Bearer ${getAuthToken()}`,
   },
 })
 
 // Helper function to convert API response to our app's format
-const convertApiListingToFeaturedListing = (apiListing: ApiListingResponse): FeaturedListing => {
+export const convertApiListingToFeaturedListing = async (apiListing: ApiListingResponse): Promise<FeaturedListing> => {
+  if(apiListing && apiListing.category_id) {
+    const category = await publicAxiosInstance.get<ApiCategoryResponse>(`/categories/${apiListing.category_id}`)
+    apiListing.category = {
+      id: category.data.id,
+      name: category.data.name,
+      slug: category.data.slug,
+    }
+  }
+
   return {
     id: apiListing.id,
     title: apiListing.title,
@@ -192,51 +200,6 @@ function getCategoryIcon(slug: string): string {
 
 // Public API service
 export const publicApi = {
-  // Get User bookings
-
-  getUserBookings: async (listingId: string, bookingId: string, userId: string): Promise<Booking[]> => {
-    try {
-      console.log(`Fetching bookings for user ${userId} from real API`);
-
-      const response = await publicAxiosInstance.get<Booking[]>(`/listings/${listingId}/bookings/${bookingId}`);
-
-      console.log(`Received ${response.data.length} bookings from API`);
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching user bookings:", error);
-      throw error;
-    }
-  },
-
-  createBooking: async (listingId: string, payload: { start_date: string; end_date: string; total_amount: number }) => {
-    try {
-      const response = await publicAxiosInstance.post(`/listings/${listingId}/bookings`, payload)
-      return response.data // contains booking and listing
-    } catch (error) {
-      console.error("Booking failed:", error)
-      throw error
-    }
-  },
-
-  getRecommendedListings: async (userId: string): Promise<FeaturedListing[]> => {
-    try {
-      console.log(`Fetching recommended listings for user ${userId} from real API`)
-
-      const response = await publicAxiosInstance.get<ApiListingResponse[]>(
-        `/users/${userId}/listings/recommendations`,
-        {
-          params: { limit: 8 }, // Optional: adjust or remove based on backend
-        }
-      )
-
-      console.log(`Received ${response.data.length} recommended listings`)
-      return response.data.map(convertApiListingToFeaturedListing)
-    } catch (error) {
-      console.error("Error fetching recommended listings:", error)
-      throw error
-    }
-  },
-
 
   // Get featured listings for the homepage
   getFeaturedListings: async (useMockApi = config.useMockApi): Promise<FeaturedListing[]> => {
@@ -254,7 +217,7 @@ export const publicApi = {
       })
 
       console.log(`Received ${response.data.length} listings from API`)
-      return response.data.map(convertApiListingToFeaturedListing)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching featured listings:", error)
       throw error // Throw error instead of returning empty array
@@ -312,8 +275,7 @@ export const publicApi = {
   },
 
 
-  // Update searchListings to properly use the API endpoints
-  searchListings: async (
+searchListings: async (
     query: string,
     category?: string,
     startDate?: Date | string,
@@ -383,7 +345,7 @@ export const publicApi = {
       }
 
       console.log(`Received ${response.data.length} listings from search API`)
-      return response.data.map(convertApiListingToFeaturedListing)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error during searchListings:", error)
       throw error

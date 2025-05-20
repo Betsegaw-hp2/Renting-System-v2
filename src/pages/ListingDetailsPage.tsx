@@ -9,7 +9,7 @@ import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
-import { format, differenceInDays, addDays } from "date-fns"
+import { format, differenceInDays, addDays, formatISO } from "date-fns"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/useToast"
+import { tenantApi } from "@/features/tenant/api/tenantApi"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -175,12 +176,12 @@ export default function ListingDetailsPage() {
 
     try {
       const payload = {
-        start_date: format(startDate, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
+        start_date: formatISO(startDate),
+        end_date: formatISO(endDate),
         total_amount: totalAmount,
       }
 
-      await publicApi.createBooking(id, payload)
+      await tenantApi.createBooking(id, payload)
 
       // Close modal and show success message
       setIsBookingModalOpen(false)
