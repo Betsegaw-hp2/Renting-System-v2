@@ -1,32 +1,38 @@
+// App.tsx
 "use client"
 
-import { useEffect } from "react"
-import { Provider } from "react-redux"
+import { Provider, useDispatch, useSelector } from "react-redux"
 import { ThemeProvider } from "./components/layout/ThemeProvider"
 import { Toaster } from "./components/ui/toaster"
-import { fetchCurrentUser } from "./features/auth/slices/authSlice"
 import { NotificationsProvider } from "./features/notifications/components/NotificationProvider"
-import { getAuthToken } from "./lib/cookies"
 import Routes from "./routes"
-import { store } from "./store"
+import { store, type AppDispatch, type RootState } from "./store"
+import { useEffect } from "react"
+import { fetchCurrentUser } from "./features/auth/slices/authSlice"
 
-function App() {
+function AppContent() {
+  const dispatch = useDispatch<AppDispatch>()
+  const { token, user } = useSelector((s: RootState) => s.auth)
+
   useEffect(() => {
-    // Check if user is logged in on app startup
-    if (getAuthToken()) {
-      store.dispatch(fetchCurrentUser())
+    if (token && user === null) {
+      dispatch(fetchCurrentUser())
     }
-  }, [])
+  }, [dispatch, token, user])
 
   return (
-    <Provider store={store}>
-      <ThemeProvider defaultTheme="light" storageKey="rental-theme">
-        <Routes />
-        <NotificationsProvider children={undefined} />
-        <Toaster />
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider defaultTheme="light" storageKey="rental-theme">
+      <Routes />
+      <NotificationsProvider children />
+      <Toaster />
+    </ThemeProvider>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <Provider store={store}>
+      <AppContent />
+    </Provider>
+  )
+}
