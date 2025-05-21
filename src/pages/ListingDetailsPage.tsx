@@ -1,9 +1,9 @@
 "use client"
 
-import { ArrowLeft, CalendarIcon, DollarSign, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
+import { ArrowLeft, CalendarIcon, DollarSign, Heart, Home, MapPin, Share2, Star, Tag, CheckCircle } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Link, useParams } from "react-router-dom"
-import { publicApi } from "../api/publicApi"
+import { Link, useParams, useNavigate } from "react-router-dom"
+import { publicApi, type Booking } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
@@ -58,8 +58,15 @@ interface Listing {
   }
 }
 
+interface BookingResponse {
+  booking: Booking
+  listing: Listing  // You can define `Listing` similarly or as `any` if not needed
+}
+
+
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [listing, setListing] = useState<Listing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -68,7 +75,9 @@ export default function ListingDetailsPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [isBooking, setIsBooking] = useState(false)
+  const [bookingId, setBookingId] = useState<string | null>(null)
   const [bookingError, setBookingError] = useState<string | null>(null)
+  const [showIllustration, setShowIllustration] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -86,6 +95,8 @@ export default function ListingDetailsPage() {
         // Fetch all listings and find the one with matching ID
         const listings = await publicApi.getFeaturedListings()
         const foundListing = listings.find((listing) => listing.id === id)
+
+
 
         if (foundListing) {
           console.log("Found listing:", foundListing)
@@ -181,19 +192,26 @@ export default function ListingDetailsPage() {
         total_amount: totalAmount,
       }
 
-      await tenantApi.createBooking(id, payload)
+      const bookingResponse = await tenantApi.createBooking(id, payload)
+      console.log("Booking Response:", bookingResponse)
 
-      // Close modal and show success message
-      setIsBookingModalOpen(false)
-      toast({
-        title: "Booking Successful",
-        description: "Your booking has been confirmed!",
-        variant: "default",
-      })
+      // Check if bookingResponse.booking and bookingResponse.booking.id exist
+      if (bookingResponse?.booking?.id) {
+        setBookingId(bookingResponse.booking.id)
+        setShowIllustration(true)
+        toast({
+          title: "Booking Successful",
+          description: "Your booking has been confirmed!",
+          variant: "default",
+        })
 
-      // Reset dates
-      setStartDate(undefined)
-      setEndDate(undefined)
+        // Reset dates
+        setStartDate(undefined)
+        setEndDate(undefined)
+      } else {
+        console.error("Booking response missing booking.id:", bookingResponse)
+        setBookingError("Booking failed. No booking ID returned.")
+      }
     } catch (error) {
       console.error("Booking failed:", error)
       setBookingError("Failed to complete booking. Please try again.")
@@ -201,6 +219,7 @@ export default function ListingDetailsPage() {
       setIsBooking(false)
     }
   }
+
 
   // Open booking modal with default dates
   const openBookingModal = () => {
@@ -331,9 +350,7 @@ export default function ListingDetailsPage() {
               {images.slice(0, 4).map((image, index) => (
                 <div
                   key={index}
-                  className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${
-                    selectedImage === image ? "ring-2 ring-blue-500" : ""
-                  }`}
+                  className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${selectedImage === image ? "ring-2 ring-blue-500" : ""}`}
                   onClick={() => setSelectedImage(image)}
                 >
                   <img
@@ -502,107 +519,167 @@ export default function ListingDetailsPage() {
       {/* Booking Modal */}
       <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle>Book {listing.title}</DialogTitle>
-            <DialogDescription>Select your booking dates to calculate the total cost.</DialogDescription>
-          </DialogHeader>
-
-          <div className="px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label htmlFor="start-date" className="text-sm font-medium">
-                  Start Date
-                </label>
-                <DatePicker
-                  date={startDate}
-                  setDate={(date) => {
-                    setStartDate(date)
-                    // If end date is before start date, adjust it
-                    if (date && endDate && date > endDate) {
-                      setEndDate(addDays(date, 1))
-                    }
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">Select your check-in date</p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="end-date" className="text-sm font-medium">
-                  End Date
-                </label>
-                <DatePicker
-                  date={endDate}
-                  setDate={(date) => {
-                    // Ensure end date is after start date
-                    if (date && startDate && date < startDate) {
-                      toast({
-                        title: "Invalid date selection",
-                        description: "End date must be after start date",
-                        variant: "destructive",
-                      })
-                      return
-                    }
-                    setEndDate(date)
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">Select your check-out date</p>
-              </div>
+          {isBooking ? (
+            <div className="flex flex-col items-center justify-center p-6">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+              <p className="mt-4 text-gray-600">Processing your booking...</p>
             </div>
+          ) : bookingError ? (
+            <div className="p-6">
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle>Booking Error</DialogTitle>
+                <DialogDescription>{bookingError}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
+                <Button variant="outline" onClick={() => setIsBookingModalOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={handleBooking}>Try Again</Button>
+              </DialogFooter>
+            </div>
+          ) : showIllustration ? (
+            <>
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle>Booking Confirmation</DialogTitle>
+                <DialogDescription>
+                  Your booking has been successfully processed. Check your email for confirmation.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col items-center p-6">
+                <CheckCircle className="h-48 w-48 text-green-600 mb-4" />
+                <h3 className="text-2xl font-semibold mb-2">All set!</h3>
+                <p>Your booking is confirmed. Check your email for details.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!bookingId || !listing}
+                  onClick={() => {
+                    if (listing && bookingId) {
+                      navigate(`/listings/${listing.id}/bookings/${bookingId}`)
+                    }
+                  }}
+                >
+                  View Details
+                </Button>
+              </div>
+              <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowIllustration(false)
+                    setIsBookingModalOpen(false)
+                    setBookingId(null) // Reset bookingId to ensure fresh state for next booking
+                  }}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle>Book {listing.title}</DialogTitle>
+                <DialogDescription>Select your booking dates to calculate the total cost.</DialogDescription>
+              </DialogHeader>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-              <h3 className="font-medium mb-3">Booking Summary</h3>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label htmlFor="start-date" className="text-sm font-medium">
+                      Start Date
+                    </label>
+                    <DatePicker
+                      date={startDate}
+                      setDate={(date) => {
+                        setStartDate(date)
+                        // If end date is before start date, adjust it
+                        if (date && endDate && date > endDate) {
+                          setEndDate(addDays(date, 1))
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">Select your check-in date</p>
+                  </div>
 
-              <div className="space-y-2">
-                {startDate && endDate ? (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Check-in:</span>
-                      <span className="font-medium">{format(startDate, "PPP")}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Check-out:</span>
-                      <span className="font-medium">{format(endDate, "PPP")}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Duration:</span>
-                      <span className="font-medium">{differenceInDays(endDate, startDate)} days</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t mt-2">
-                      <span className="text-gray-600">Rate:</span>
-                      <span className="font-medium">${(listing.price / 30).toFixed(2)}/day</span>
-                    </div>
-                    <div className="flex justify-between items-center font-bold text-lg">
-                      <span>Total Amount:</span>
-                      <span>${calculateTotalAmount().toFixed(2)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-gray-500 text-center py-2">
-                    Please select both start and end dates to see the total cost
-                  </p>
+                  <div className="space-y-2">
+                    <label htmlFor="end-date" className="text-sm font-medium">
+                      End Date
+                    </label>
+                    <DatePicker
+                      date={endDate}
+                      setDate={(date) => {
+                        // Ensure end date is after start date
+                        if (date && startDate && date < startDate) {
+                          toast({
+                            title: "Invalid date selection",
+                            description: "End date must be after start date",
+                            variant: "destructive",
+                          })
+                          return
+                        }
+                        setEndDate(date)
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">Select your check-out date</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                  <h3 className="font-medium mb-3">Booking Summary</h3>
+
+                  <div className="space-y-2">
+                    {startDate && endDate ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Check-in:</span>
+                          <span className="font-medium">{format(startDate, "PPP")}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Check-out:</span>
+                          <span className="font-medium">{format(endDate, "PPP")}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Duration:</span>
+                          <span className="font-medium">{differenceInDays(endDate, startDate)} days</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t mt-2">
+                          <span className="text-gray-600">Rate:</span>
+                          <span className="font-medium">${(listing.price / 30).toFixed(2)}/day</span>
+                        </div>
+                        <div className="flex justify-between items-center font-bold text-lg">
+                          <span>Total Amount:</span>
+                          <span>${calculateTotalAmount().toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-gray-500 text-center py-2">
+                        Please select both start and end dates to see the total cost
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {bookingError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+                    {bookingError}
+                  </div>
                 )}
               </div>
-            </div>
 
-            {bookingError && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-                {bookingError}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
-            <Button variant="outline" onClick={() => setIsBookingModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleBooking}
-              disabled={isBooking || !startDate || !endDate || calculateTotalAmount() <= 0}
-              className="ml-2"
-            >
-              {isBooking ? "Processing..." : "Confirm Booking"}
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
+                <Button variant="outline" onClick={() => setIsBookingModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBooking}
+                  disabled={isBooking || !startDate || !endDate || calculateTotalAmount() <= 0}
+                  className="ml-2"
+                >
+                  {isBooking ? "Processing..." : "Confirm Booking"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
