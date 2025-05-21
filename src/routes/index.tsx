@@ -13,6 +13,7 @@ const ForgotPasswordPage = lazy(() => import("../features/auth/pages/ForgotPassw
 const LandingPage = lazy(() => import("../pages/LandingPage"))
 const ListingDetailsPage = lazy(() => import("../pages/ListingDetailsPage"))
 const BookingPage = lazy(() => import("../pages/BookingPage"))
+const BookingDetailPage = lazy(() => import("../pages/BookingDetailPage"))
 
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
@@ -168,11 +169,11 @@ const router = createBrowserRouter([
   {
     path: "/tenant/home",
     element: (
-      // <TenantRoute>
+      <TenantRoute>
         <Suspense fallback={<LoadingFallback />}>
           <TenantHomePage />
         </Suspense>
-      // </TenantRoute>
+      </TenantRoute>
     ),
   },
   {
@@ -189,6 +190,16 @@ const router = createBrowserRouter([
       <BookingRoute>
         <Suspense fallback={<LoadingFallback />}>
           <BookingPage />
+        </Suspense>
+      </BookingRoute>
+    ),
+  },
+  {
+    path: "/listings/:listingId/bookings/:bookingId",
+    element: (
+      <BookingRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <BookingDetailPage />
         </Suspense>
       </BookingRoute>
     ),

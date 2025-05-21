@@ -6,6 +6,12 @@ import {
   type FeaturedListing,
 } from "../../../api/publicApi"
 
+interface UpdateBookingPayload {
+  start_date: string
+  end_date: string
+  total_amount: number
+}
+
 // Tenant API service
 export const tenantApi = {
   // Get user's favorited listings
@@ -103,11 +109,11 @@ export const tenantApi = {
   createBooking: async (
     listingId: string,
     payload: { start_date: string; end_date: string; total_amount: number }
-  ): Promise<any> => {
+  ): Promise<Booking> => {
     try {
       payload.start_date = new Date(payload.start_date).toISOString()
       payload.end_date = new Date(payload.end_date).toISOString()
-      const response = await publicAxiosInstance.post(`/listings/${listingId}/bookings`, payload)
+      const response = await publicAxiosInstance.post<Booking>(`/listings/${listingId}/bookings`, payload)
       console.log(`Successfully created booking for listing ${listingId}`)
       return response.data
     } catch (error) {
@@ -119,16 +125,60 @@ export const tenantApi = {
   // Delete a booking
   deleteBooking: async (listingId: string, bookingId: string): Promise<void> => {
     try {
-        console.log(`Deleting booking ${bookingId} for listing ${listingId}`)
-        await publicAxiosInstance.delete(`/listings/${listingId}/bookings/${bookingId}`)
-        console.log(`Successfully deleted booking ${bookingId} for listing ${listingId}`)
+      console.log(`Deleting booking ${bookingId} for listing ${listingId}`)
+      await publicAxiosInstance.delete(`/listings/${listingId}/bookings/${bookingId}`)
+      console.log(`Successfully deleted booking ${bookingId} for listing ${listingId}`)
     } catch (error) {
-        console.error(`Error deleting booking ${bookingId} for listing ${listingId}:`, error)
-        throw error
+      console.error(`Error deleting booking ${bookingId} for listing ${listingId}:`, error)
+      throw error
+    }
+  },
+
+  // Get a single booking
+  getBooking: async (listingId: string, bookingId: string): Promise<Booking> => {
+    try {
+      console.log(`Fetching booking ${bookingId} for listing ${listingId} from real API`)
+      const response = await publicAxiosInstance.get<Booking>(`/listings/${listingId}/bookings/${bookingId}`)
+      console.log(`Successfully fetched booking ${bookingId}`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching booking ${bookingId} for listing ${listingId}:`, error)
+      throw error
+    }
+  },
+
+  // Update a booking
+  updateBooking: async (
+    listingId: string,
+    bookingId: string,
+    payload: UpdateBookingPayload
+  ): Promise<Booking> => {
+    try {
+      console.log(`Updating booking ${bookingId} for listing ${listingId}`)
+      console.log('Request URL:', publicAxiosInstance.defaults.baseURL + `/listings/${listingId}/bookings/${bookingId}`)
+      console.log('Payload:', payload)
+      payload.start_date = new Date(payload.start_date).toISOString()
+      payload.end_date = new Date(payload.end_date).toISOString()
+      const response = await publicAxiosInstance.patch<Booking>(
+        `/listings/${listingId}/bookings/${bookingId}`,
+        payload
+      )
+      console.log(`Successfully updated booking ${bookingId}`)
+      return response.data
+    } catch (error) {
+      if (error && typeof error === "object") {
+        console.error(`Error updating booking ${bookingId} for listing ${listingId}:`, {
+          message: (error as any).message,
+          code: (error as any).code,
+          config: (error as any).config,
+          request: (error as any).request ? 'Request made' : 'No request made',
+        })
+      } else {
+        console.error(`Error updating booking ${bookingId} for listing ${listingId}:`, error)
+      }
+      throw error
     }
   }
-
 }
 
-export type { Booking, FeaturedListing }
-
+export type { FeaturedListing, Booking, UpdateBookingPayload }

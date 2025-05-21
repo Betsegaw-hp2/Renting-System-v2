@@ -296,7 +296,7 @@ export default function TenantHomePage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => navigate(`/listings/${booking.listing_id}`)}
+                                  onClick={() => navigate(`/listings/${booking.listing_id}/bookings/${booking.id}`)}
                                 >
                                   View Details
                                 </Button>

@@ -22,9 +22,10 @@ function AppContent() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="rental-theme">
-      <Routes />
-      <NotificationsProvider children />
-      <Toaster />
+      <NotificationsProvider>
+        <Routes />
+        <Toaster />
+      </NotificationsProvider>
     </ThemeProvider>
   )
 }

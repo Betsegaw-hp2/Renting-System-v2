@@ -9,6 +9,16 @@ export interface AuthResponse {
   token: string
 }
 
+export interface VerifyEmailPayload {
+  otp_code: string
+  user_id: string
+}
+
+export interface VerifyEmailResponse {
+  message: string
+  verified: boolean
+}
+
 export const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
   try {
     if (config.useMockApi) {
@@ -85,6 +95,55 @@ export const getCurrentUser = async (): Promise<User> => {
       throw new Error(JSON.stringify(error))
     } else {
       throw new Error("An unknown error occurred while fetching user data")
+    }
+  }
+}
+
+export const verifyEmail = async (payload: VerifyEmailPayload): Promise<VerifyEmailResponse> => {
+  try {
+    if (config.useMockApi) {
+      // Mock successful verification
+      return {
+        message: "Email verified successfully",
+        verified: true,
+      }
+    }
+
+    const response = await apiClient.post<VerifyEmailResponse>("/authentication/verify-email", payload)
+    return response.data
+  } catch (error) {
+    // Format the error before throwing
+    if (error instanceof Error) {
+      throw error
+    } else if (typeof error === "object" && error !== null) {
+      throw new Error(JSON.stringify(error))
+    } else {
+      throw new Error("An unknown error occurred during email verification")
+    }
+  }
+}
+
+export const resendVerificationEmail = async (userId: string): Promise<{ message: string }> => {
+  try {
+    if (config.useMockApi) {
+      // Mock successful resend
+      return {
+        message: "Verification email sent successfully",
+      }
+    }
+
+    const response = await apiClient.post<{ message: string }>("/authentication/resend-verification", {
+      user_id: userId,
+    })
+    return response.data
+  } catch (error) {
+    // Format the error before throwing
+    if (error instanceof Error) {
+      throw error
+    } else if (typeof error === "object" && error !== null) {
+      throw new Error(JSON.stringify(error))
+    } else {
+      throw new Error("An unknown error occurred while resending verification email")
     }
   }
 }

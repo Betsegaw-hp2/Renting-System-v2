@@ -107,6 +107,7 @@ export interface ApiCategoryResponse {
 }
 
 export interface Booking {
+  booking: any
   id: string
   listing_id: string
   renter_id: string

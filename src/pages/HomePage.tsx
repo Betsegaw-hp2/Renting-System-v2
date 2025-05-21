@@ -89,7 +89,7 @@ export default function HomePage() {
   }, [is_authenticated, user, navigate])
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault()  
     navigate(`/browse?query=${encodeURIComponent(searchQuery)}`)
   }
 
