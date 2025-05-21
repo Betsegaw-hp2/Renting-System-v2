@@ -7,45 +7,45 @@ import type { LoginCredentials, SignupCredentials, User, UserRole } from "../typ
 
 // In-memory storage for mock data
 const mockUsers: User[] = [
-	{
-		id: "1",
-		email: "admin@example.com",
-		first_name: "Admin",
-		last_name: "User",
-		username: "admin",
-		role: "admin" as UserRole,
-		is_verified: true,
-		is_member: true,
-		created_at: new Date().toISOString(),
-		updated_at: new Date().toISOString(),
-		profile_picture: ""
-	},
-	{
-		id: "2",
-		email: "tenant@example.com",
-		first_name: "Tenant",
-		last_name: "User",
-		username: "tenant",
-		role: "renter" as UserRole,
-		is_verified: true,
-		is_member: true,
-		created_at: new Date().toISOString(),
-		updated_at: new Date().toISOString(),
-		profile_picture: ""
-	},
-	{
-		id: "3",
-		email: "owner@example.com",
-		first_name: "Property",
-		last_name: "Owner",
-		username: "owner",
-		role: "owner" as UserRole,
-		is_verified: true,
-		is_member: true,
-		created_at: new Date().toISOString(),
-		updated_at: new Date().toISOString(),
-		profile_picture: ""
-	},
+  {
+    id: "1",
+    email: "admin@example.com",
+    first_name: "Admin",
+    last_name: "User",
+    username: "admin",
+    role: "admin" as UserRole,
+    is_verified: true,
+    is_member: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    profile_picture: ""
+  },
+  {
+    id: "2",
+    email: "tenant@example.com",
+    first_name: "Tenant",
+    last_name: "User",
+    username: "tenant",
+    role: "renter" as UserRole,
+    is_verified: true,
+    is_member: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    profile_picture: ""
+  },
+  {
+    id: "3",
+    email: "owner@example.com",
+    first_name: "Property",
+    last_name: "Owner",
+    username: "owner",
+    role: "owner" as UserRole,
+    is_verified: true,
+    is_member: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    profile_picture: ""
+  },
 ]
 
 // Mock tokens for authenticated users
@@ -92,7 +92,7 @@ export const mockApi = {
       role: credentials.role,
       is_verified: false,
       is_member: false,
-	    profile_picture: "",
+      profile_picture: "",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
@@ -104,7 +104,10 @@ export const mockApi = {
     const token = `mock-token-${newUser.id}`
     mockTokens[newUser.id] = token
 
-    return {...newUser,token}
+    return {
+      user: { ...newUser },
+      token
+    }
   },
 
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -123,7 +126,10 @@ export const mockApi = {
     // Get token
     const token = mockTokens[user.id]
 
-    return {...user,token}
+    return {
+      user: { ...user },
+      token
+    }
 
   },
 

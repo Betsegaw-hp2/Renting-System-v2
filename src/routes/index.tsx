@@ -23,7 +23,8 @@ const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
 
 // Tenant pages
-// const TenantProfilePage = lazy(() => import("../features/tenant/pages/ProfilePage"))
+const TenantProfilePage = lazy(() => import("../features/tenant/pages/TenantProfilePage"))
+const TenantHomePage = lazy(() => import("../features/tenant/pages/TenantHomePage"))
 // const TenantBookingsPage = lazy(() => import("../features/tenant/pages/RentalHistoryPage"))
 
 // // Owner pages
@@ -159,18 +160,26 @@ const router = createBrowserRouter([
     element: (
       <TenantRoute>
         <Suspense fallback={<LoadingFallback />}>
-          {/* <TenantProfilePage /> */}
+          <TenantProfilePage />
         </Suspense>
       </TenantRoute>
+    ),
+  },
+  {
+    path: "/tenant/home",
+    element: (
+      // <TenantRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <TenantHomePage />
+        </Suspense>
+      // </TenantRoute>
     ),
   },
   {
     path: "/tenant/bookings",
     element: (
       <TenantRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <TenantBookingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <TenantBookingsPage /> */}</Suspense>
       </TenantRoute>
     ),
   },
@@ -190,9 +199,7 @@ const router = createBrowserRouter([
     path: "/owner/listings",
     element: (
       <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <OwnerListingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <OwnerListingsPage /> */}</Suspense>
       </OwnerRoute>
     ),
   },
@@ -210,9 +217,7 @@ const router = createBrowserRouter([
     path: "/owner/bookings",
     element: (
       <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          {/* <OwnerBookingsPage /> */}
-        </Suspense>
+        <Suspense fallback={<LoadingFallback />}>{/* <OwnerBookingsPage /> */}</Suspense>
       </OwnerRoute>
     ),
   },
@@ -277,12 +282,6 @@ const router = createBrowserRouter([
         </Suspense>
       </AdminRoute>
     ),
-  },
-
-  // Fallback route
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
   },
 
   // Fallback route

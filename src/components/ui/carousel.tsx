@@ -28,8 +28,9 @@ const Carousel = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
     orientation?: "horizontal" | "vertical"
+    itemsPerSlide: number
   }
->(({ orientation = "horizontal", className, children, ...props }, ref) => {
+>(({ orientation = "horizontal", className, children, itemsPerSlide, ...props }, ref) => {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [currentSlide, setCurrentSlide] = React.useState(0)
   const [totalSlides, setTotalSlides] = React.useState(0)
@@ -39,11 +40,12 @@ const Carousel = React.forwardRef<
   React.useEffect(() => {
     if (containerRef.current) {
       const items = containerRef.current.querySelectorAll('[role="group"]')
-      setTotalSlides(items.length)
-      setCanScrollNext(currentSlide < items.length - 1)
+      const slides = Math.ceil(items.length / itemsPerSlide)
+      setTotalSlides(slides)
+      setCanScrollNext(currentSlide < slides - 1)
       setCanScrollPrev(currentSlide > 0)
     }
-  }, [currentSlide, children])
+  }, [currentSlide, children, itemsPerSlide])
 
   const scrollPrev = React.useCallback(() => {
     if (currentSlide > 0) {

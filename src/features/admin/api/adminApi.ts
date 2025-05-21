@@ -28,7 +28,7 @@ export const adminApi = {
     try {
       // Try to fetch from the analytics endpoint if it exists
       try {
-        const response = await apiClient.get("/analytics/summary")
+        const response = await apiClient.get("/admin/stats")
         return toCamelCase(response.data)
       } catch (analyticsError) {
         console.warn("Analytics endpoint not available, calculating from individual endpoints", analyticsError)
@@ -149,7 +149,7 @@ export const adminApi = {
     try {
       // Try to fetch from the analytics endpoint if it exists
       try {
-        const response = await apiClient.get("/analytics/details", {
+        const response = await apiClient.get("/admin/analytics", {
           params: {
             time_range: timeRange,
           },

@@ -183,7 +183,7 @@ export default function BookingPage() {
                             {/* {listing.city}, {listing.region} */}
                           </p>
                           <p className="text-sm text-gray-500 mt-2">
-                            {listing.category} •
+                            {listing.category.name} •
                             {listing.features?.bedrooms && ` ${listing.features.bedrooms} bedrooms • `}
                             {listing.features?.bathrooms && ` ${listing.features.bathrooms} bathrooms`}
                           </p>
@@ -312,10 +312,12 @@ export default function BookingPage() {
                           {Math.max(
                             1,
                             Math.ceil(
-                              (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24),
-                            ),
-                          )}{" "}
-                          {listing.priceUnit}s
+                              (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+                            )
+                          )}
+                          {` day${Math.max(1, Math.ceil(
+                            (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+                          )) > 1 ? "s" : ""}`}
                         </span>
                         <span>
                           $
@@ -324,8 +326,8 @@ export default function BookingPage() {
                             Math.max(
                               1,
                               Math.ceil(
-                                (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24),
-                              ),
+                                (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
+                              )
                             )
                           ).toLocaleString()}
                         </span>
@@ -337,12 +339,12 @@ export default function BookingPage() {
                           {(
                             totalPrice -
                             listing.price *
-                              Math.max(
-                                1,
-                                Math.ceil(
-                                  (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24),
-                                ),
+                            Math.max(
+                              1,
+                              Math.ceil(
+                                (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)
                               )
+                            )
                           ).toLocaleString()}
                         </span>
                       </div>
@@ -365,6 +367,7 @@ export default function BookingPage() {
                   </CardFooter>
                 </Card>
               </div>
+
             </div>
           ) : (
             <div className="text-center py-12">

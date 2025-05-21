@@ -21,9 +21,9 @@ export const AccessDeniedPage: React.FC = () => {
       case UserRole.ADMIN:
         return "/admin/dashboard"
       case UserRole.PROPERTY_OWNER:
-        return "/owner/dashboard"
+        return "/owner/home"
       case UserRole.TENANT:
-        return "/tenant/dashboard"
+        return "/tenant/home"
       default:
         return "/"
     }

@@ -1,59 +1,108 @@
 "use client"
 
-import {
-  AlertTriangle,
-  Bath,
-  Bed,
-  Calendar,
-  Heart,
-  Home,
-  MapPin,
-  MessageSquare,
-  Share,
-  Square,
-  Star,
-  Users,
-} from "lucide-react"
+import { ArrowLeft, CalendarIcon, DollarSign, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { useNavigate, useParams } from "react-router-dom"
-import type { FeaturedListing } from "../api/publicApi"
+import { Link, useParams } from "react-router-dom"
 import { publicApi } from "../api/publicApi"
+import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
+import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
-import { Skeleton } from "../components/ui/skeleton"
-import { usePermissions } from "../hooks/usePermissions"
-import type { RootState } from "../store"
+import { Card, CardContent } from "../components/ui/card"
+import { format, differenceInDays, addDays, formatISO } from "date-fns"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { DatePicker } from "@/components/ui/date-picker"
+import { useToast } from "@/hooks/useToast"
+import { tenantApi } from "@/features/tenant/api/tenantApi"
+
+// Listing interface matching the provided data structure
+interface Listing {
+  id: string
+  title: string
+  description: string
+  price: number
+  address?: string
+  city?: string
+  region?: string
+  country?: string
+  status?: string
+  views_count?: number
+  owner_id?: string
+  availability_start?: string
+  availability_end?: string
+  media?: Array<{
+    id: string
+    media_type: string
+    media_url: string
+  }>
+  category?: {
+    id: string
+    slug: string
+    name: string
+  }
+  tags?: string[]
+  rating?: number
+  reviewCount?: number
+  features?: {
+    guests?: number
+    bedrooms?: number
+    bathrooms?: number
+    area?: number
+  }
+}
 
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const [listing, setListing] = useState<FeaturedListing | null>(null)
+  const [listing, setListing] = useState<Listing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isFavorite, setIsFavorite] = useState(false)
-  const { is_authenticated } = useSelector((state: RootState) => state.auth)
-  const permissions = usePermissions()
+  const [error, setError] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined)
+  const [isBooking, setIsBooking] = useState(false)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     const fetchListing = async () => {
-      setIsLoading(true)
-      try {
-        if (!id) return
+      if (!id) {
+        setError("No listing ID provided")
+        setIsLoading(false)
+        return
+      }
 
-        // Fetch listing details
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // Fetch all listings and find the one with matching ID
         const listings = await publicApi.getFeaturedListings()
         const foundListing = listings.find((listing) => listing.id === id)
 
         if (foundListing) {
+          console.log("Found listing:", foundListing)
           setListing(foundListing)
+
+          // Set the selected image to the first media item or placeholder
+          if (foundListing.media && foundListing.media.length > 0) {
+            setSelectedImage(foundListing.media[0].media_url)
+          } else {
+            setSelectedImage("https://picsum.photos/200/300")
+          }
         } else {
-          // Handle not found
-          console.error("Listing not found")
+          setError("Listing not found")
         }
-      } catch (error) {
-        console.error("Error fetching listing details:", error)
+      } catch (err) {
+        console.error("Error fetching listing:", err)
+        setError("Failed to load listing details. Please try again later.")
       } finally {
         setIsLoading(false)
       }
@@ -62,320 +111,500 @@ export default function ListingDetailsPage() {
     fetchListing()
   }, [id])
 
-  const handleFavoriteToggle = () => {
-    if (!is_authenticated) {
-      navigate("/login", { state: { from: `/listings/${id}` } })
+  // Format dates
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Not specified"
+    try {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    } catch (e) {
+      return "Invalid date"
+    }
+  }
+
+  // Get location string
+  const getLocationString = () => {
+    if (listing?.city && listing?.region) {
+      return `${listing.city}, ${listing.region}${listing.country ? `, ${listing.country}` : ""}`
+    }
+    return "Location not specified"
+  }
+
+  // Get images array
+  const getImages = () => {
+    if (listing?.media && listing.media.length > 0) {
+      return listing.media.map((item) => item.media_url)
+    }
+    return ["https://picsum.photos/200/300"]
+  }
+
+  // Calculate total amount based on selected dates
+  const calculateTotalAmount = () => {
+    if (!startDate || !endDate || !listing) return 0
+
+    const days = differenceInDays(endDate, startDate)
+    if (days <= 0) return 0
+
+    // Convert monthly price to daily price (approximate)
+    const dailyPrice = listing.price / 30
+
+    // Calculate base amount
+    const baseAmount = dailyPrice * days
+
+    // Round to 2 decimal places
+    return Math.round(baseAmount * 100) / 100
+  }
+
+  // Handle booking submission
+  const handleBooking = async () => {
+    if (!startDate || !endDate || !listing || !id) {
+      setBookingError("Please select valid dates")
       return
     }
 
-    setIsFavorite(!isFavorite)
-  }
-
-  const handleBookNow = () => {
-    if (!is_authenticated) {
-      navigate("/login", { state: { from: `/listings/${id}/book` } })
+    const totalAmount = calculateTotalAmount()
+    if (totalAmount <= 0) {
+      setBookingError("Invalid booking period")
       return
     }
 
-    navigate(`/listings/${id}/book`)
+    setIsBooking(true)
+    setBookingError(null)
+
+    try {
+      const payload = {
+        start_date: formatISO(startDate),
+        end_date: formatISO(endDate),
+        total_amount: totalAmount,
+      }
+
+      await tenantApi.createBooking(id, payload)
+
+      // Close modal and show success message
+      setIsBookingModalOpen(false)
+      toast({
+        title: "Booking Successful",
+        description: "Your booking has been confirmed!",
+        variant: "default",
+      })
+
+      // Reset dates
+      setStartDate(undefined)
+      setEndDate(undefined)
+    } catch (error) {
+      console.error("Booking failed:", error)
+      setBookingError("Failed to complete booking. Please try again.")
+    } finally {
+      setIsBooking(false)
+    }
   }
 
-  const handleContactOwner = () => {
-    if (!is_authenticated) {
-      navigate("/login", { state: { from: `/listings/${id}` } })
-      return
+  // Open booking modal with default dates
+  const openBookingModal = () => {
+    // Set default dates if not already set
+    if (!startDate) {
+      const today = new Date()
+      const tomorrow = addDays(today, 1)
+      setStartDate(tomorrow)
+      setEndDate(addDays(tomorrow, 7)) // Default to 7-day booking
     }
 
-    // Navigate to messaging with this owner
-    navigate(`/messages/new?listingId=${id}`)
+    // Reset any previous booking errors
+    setBookingError(null)
+    setIsBookingModalOpen(true)
   }
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 py-8">
+          <div className="container mx-auto px-4">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-64 bg-gray-200 rounded mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="h-32 bg-gray-200 rounded"></div>
+                <div className="h-32 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (error || !listing) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-1 py-8">
+          <div className="container mx-auto px-4">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold mb-4">Error Loading Listing</h2>
+              <p className="text-gray-600 mb-6">{error || "Listing not found"}</p>
+              <Button asChild>
+                <Link to="/browse">Browse Other Listings</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  const images = getImages()
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex flex-col min-h-screen">
       <Header />
 
-      <main className="flex-1 bg-gray-50">
-        {/* Role-specific alerts */}
-        {is_authenticated && (permissions.isAdmin || permissions.isOwner) && (
-          <div className="container mx-auto px-4 mt-6">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Role Restriction Notice</AlertTitle>
-              <AlertDescription>
-                {permissions.isAdmin
-                  ? "As an administrator, you cannot book properties. Please create a tenant account if you wish to make bookings."
-                  : "As a property owner, you cannot book properties with this account. Please create a tenant account if you wish to make bookings."}
-              </AlertDescription>
-            </Alert>
+      <main className="flex-1 py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          {/* Back button */}
+          <div className="mb-6">
+            <Button variant="ghost" asChild className="flex items-center text-gray-600">
+              <Link to="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to listings
+              </Link>
+            </Button>
           </div>
-        )}
 
-        {isLoading ? (
-          <div className="container mx-auto px-4 py-8">
-            <Skeleton className="h-8 w-2/3 mb-4" />
-            <Skeleton className="h-6 w-1/3 mb-8" />
+          {/* Listing title and basic info */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">{listing.title}</h1>
+            <div className="flex items-center text-gray-600 mb-4">
+              <MapPin className="h-4 w-4 mr-1" />
+              <span>{getLocationString()}</span>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Skeleton className="h-80 col-span-2" />
-              <div className="space-y-4">
-                <Skeleton className="h-40" />
-                <Skeleton className="h-40" />
+            <div className="flex flex-wrap items-center gap-4">
+              {listing.status && (
+                <Badge className={`${listing.status === "available" ? "bg-green-500" : "bg-gray-500"} text-white`}>
+                  {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
+                </Badge>
+              )}
+
+              {listing.category && (
+                <Badge variant="outline" className="bg-blue-50">
+                  <Home className="h-3 w-3 mr-1" />
+                  {listing.category.name}
+                </Badge>
+              )}
+
+              {listing.rating !== undefined && (
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                  <span>{listing.rating}</span>
+                  {listing.reviewCount !== undefined && (
+                    <span className="text-gray-500 text-sm ml-1">({listing.reviewCount} reviews)</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Image gallery */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="md:col-span-2">
+              <div className="rounded-lg overflow-hidden bg-white border h-[400px]">
+                <img
+                  src={selectedImage || images[0]}
+                  alt={listing.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg?height=600&width=800"
+                  }}
+                />
               </div>
             </div>
 
-            <Skeleton className="h-6 w-1/4 mb-4" />
-            <Skeleton className="h-24 mb-8" />
-
-            <Skeleton className="h-6 w-1/4 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-              <Skeleton className="h-20" />
-            </div>
-          </div>
-        ) : listing ? (
-          <>
-            {/* Listing Header */}
-            <div className="container mx-auto px-4 py-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{listing.title}</h1>
-                  <p className="text-gray-600 flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {/* {listing.city}, {listing.region} */}
-                  </p>
+            <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
+              {images.slice(0, 4).map((image, index) => (
+                <div
+                  key={index}
+                  className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${
+                    selectedImage === image ? "ring-2 ring-blue-500" : ""
+                  }`}
+                  onClick={() => setSelectedImage(image)}
+                >
+                  <img
+                    src={image || "/placeholder.svg"}
+                    alt={`${listing.title} - image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                    }}
+                  />
                 </div>
-                <div className="flex items-center mt-4 md:mt-0 space-x-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={isFavorite ? "text-red-500" : ""}
-                    onClick={handleFavoriteToggle}
-                    disabled={!permissions.isTenant}
-                  >
-                    <Heart className={`h-4 w-4 mr-2 ${isFavorite ? "fill-current" : ""}`} />
-                    {isFavorite ? "Saved" : "Save"}
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Share className="h-4 w-4 mr-2" />
-                    Share
-                  </Button>
-                </div>
-              </div>
+              ))}
 
-              {/* Listing Images and Booking Card */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                {/* Main Image */}
-                <div className="md:col-span-2">
-                  <div className="aspect-video rounded-lg overflow-hidden">
-                    {/* <img
-                      src={listing.media[0]?.media_url || "/placeholder.svg?height=400&width=600"}
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    /> */}
+              {images.length > 4 && (
+                <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
+                  <img
+                    src={images[4] || "/placeholder.svg"}
+                    alt={`${listing.title} - image 5`}
+                    className="w-full h-full object-cover opacity-70"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium">
+                    +{images.length - 4} more
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-                  {/* Thumbnail Images */}
-                  {/* {listing.media.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                      {listing.media.slice(1, 5).map((media, index) => (
-                        <div key={index} className="aspect-video rounded-lg overflow-hidden">
-                          <img
-                            src={media.media_url || "/placeholder.svg?height=100&width=150"}
-                            alt={`${listing.title} - image ${index + 2}`}
-                            className="w-full h-full object-cover"
-                          />
+          {/* Main content */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Left column - Details */}
+            <div className="md:col-span-2 space-y-8">
+              {/* Description */}
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold mb-4">Description</h2>
+                  <p className="text-gray-700 whitespace-pre-line">{listing.description}</p>
+                </CardContent>
+              </Card>
+
+              {/* Features and amenities */}
+              {listing.tags && listing.tags.length > 0 && (
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Features & Amenities</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {listing.tags.map((tag, index) => (
+                        <div key={index} className="flex items-center">
+                          <Tag className="h-4 w-4 mr-2 text-blue-600" />
+                          <span>{tag}</span>
                         </div>
                       ))}
                     </div>
-                  )} */}
-                </div>
-
-                {/* Booking Card */}
-                <div>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex justify-between items-center">
-                        <span>${listing.price.toLocaleString()}</span>
-                        <span className="text-sm text-gray-500">/{listing.priceUnit}</span>
-                      </CardTitle>
-                      <CardDescription className="flex items-center">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        <span>
-                          {listing.rating.toFixed(1)} ({listing.reviewCount} reviews)
-                        </span>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Category</span>
-                          <span className="font-medium">{listing.category}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Availability</span>
-                          <span className="font-medium">Immediate</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Minimum Stay</span>
-                          <span className="font-medium">1 {listing.priceUnit}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex flex-col space-y-3">
-                      {permissions.canBookProperties ? (
-                        <Button className="w-full" onClick={handleBookNow}>
-                          Book Now
-                        </Button>
-                      ) : (
-                        <Button className="w-full" disabled>
-                          Booking Not Available
-                        </Button>
-                      )}
-                      <Button variant="outline" className="w-full" onClick={handleContactOwner}>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Contact Owner
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Listing Description */}
-              <div className="mb-12">
-                <h2 className="text-2xl font-bold mb-4">About this property</h2>
-                <p className="text-gray-700 whitespace-pre-line">{listing.description}</p>
-              </div>
-
-              {/* Listing Features */}
-              <div className="mb-12">
-                <h2 className="text-2xl font-bold mb-4">Features</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {listing.features?.guests && (
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                      <Users className="h-6 w-6 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-medium">{listing.features.guests} guests</p>
-                        <p className="text-sm text-gray-500">Maximum capacity</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {listing.features?.bedrooms && (
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                      <Bed className="h-6 w-6 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-medium">{listing.features.bedrooms} bedrooms</p>
-                        <p className="text-sm text-gray-500">Sleeping arrangements</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {listing.features?.bathrooms && (
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                      <Bath className="h-6 w-6 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-medium">{listing.features.bathrooms} bathrooms</p>
-                        <p className="text-sm text-gray-500">Full bathrooms</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {listing.features?.area && (
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                      <Square className="h-6 w-6 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-medium">{listing.features.area} sq ft</p>
-                        <p className="text-sm text-gray-500">Total area</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                    <Home className="h-6 w-6 text-blue-600 mr-3" />
-                    <div>
-                      <p className="font-medium">{listing.category}</p>
-                      <p className="text-sm text-gray-500">Property type</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-4 rounded-lg shadow-sm flex items-center">
-                    <Calendar className="h-6 w-6 text-blue-600 mr-3" />
-                    <div>
-                      <p className="font-medium">Flexible cancellation</p>
-                      <p className="text-sm text-gray-500">Cancel up to 24 hours before</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Location */}
-              <div className="mb-12">
-                <h2 className="text-2xl font-bold mb-4">Location</h2>
-                <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                  <MapPin className="h-8 w-8 text-gray-400 mr-2" />
-                  <span className="text-gray-500">Map view will be displayed here</span>
-                </div>
-                <p className="mt-4 text-gray-700">
-                  {/* {listing.city}, {listing.region}. */}
-                   The exact location will be provided after booking.
-                </p>
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-bold mb-4">Location</h2>
+                  <div className="mb-4">
+                    <p className="text-gray-700">
+                      {listing.address && <span className="block">{listing.address}</span>}
+                      <span className="block">{getLocationString()}</span>
+                    </p>
+                  </div>
+                  <div className="bg-gray-200 h-[200px] rounded-lg flex items-center justify-center">
+                    <p className="text-gray-500">Map would be displayed here</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right column - Booking and info */}
+            <div className="space-y-6">
+              {/* Price card */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-baseline mb-4">
+                    <span className="text-2xl font-bold">${new Intl.NumberFormat("en-US").format(listing.price)}</span>
+                    <span className="text-gray-600 ml-1">/month</span>
+                  </div>
+
+                  {/* Availability */}
+                  <div className="mb-6">
+                    <h3 className="font-medium mb-2">Availability</h3>
+                    <div className="flex items-center text-gray-700 mb-2">
+                      <CalendarIcon className="h-4 w-4 mr-2 text-blue-600" />
+                      <div>
+                        <div>From: {formatDate(listing.availability_start)}</div>
+                        <div>To: {formatDate(listing.availability_end)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="space-y-3">
+                    <Button className="w-full" onClick={openBookingModal}>
+                      Book Now
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      Contact Owner
+                    </Button>
+
+                    <div className="flex justify-between">
+                      <Button variant="ghost" size="sm" className="flex items-center">
+                        <Heart className="h-4 w-4 mr-1" />
+                        Save
+                      </Button>
+                      <Button variant="ghost" size="sm" className="flex items-center">
+                        <Share2 className="h-4 w-4 mr-1" />
+                        Share
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Additional info */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-medium mb-3">Additional Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Listed</span>
+                      <span>Recently</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 flex items-center">
+                        <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
+                        Price
+                      </span>
+                      <span>${new Intl.NumberFormat("en-US").format(listing.price)}/month</span>
+                    </div>
+
+                    {listing.views_count !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Views</span>
+                        <span>{listing.views_count}</span>
+                      </div>
+                    )}
+
+                    {listing.category && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <Home className="h-4 w-4 mr-2 text-blue-600" />
+                          Category
+                        </span>
+                        <span>{listing.category.name}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+      {/* Booking Modal */}
+      <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Book {listing.title}</DialogTitle>
+            <DialogDescription>Select your booking dates to calculate the total cost.</DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label htmlFor="start-date" className="text-sm font-medium">
+                  Start Date
+                </label>
+                <DatePicker
+                  date={startDate}
+                  setDate={(date) => {
+                    setStartDate(date)
+                    // If end date is before start date, adjust it
+                    if (date && endDate && date > endDate) {
+                      setEndDate(addDays(date, 1))
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Select your check-in date</p>
               </div>
 
-              {/* Reviews */}
-              <div className="mb-12">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold">Reviews</h2>
-                  <div className="flex items-center">
-                    <Star className="h-5 w-5 text-yellow-400 mr-1" />
-                    <span className="font-medium">{listing.rating.toFixed(1)}</span>
-                    <span className="text-gray-500 ml-1">({listing.reviewCount} reviews)</span>
-                  </div>
-                </div>
-
-                {/* Sample Reviews */}
-                <div className="space-y-6">
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                    <div className="flex items-center mb-4">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3"></div>
-                      <div>
-                        <p className="font-medium">John Doe</p>
-                        <p className="text-sm text-gray-500">June 2023</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-700">
-                      Great property! Very clean and exactly as described. The location was perfect for our needs.
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                    <div className="flex items-center mb-4">
-                      <div className="h-10 w-10 rounded-full bg-gray-200 mr-3"></div>
-                      <div>
-                        <p className="font-medium">Jane Smith</p>
-                        <p className="text-sm text-gray-500">May 2023</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-700">
-                      We had a wonderful stay. The owner was very responsive and helpful. Would definitely recommend!
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 text-center">
-                  <Button variant="outline">View All Reviews</Button>
-                </div>
+              <div className="space-y-2">
+                <label htmlFor="end-date" className="text-sm font-medium">
+                  End Date
+                </label>
+                <DatePicker
+                  date={endDate}
+                  setDate={(date) => {
+                    // Ensure end date is after start date
+                    if (date && startDate && date < startDate) {
+                      toast({
+                        title: "Invalid date selection",
+                        description: "End date must be after start date",
+                        variant: "destructive",
+                      })
+                      return
+                    }
+                    setEndDate(date)
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Select your check-out date</p>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="container mx-auto px-4 py-12 text-center">
-            <h2 className="text-2xl font-bold mb-4">Listing Not Found</h2>
-            <p className="text-gray-600 mb-8">The listing you're looking for doesn't exist or has been removed.</p>
-            <Button onClick={() => navigate("/browse")}>Browse Other Listings</Button>
+
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+              <h3 className="font-medium mb-3">Booking Summary</h3>
+
+              <div className="space-y-2">
+                {startDate && endDate ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Check-in:</span>
+                      <span className="font-medium">{format(startDate, "PPP")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Check-out:</span>
+                      <span className="font-medium">{format(endDate, "PPP")}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Duration:</span>
+                      <span className="font-medium">{differenceInDays(endDate, startDate)} days</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2 border-t mt-2">
+                      <span className="text-gray-600">Rate:</span>
+                      <span className="font-medium">${(listing.price / 30).toFixed(2)}/day</span>
+                    </div>
+                    <div className="flex justify-between items-center font-bold text-lg">
+                      <span>Total Amount:</span>
+                      <span>${calculateTotalAmount().toFixed(2)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-500 text-center py-2">
+                    Please select both start and end dates to see the total cost
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {bookingError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
+                {bookingError}
+              </div>
+            )}
           </div>
-        )}
-      </main>
+
+          <DialogFooter className="px-6 py-4 bg-gray-50 border-t">
+            <Button variant="outline" onClick={() => setIsBookingModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBooking}
+              disabled={isBooking || !startDate || !endDate || calculateTotalAmount() <= 0}
+              className="ml-2"
+            >
+              {isBooking ? "Processing..." : "Confirm Booking"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

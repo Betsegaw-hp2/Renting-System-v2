@@ -2,29 +2,47 @@ import axios from "axios"
 import { format } from "date-fns"
 import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
+import { getAuthToken } from "@/lib/cookies"
 
 // Types for public API responses
 export interface FeaturedListing {
   id: string
   title: string
   description: string
-  location: string
+  address: string
+  city: string
+  region: string
+  country: string
   price: number
-  priceUnit: string
-  images: string[]
-  category: string
-  reviewCount: number
-  rating: number
+  status: string
+  availability: {
+    startDate: string
+    endDate: string
+  }
+  media: {
+    id: string
+    media_type: 'image' | 'video' | string // or just 'image' if you only expect images
+    media_url: string
+  }[]
+  category: {
+    id: string
+    slug: string
+    name: string
+  }
+  tags: string[]
+  owner_id: string
+  created_at: string
+  updated_at: string
+
+  // Optional frontend-calculated props
+  reviewCount?: number
+  rating?: number
   features?: {
     guests?: number
     bedrooms?: number
     bathrooms?: number
     area?: number
   }
-  availability?: {
-    startDate: string
-    endDate: string
-  }[]
 }
 
 export interface Testimonial {
@@ -88,37 +106,78 @@ export interface ApiCategoryResponse {
   updated_at: string
 }
 
+export interface Booking {
+  id: string
+  listing_id: string
+  renter_id: string
+  owner_id: string
+  start_date: string
+  end_date: string
+  total_amount: number
+  status: "pending" | "booked" | "completed" | "cancelled"
+  payment_status: "pending" | "completed" | "in_escrow" | "disputed" | "failed"
+  payment_reference: string
+  created_at: string
+  updated_at: string
+}
+
+
+
 // Create axios instance for public API endpoints
-const publicAxiosInstance = axios.create({
+export const publicAxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${getAuthToken()}`,
   },
 })
 
 // Helper function to convert API response to our app's format
-const convertApiListingToFeaturedListing = (apiListing: ApiListingResponse): FeaturedListing => {
+export const convertApiListingToFeaturedListing = async (apiListing: ApiListingResponse): Promise<FeaturedListing> => {
+  if(apiListing && apiListing.category_id) {
+    const category = await publicAxiosInstance.get<ApiCategoryResponse>(`/categories/${apiListing.category_id}`)
+    apiListing.category = {
+      id: category.data.id,
+      name: category.data.name,
+      slug: category.data.slug,
+    }
+  }
+
   return {
     id: apiListing.id,
     title: apiListing.title,
     description: apiListing.description,
-    location: `${apiListing.city}, ${apiListing.region}`,
+    address: apiListing.address,
+    city: apiListing.city,
+    region: apiListing.region,
+    country: apiListing.country,
     price: apiListing.price,
-    priceUnit: "month", // Default, could be determined by category or other logic
-    category: apiListing.category?.name || "",
-    images: apiListing.media?.map((m) => m.media_url) || ["/placeholder.svg?height=200&width=300"],
-    rating: 4.5, // Default rating if not provided by API
-    reviewCount: 0, // Default review count if not provided by API
+    status: apiListing.status,
+    availability: {
+      startDate: apiListing.availability_start,
+      endDate: apiListing.availability_end,
+    },
+    media: apiListing.media?.map((m) => ({
+      id: m.id,
+      media_type: m.media_type,
+      media_url: m.media_url,
+    })) || [],
+    category: {
+      id: apiListing.category?.id || '',
+      slug: apiListing.category?.slug || '',
+      name: apiListing.category?.name || '',
+    },
+    tags: apiListing.tags || [],
+    owner_id: apiListing.owner_id,
+    created_at: apiListing.created_at,
+    updated_at: apiListing.updated_at,
+
+    // Optional fallback values
+    rating: 4.5,
+    reviewCount: 0,
     features: {
-      // Extract features based on category or other logic
       area: 0,
     },
-    availability: [
-      {
-        startDate: apiListing.availability_start,
-        endDate: apiListing.availability_end,
-      },
-    ],
   }
 }
 
@@ -141,13 +200,15 @@ function getCategoryIcon(slug: string): string {
 
 // Public API service
 export const publicApi = {
+
   // Get featured listings for the homepage
   getFeaturedListings: async (useMockApi = config.useMockApi): Promise<FeaturedListing[]> => {
     try {
-      if (useMockApi) {
-        console.log("Using mock API for featured listings")
-        return mockPublicApi.getFeaturedListings()
-      }
+      // if (useMockApi) {
+      //   console.log("Using mock API for featured listings")
+      //   // Commenting out mock API usage
+      //   // return mockPublicApi.getFeaturedListings()
+      // }
 
       console.log("Fetching featured listings from real API")
       // Use the /listings/popular endpoint from the API
@@ -156,7 +217,7 @@ export const publicApi = {
       })
 
       console.log(`Received ${response.data.length} listings from API`)
-      return response.data.map(convertApiListingToFeaturedListing)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching featured listings:", error)
       throw error // Throw error instead of returning empty array
@@ -168,6 +229,7 @@ export const publicApi = {
     try {
       if (useMockApi) {
         console.log("Using mock API for testimonials")
+        // Commenting out mock API usage
         return mockPublicApi.getTestimonials()
       }
 
@@ -186,7 +248,8 @@ export const publicApi = {
     try {
       if (useMockApi) {
         console.log("Using mock API for categories")
-        return mockPublicApi.getCategoryCounts()
+        // Commenting out mock API usage
+        // return mockPublicApi.getCategoryCounts()
       }
 
       console.log("Fetching categories from real API")
@@ -211,8 +274,8 @@ export const publicApi = {
     }
   },
 
-  // Update searchListings to properly use the API endpoints
-  searchListings: async (
+
+searchListings: async (
     query: string,
     category?: string,
     startDate?: Date | string,
@@ -222,12 +285,13 @@ export const publicApi = {
     try {
       if (useMockApi) {
         console.log("Using mock API for search listings")
-        return mockPublicApi.searchListings(
-          query,
-          category,
-          startDate ? formatDate(startDate) : undefined,
-          endDate ? formatDate(endDate) : undefined,
-        )
+        // Commenting out mock API usage
+        // return mockPublicApi.searchListings(
+        //   query,
+        //   category,
+        //   startDate ? formatDate(startDate) : undefined,
+        //   endDate ? formatDate(endDate) : undefined,
+        // )
       }
 
       console.log("Searching listings with real API:", { query, category, startDate, endDate })
@@ -260,10 +324,9 @@ export const publicApi = {
           if (matchingCategory) {
             console.log(`Found matching category: ${matchingCategory.id} - ${matchingCategory.name}`)
             // Use the category-specific endpoint
-            response = await publicAxiosInstance.get<ApiListingResponse[]>(
-              `/categories/${matchingCategory.id}/listings`,
-              { params },
-            )
+            response = await publicAxiosInstance.get<ApiListingResponse[]>(`/categories/${matchingCategory.id}/listings`, {
+              params,
+            })
             console.log(`Received ${response.data.length} listings for category ${matchingCategory.name}`)
           } else {
             console.log("Category not found, falling back to general search")
@@ -279,40 +342,18 @@ export const publicApi = {
         // General search without category filter
         console.log("Performing general search with params:", params)
         response = await publicAxiosInstance.get<ApiListingResponse[]>("/listings", { params })
-        console.log(`Received ${response.data.length} listings from general search`)
       }
 
-      // Convert API response to our format
-      return response.data.map(convertApiListingToFeaturedListing)
+      console.log(`Received ${response.data.length} listings from search API`)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
-      console.error("Error searching listings:", error)
-      throw error // Throw error instead of returning empty array
-    }
-  },
-
-  // Check availability for a specific listing
-  checkAvailability: async (listingId: string, startDate: string, endDate: string): Promise<boolean> => {
-    try {
-      if (config.useMockApi) {
-        return mockPublicApi.checkAvailability(listingId, startDate, endDate)
-      }
-
-      const response = await publicAxiosInstance.get<{ available: boolean }>(`/listings/${listingId}/availability`, {
-        params: { startDate, endDate },
-      })
-      return response.data.available
-    } catch (error) {
-      console.error("Error checking availability:", error)
-      return false
+      console.error("Error during searchListings:", error)
+      throw error
     }
   },
 }
 
-// Helper function to format dates for the API
-function formatDate(date: Date | string): string {
-  if (typeof date === "string") {
-    return date
-  }
+function formatDate(date: Date): string {
   return format(date, "yyyy-MM-dd")
 }
 

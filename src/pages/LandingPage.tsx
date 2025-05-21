@@ -2,9 +2,11 @@
 
 import type React from "react"
 
+import type { RootState } from "@/store"
 import { Calendar, CreditCard, Key, Search, Star } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { Link, useNavigate } from "react-router-dom"
 import type { FeaturedListing, Testimonial } from "../api/publicApi"
 import { publicApi } from "../api/publicApi"
 import { CategoryCard } from "../components/categories/CategoryCard"
@@ -23,8 +25,10 @@ import {
 } from "../components/ui/carousel"
 
 export default function HomePage() {
+  const navigate = useNavigate()
   const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const {  is_authenticated } = useSelector((state: RootState) => state.auth)
   const [categories, setCategories] = useState<CategoryCount[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
@@ -54,6 +58,11 @@ export default function HomePage() {
   
 
   useEffect(() => {
+    if (is_authenticated) {
+      navigate("/home")
+      return
+    }
+
     const fetchHomeData = async () => {
       setIsLoading(true)
       try {
@@ -86,13 +95,13 @@ export default function HomePage() {
         !filters.query ||
         listing.title.toLowerCase().includes(filters.query.toLowerCase()) ||
         listing.description.toLowerCase().includes(filters.query.toLowerCase()) ||
-        listing.category.toLowerCase().includes(filters.query.toLowerCase())
+        listing.category.name.toLowerCase().includes(filters.query.toLowerCase())
 
       // Filter by category
       const matchesCategory =
         !filters.category ||
         filters.category === "all" ||
-        listing.category.toLowerCase() === filters.category.toLowerCase()
+        listing.category.name.toLowerCase() === filters.category.toLowerCase()
 
       // Filter by date range (if applicable)
       // This is a simplified example - in a real app, you'd need to check if the listing is available during the selected date range
@@ -139,9 +148,9 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="relative h-[300px] w-full overflow-hidden rounded-xl bg-gray-100 sm:h-[350px] lg:h-[400px]">
+              <div className="relative h-[300px] w-full overflow-hidden rounded-xl bg-transparent sm:h-[350px] lg:h-[400px]">
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/assets/hero-image.png"
                   alt="Rental platform showcase"
                   className="h-full w-full object-cover"
                 />
@@ -158,7 +167,7 @@ export default function HomePage() {
       </section>
 
       {/* Search Box */}
-      <SearchFilters className="max-w-4xl mx-auto -mt-8" />
+      <SearchFilters className="max-w-4xl mx-auto -mt-8" onSearch={handleSearch}/>
 
       {/* Categories Section */}
       <section className="my-10 py-16 bg-gray-50">
@@ -179,7 +188,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <Carousel className="w-full">
+            <Carousel itemsPerSlide={3} className="w-full">
               <CarouselContent>
                 {categories.map((category) => (
                   <CarouselItem key={category.slug} className="md:basis-1/3 lg:basis-1/3">
@@ -191,6 +200,7 @@ export default function HomePage() {
               </CarouselContent>
               <CarouselPrevious className="left-2" />
               <CarouselNext className="right-2" />
+              <CarouselDots count={Math.ceil(categories.length / 3)} className="mt-4" />
             </Carousel>
           )}
         </div>
@@ -223,7 +233,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : filteredListings.length > 0 ? (
-            <Carousel className="w-full">
+            <Carousel itemsPerSlide={4} className="w-full">
               <CarouselContent>
                 {filteredListings.map((listing) => (
                   <CarouselItem key={listing.id} className="md:basis-1/2 lg:basis-1/4">
@@ -329,7 +339,7 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <Carousel className="w-full max-w-4xl mx-auto">
+            <Carousel itemsPerSlide={1} className="w-full max-w-4xl mx-auto">
               <CarouselContent>
                 {testimonials.map((testimonial) => (
                   <CarouselItem key={testimonial.id}>

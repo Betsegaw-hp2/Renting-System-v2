@@ -3,6 +3,8 @@ import { getAuthToken, removeAuthToken, setAuthToken } from "../../../lib/cookie
 import type { AuthState, LoginCredentials, User } from "../../../types/user.types"
 import * as authApi from "../api/authApi"
 import type { SignupFormData } from "../types/signup.types"
+import type { AuthResponse } from "../api/authApi"
+import type { AppDispatch } from "@/store"
 
 const initialState: AuthState = {
   user: null,
@@ -80,6 +82,24 @@ export const loginUser = createAsyncThunk(
     }
   },
 )
+// export const loginUser = createAsyncThunk<
+//   AuthResponse,
+//   LoginUserParams,
+//   { dispatch: AppDispatch }
+// >(
+//   "auth/login",
+//   async (creds, { dispatch, rejectWithValue }) => {
+//     try {
+//       const response = await authApi.login(creds);
+//       setAuthToken(response.token, creds.remember_me);      
+//       await dispatch(fetchCurrentUser()).unwrap();
+//       return response;
+//     } catch (err: any) {
+//       return rejectWithValue(getErrorMessage(err));
+//     }
+//   }
+// );
+
 
 export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {

@@ -1,16 +1,3 @@
-import {
-  Briefcase,
-  Building,
-  Camera,
-  Car,
-  Home,
-  Landmark,
-  Music,
-  Package,
-  Utensils,
-  Warehouse,
-  type LucideIcon,
-} from "lucide-react"
 import { Link } from "react-router-dom"
 import { cn } from "../../lib/utils"
 
@@ -31,50 +18,32 @@ interface CategoryCardProps {
 }
 
 export function CategoryCard({ category, className }: CategoryCardProps) {
-  // Map icon string to Lucide icon component
-  const iconMap: Record<string, LucideIcon> = {
-    building: Building,
-    home: Home,
-    camera: Camera,
-    car: Car,
-    landmark: Landmark,
-    package: Package,
-    warehouse: Warehouse,
-    briefcase: Briefcase,
-    music: Music,
-    utensils: Utensils,
-  }
-
-  const iconKey = getCategoryIcon(category.slug)
-  const IconComponent = iconMap[iconKey] || Package
+  // Use a default image if none is provided
+  const imageUrl = category.image_url || "/placeholder.svg?height=200&width=300"
 
   return (
     <Link
       to={`/browse?category=${encodeURIComponent(category.slug)}`}
       className={cn(
-        "flex flex-col items-center justify-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all",
+        "group relative flex flex-col overflow-hidden rounded-lg shadow-md transition-all hover:shadow-lg",
         className,
       )}
     >
-      <div className="bg-blue-100 rounded-full p-4 mb-4">
-        <IconComponent className="h-8 w-8 text-blue-600" />
+      <div className="aspect-[4/3] w-full overflow-hidden">
+        <img
+          src={imageUrl || "/placeholder.svg"}
+          alt={category.name}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+
+        {/* Overlay gradient for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-80 transition-opacity group-hover:opacity-90"></div>
       </div>
-      <h3 className="font-bold text-lg mb-1">{category.name}</h3>
+
+      {/* Category name */}
+      <div className="absolute bottom-0 left-0 w-full p-4">
+        <h3 className="font-semibold text-lg text-white">{category.name}</h3>
+      </div>
     </Link>
   )
-}
-
-function getCategoryIcon(slug: string) {
-  const iconMap: Record<string, string> = {
-    homes: "home",
-    apartments: "building",
-    vehicles: "car",
-    equipment: "camera",
-    spaces: "landmark",
-    tools: "briefcase",
-    electronics: "package",
-    furniture: "warehouse",
-    clothing: "utensils",
-  }
-  return iconMap[slug.toLowerCase()] || "package"
 }

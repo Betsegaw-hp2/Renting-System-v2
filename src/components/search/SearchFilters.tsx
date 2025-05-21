@@ -10,6 +10,7 @@ import { Label } from "../ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { cn } from "../../lib/utils"
 import { addDays, subDays } from "date-fns"
+import { publicApi, type CategoryCount } from "@/api/publicApi"
 
 interface SearchFiltersProps {
   onSearch?: (filters: SearchFilters) => void
@@ -44,40 +45,67 @@ const DATE_RANGES = [
 export function SearchFilters({ onSearch, className, showAdvanced = false, initialValues }: SearchFiltersProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
+  const [categories, setCategories] = useState<CategoryCount[]>([])
   const [category, setCategory] = useState("")
   const [dateRangeValue, setDateRangeValue] = useState("any")
   const [useMockApi, setUseMockApi] = useState(true)
   const [showFilters, setShowFilters] = useState(showAdvanced)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const data = await publicApi.getCategoryCounts(false) // or pass useMockApi if needed
+        setCategories(data)
+      } catch (err) {
+        console.error("Failed to fetch categories:", err)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+
   // Load saved filters from localStorage on component mount
   useEffect(() => {
+    const pathname = window.location.pathname
+
     if (initialValues) {
-      // If initial values are provided, use them
+      // Use initial values if passed
       setSearchQuery(initialValues.query || "")
       setCategory(initialValues.category || "")
       setDateRangeValue(
         initialValues.dateRange?.label
           ? DATE_RANGES.find((r) => r.label === initialValues.dateRange?.label)?.value || "any"
-          : "any",
+          : "any"
       )
       setUseMockApi(initialValues.useMockApi !== undefined ? initialValues.useMockApi : true)
     } else {
-      // Otherwise, try to load from localStorage
-      const savedFilters = localStorage.getItem("searchFilters")
-      if (savedFilters) {
-        try {
-          const parsedFilters = JSON.parse(savedFilters)
-          setSearchQuery(parsedFilters.query || "")
-          setCategory(parsedFilters.category || "")
-          setDateRangeValue(parsedFilters.dateRange?.value || "any")
-          setUseMockApi(parsedFilters.useMockApi !== undefined ? parsedFilters.useMockApi : true)
-        } catch (error) {
-          console.error("Error parsing saved filters:", error)
+      // Only load from localStorage if NOT on the landing page
+      if (pathname !== "/") {
+        const savedFilters = localStorage.getItem("searchFilters")
+        if (savedFilters) {
+          try {
+            const parsedFilters = JSON.parse(savedFilters)
+            setSearchQuery(parsedFilters.query || "")
+            setCategory(parsedFilters.category || "")
+            setDateRangeValue(parsedFilters.dateRange?.value || "any")
+            setUseMockApi(parsedFilters.useMockApi !== undefined ? parsedFilters.useMockApi : true)
+          } catch (error) {
+            console.error("Error parsing saved filters:", error)
+          }
         }
+      } else {
+        // Reset filters on landing page
+        setSearchQuery("")
+        setCategory("")
+        setDateRangeValue("any")
+        setUseMockApi(true)
       }
     }
   }, [initialValues])
+
+
 
   // Convert selected date range to actual dates
   const getDateRangeFromValue = (value: string) => {
@@ -168,7 +196,6 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         setError("An error occurred while searching. Please try again.")
         console.error("Search error:", error)
       }
-      return
     }
 
     // Otherwise, navigate to search results page with query parameters
@@ -180,11 +207,12 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
 
     navigate(`/browse?${queryParams.toString()}`)
 
-    // Reset form fields after search only when navigating away
+    // Reset form fields immediately after search (before navigating)
     setSearchQuery("")
     setCategory("")
     setDateRangeValue("any")
   }
+
 
   return (
     <div className={cn("container mx-auto rounded-xl border bg-white p-6 shadow-md z-20 relative", className)}>
@@ -254,14 +282,11 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="homes">Homes</SelectItem>
-                  <SelectItem value="vehicles">Vehicles</SelectItem>
-                  <SelectItem value="equipment">Equipment</SelectItem>
-                  <SelectItem value="spaces">Spaces</SelectItem>
-                  <SelectItem value="tools">Tools</SelectItem>
-                  <SelectItem value="electronics">Electronics</SelectItem>
-                  <SelectItem value="furniture">Furniture</SelectItem>
-                  <SelectItem value="clothing">Clothing</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.slug}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
