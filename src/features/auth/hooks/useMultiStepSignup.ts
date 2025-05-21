@@ -36,10 +36,9 @@ const initialFormData: SignupFormData = {
 }
 
 export const useMultiStepSignup = () => {
-  const [currentStep, setCurrentStep] = useState<SignupStep>("account")
-  const [formData, setFormData] = useState<SignupFormData>(initialFormData)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
+  const [currentStep, setCurrentStep] = useState<SignupStep>("account");
+  const [formData, setFormData] = useState<SignupFormData>(initialFormData);
+  const [errors, setErrors] = useState<Record<string,string>>({});
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { is_loading, error } = useSelector((state: RootState) => state.auth)
