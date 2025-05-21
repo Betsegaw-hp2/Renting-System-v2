@@ -1,17 +1,24 @@
 "use client"
 import { Star } from "lucide-react"
+import type React from "react"
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import type { FeaturedListing } from "../../api/publicApi"
+import { useToast } from "../../hooks/useToast"
 import { Button } from "../ui/button"
 
 type ListingCardProps = {
   listing: FeaturedListing
-  showFavorite?: boolean
-  isFavorite?: boolean
-  onFavoriteToggle?: (id: string) => void
+  showSaveButton?: boolean
+  isSaved?: boolean
+  onSaveToggle?: (id: string, isSaved: boolean) => void
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, showSaveButton = false, isSaved = false, onSaveToggle }: ListingCardProps) {
+  const [isListingSaved, setIsListingSaved] = useState(isSaved)
+  const [isToggling, setIsToggling] = useState(false)
+  const { toast } = useToast()
+
   if (!listing) {
     return (
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -31,6 +38,31 @@ export function ListingCard({ listing }: ListingCardProps) {
   const mainImage = media && media.length > 0 ? media[0].media_url : "https://picsum.photos/200/300"
   const location = `${city || ""}${city && region ? ", " : ""}${region || ""}` || "Unknown location"
 
+  const handleSaveToggle = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (isToggling) return
+
+    setIsToggling(true)
+    try {
+      setIsListingSaved(!isListingSaved)
+      if (onSaveToggle) {
+        onSaveToggle(id, !isListingSaved)
+      }
+    } catch (error) {
+      console.error("Error toggling saved status:", error)
+      setIsListingSaved(isListingSaved) // Revert on error
+      toast({
+        title: "Error",
+        description: `Failed to ${isListingSaved ? "remove from" : "add to"} saved listings. Please try again.`,
+        variant: "destructive",
+      })
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:translate-y-[-4px] hover:shadow-lg">
       <div className="relative">
@@ -46,9 +78,21 @@ export function ListingCard({ listing }: ListingCardProps) {
             e.currentTarget.src = "https://picsum.photos/200/300"
           }}
         />
-        <div className="absolute top-2 right-2 bg-white rounded-full p-1">
-          <Star className="h-4 w-4 text-yellow-400" />
-        </div>
+
+        {showSaveButton && (
+          <button
+            onClick={handleSaveToggle}
+            disabled={isToggling}
+            className={`absolute top-2 right-2 p-1.5 rounded-full transition-colors ${
+              isListingSaved
+                ? "bg-yellow-500 text-white hover:bg-yellow-600"
+                : "bg-white text-gray-500 hover:text-yellow-500"
+            } ${isToggling ? "opacity-50 cursor-not-allowed" : ""}`}
+            aria-label={isListingSaved ? "Remove from saved" : "Save listing"}
+          >
+            <Star className={`h-4 w-4 ${isListingSaved ? "fill-current" : ""}`} />
+          </button>
+        )}
       </div>
       <div className="p-4">
         <div className="flex items-center mb-2">

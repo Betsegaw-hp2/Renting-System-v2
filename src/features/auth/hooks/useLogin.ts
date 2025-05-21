@@ -7,7 +7,8 @@ import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateEmail, validateRequired } from "../../../lib/validation"
 import type { AppDispatch, RootState } from "../../../store"
-import { loginUser } from "../slices/authSlice"
+import { fetchCurrentUser, loginUser } from "../slices/authSlice"
+import { unwrapResult } from "@reduxjs/toolkit"
 
 export const useLogin = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -48,7 +49,14 @@ export const useLogin = () => {
     const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
     if (loginUser.fulfilled.match(resultAction)) {
-      navigate("/home")
+      try {
+        const fetchMeAction = await dispatch(fetchCurrentUser());
+        unwrapResult(fetchMeAction);
+      } catch {
+        console.error("Failed to fetch user data after login");
+      }
+
+      navigate("/home");
     }
   }
 

@@ -23,7 +23,8 @@ const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
 
 // Tenant pages
-// const TenantProfilePage = lazy(() => import("../features/tenant/pages/ProfilePage"))
+const TenantProfilePage = lazy(() => import("../features/tenant/pages/TenantProfilePage"))
+const TenantHomePage = lazy(() => import("../features/tenant/pages/TenantHomePage"))
 // const TenantBookingsPage = lazy(() => import("../features/tenant/pages/RentalHistoryPage"))
 
 // // Owner pages
@@ -158,8 +159,20 @@ const router = createBrowserRouter([
     path: "/tenant/profile",
     element: (
       <TenantRoute>
-        <Suspense fallback={<LoadingFallback />}>{/* <TenantProfilePage /> */}</Suspense>
+        <Suspense fallback={<LoadingFallback />}>
+          <TenantProfilePage />
+        </Suspense>
       </TenantRoute>
+    ),
+  },
+  {
+    path: "/tenant/home",
+    element: (
+      // <TenantRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <TenantHomePage />
+        </Suspense>
+      // </TenantRoute>
     ),
   },
   {
@@ -269,12 +282,6 @@ const router = createBrowserRouter([
         </Suspense>
       </AdminRoute>
     ),
-  },
-
-  // Fallback route
-  {
-    path: "*",
-    element: <Navigate to="/" replace />,
   },
 
   // Fallback route

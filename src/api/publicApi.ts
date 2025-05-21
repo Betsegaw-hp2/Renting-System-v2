@@ -2,6 +2,7 @@ import axios from "axios"
 import { format } from "date-fns"
 import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
+import { getAuthToken } from "@/lib/cookies"
 
 // Types for public API responses
 export interface FeaturedListing {
@@ -105,16 +106,43 @@ export interface ApiCategoryResponse {
   updated_at: string
 }
 
+export interface Booking {
+  id: string
+  listing_id: string
+  renter_id: string
+  owner_id: string
+  start_date: string
+  end_date: string
+  total_amount: number
+  status: "pending" | "booked" | "completed" | "cancelled"
+  payment_status: "pending" | "completed" | "in_escrow" | "disputed" | "failed"
+  payment_reference: string
+  created_at: string
+  updated_at: string
+}
+
+
+
 // Create axios instance for public API endpoints
-const publicAxiosInstance = axios.create({
+export const publicAxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${getAuthToken()}`,
   },
 })
 
 // Helper function to convert API response to our app's format
-const convertApiListingToFeaturedListing = (apiListing: ApiListingResponse): FeaturedListing => {
+export const convertApiListingToFeaturedListing = async (apiListing: ApiListingResponse): Promise<FeaturedListing> => {
+  if(apiListing && apiListing.category_id) {
+    const category = await publicAxiosInstance.get<ApiCategoryResponse>(`/categories/${apiListing.category_id}`)
+    apiListing.category = {
+      id: category.data.id,
+      name: category.data.name,
+      slug: category.data.slug,
+    }
+  }
+
   return {
     id: apiListing.id,
     title: apiListing.title,
@@ -172,14 +200,15 @@ function getCategoryIcon(slug: string): string {
 
 // Public API service
 export const publicApi = {
+
   // Get featured listings for the homepage
   getFeaturedListings: async (useMockApi = config.useMockApi): Promise<FeaturedListing[]> => {
     try {
-      if (useMockApi) {
-        console.log("Using mock API for featured listings")
-        // Commenting out mock API usage
-        // return mockPublicApi.getFeaturedListings()
-      }
+      // if (useMockApi) {
+      //   console.log("Using mock API for featured listings")
+      //   // Commenting out mock API usage
+      //   // return mockPublicApi.getFeaturedListings()
+      // }
 
       console.log("Fetching featured listings from real API")
       // Use the /listings/popular endpoint from the API
@@ -188,7 +217,7 @@ export const publicApi = {
       })
 
       console.log(`Received ${response.data.length} listings from API`)
-      return response.data.map(convertApiListingToFeaturedListing)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching featured listings:", error)
       throw error // Throw error instead of returning empty array
@@ -245,8 +274,8 @@ export const publicApi = {
     }
   },
 
-  // Update searchListings to properly use the API endpoints
-  searchListings: async (
+
+searchListings: async (
     query: string,
     category?: string,
     startDate?: Date | string,
@@ -316,7 +345,7 @@ export const publicApi = {
       }
 
       console.log(`Received ${response.data.length} listings from search API`)
-      return response.data.map(convertApiListingToFeaturedListing)
+      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error during searchListings:", error)
       throw error

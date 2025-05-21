@@ -3,7 +3,7 @@
 // import type React from "react"
 // import { useDispatch, useSelector } from "react-redux"
 // import { useNavigate } from "react-router-dom"
-// import  switchUserRole  from "../../features/auth/slices/authSlice"
+// import  {switchUserRole}  from "../../features/auth/slices/authSlice"
 // import type { RootState } from "../../store"
 // import { UserRole } from "../../types/user.types"
 // import { Button } from "../ui/button"
@@ -19,7 +19,7 @@
 //   }
 
 //   const handleRoleSwitch = (role: UserRole) => {
-//     dispatch(switchUserRole(role))
+//     dispatch(switchUserRole({ role }))
 
 //     // Navigate to the appropriate homepage based on the new role
 //     switch (role) {

@@ -1,15 +1,12 @@
 "use client"
 
 import type React from "react"
-
 import {
   AlertTriangle,
   BarChart3,
-  BookOpen,
   Building2,
   Calendar,
   DollarSign,
-  Heart,
   HomeIcon,
   PieChart,
   Search,
@@ -20,7 +17,6 @@ import {
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-
 import type { FeaturedListing } from "@/api/publicApi"
 import { ListingCard } from "@/components/listings/ListingCard"
 import type { RootState } from "@/store"
@@ -33,18 +29,21 @@ import { Input } from "../components/ui/input"
 import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { usePermissions } from "../hooks/usePermissions"
-import type { AdminStats, Booking, UserListingStats } from "../types/listing.types"
+import TenantHomePage from "../features/tenant/pages/TenantHomePage"
+import type { AdminStats, UserListingStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
-
 
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
+
+
+
+  // State and logic for non-tenants (owners and admins)
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
   const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
   const [userListings, setUserListings] = useState<FeaturedListing[]>([])
-  const [rentalHistory, setRentalHistory] = useState<Booking[]>([])
   const [userStats, setUserStats] = useState<UserListingStats | null>(null)
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -54,31 +53,26 @@ export default function HomePage() {
     // Redirect unauthenticated users to landing page
     if (!is_authenticated) {
       navigate("/")
-      return
     }
 
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        // Fetch recommended listings for all users
         if (user) {
-          const listings = await mockHomeApi.getRecommendedListings(user.id)
-          setRecommendedListings(listings)
-
-          // Fetch trending listings for all users
-          const trending = await mockHomeApi.getTrendingListings()
-          setTrendingListings(trending)
+          // Fetch recommended and trending listings for non-tenants
+          if (user.role !== UserRole.TENANT) {
+            const listings = await mockHomeApi.getRecommendedListings(user.id)
+            setRecommendedListings(listings)
+            const trending = await mockHomeApi.getTrendingListings()
+            setTrendingListings(trending)
+          }
 
           // Fetch role-specific data
           if (user.role === UserRole.PROPERTY_OWNER) {
             const ownedListings = await mockHomeApi.getUserListings(user.id)
             setUserListings(ownedListings)
-
             const stats = await mockHomeApi.getUserListingStats(user.id)
             setUserStats(stats)
-          } else if (user.role === UserRole.TENANT) {
-            const history = await mockHomeApi.getUserRentalHistory(user.id)
-            setRentalHistory(history)
           } else if (user.role === UserRole.ADMIN) {
             const stats = await mockHomeApi.getAdminStats()
             setAdminStats(stats)
@@ -99,18 +93,21 @@ export default function HomePage() {
     navigate(`/browse?query=${encodeURIComponent(searchQuery)}`)
   }
 
-  // Determine default tab based on user role
+  // Determine default tab based on user role (only for non-tenants)
   const getDefaultTab = () => {
     if (permissions.isOwner) return "myProperties"
     if (permissions.isAdmin) return "dashboard"
-    if (permissions.isTenant) return "bookings"
     return "recommended"
+  }
+
+    // If user is a tenant, render TenantHomePage directly
+  if (permissions.isTenant) {
+    return (<TenantHomePage />)
   }
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header showSidebarToggle={false} />
-
       <main className="flex-1 bg-gray-50">
         {/* Hero Section with Search */}
         <section className="bg-blue-600 py-12 text-white">
@@ -124,7 +121,6 @@ export default function HomePage() {
                     ? "Monitor platform activity and manage users"
                     : "Find your perfect rental and manage your bookings"}
               </p>
-
               <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -164,13 +160,10 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <Tabs defaultValue={getDefaultTab()} className="w-full">
               <TabsList className="mb-8">
-                {/* Common tabs for all users */}
                 <TabsTrigger value="recommended" className="text-sm md:text-base">
                   <HomeIcon className="h-4 w-4 mr-2" />
                   Recommended
                 </TabsTrigger>
-
-                {/* Owner-specific tabs */}
                 {permissions.isOwner && (
                   <>
                     <TabsTrigger value="myProperties" className="text-sm md:text-base">
@@ -183,22 +176,6 @@ export default function HomePage() {
                     </TabsTrigger>
                   </>
                 )}
-
-                {/* Tenant-specific tabs */}
-                {permissions.isTenant && (
-                  <>
-                    <TabsTrigger value="bookings" className="text-sm md:text-base">
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      My Bookings
-                    </TabsTrigger>
-                    <TabsTrigger value="saved" className="text-sm md:text-base">
-                      <Heart className="h-4 w-4 mr-2" />
-                      Saved Listings
-                    </TabsTrigger>
-                  </>
-                )}
-
-                {/* Admin-specific tabs */}
                 {permissions.isAdmin && (
                   <TabsTrigger value="dashboard" className="text-sm md:text-base">
                     <PieChart className="h-4 w-4 mr-2" />
@@ -207,11 +184,10 @@ export default function HomePage() {
                 )}
               </TabsList>
 
-              {/* Recommended Listings Tab - For All Users */}
+              {/* Recommended Listings Tab - For Owners and Admins */}
               <TabsContent value="recommended" className="space-y-8">
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Recommended for You</h2>
-
                   {isLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {[...Array(4)].map((_, index) => (
@@ -236,19 +212,17 @@ export default function HomePage() {
                         <ListingCard
                           key={listing.id}
                           listing={listing}
-                          showFavorite={permissions.isTenant}
+                          showSaveButton={false} // No save for owners/admins
                         />
                       ))}
                     </div>
                   )}
-
                   <div className="mt-8 text-center">
                     <Button variant="outline" onClick={() => navigate("/browse")}>
                       View All Listings
                     </Button>
                   </div>
                 </div>
-
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Trending Now</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -271,7 +245,7 @@ export default function HomePage() {
                           <ListingCard
                             key={listing.id}
                             listing={listing}
-                            showFavorite={permissions.isTenant}
+                            showSaveButton={false} // No save for owners/admins
                           />
                         ))}
                   </div>
@@ -286,7 +260,6 @@ export default function HomePage() {
                       <h2 className="text-2xl font-bold">My Properties</h2>
                       <Button onClick={() => navigate("/owner/listings/new")}>Add New Property</Button>
                     </div>
-
                     {isLoading ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[...Array(2)].map((_, index) => (
@@ -338,7 +311,6 @@ export default function HomePage() {
                         </CardContent>
                       </Card>
                     )}
-
                     {userListings.length > 0 && (
                       <div className="mt-8">
                         <Card>
@@ -403,7 +375,6 @@ export default function HomePage() {
                 <TabsContent value="bookingRequests" className="space-y-8">
                   <div>
                     <h2 className="text-2xl font-bold mb-6">Booking Requests</h2>
-
                     {isLoading ? (
                       <Card>
                         <CardContent className="p-0">
@@ -427,37 +398,37 @@ export default function HomePage() {
                       <Card>
                         <CardContent className="p-0">
                           <div className="divide-y">
-                            {rentalHistory.length > 0 ? (
-                              rentalHistory.map((booking) => (
-                                <div key={booking.id} className="p-4">
+                            {userListings.length > 0 ? (
+                              userListings.map((listing) => (
+                                <div key={listing.id} className="p-4">
                                   <div className="flex justify-between items-center mb-2">
-                                    <h3 className="font-bold">Booking Request #{booking.id.substring(0, 8)}</h3>
+                                    <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
                                     <span
                                       className={`px-2 py-1 rounded text-xs font-medium ${
-                                        booking.status === "completed"
+                                        listing.status === "completed"
                                           ? "bg-green-100 text-green-800"
-                                          : booking.status === "booked"
+                                          : listing.status === "booked"
                                             ? "bg-blue-100 text-blue-800"
-                                            : booking.status === "pending"
+                                            : listing.status === "pending"
                                               ? "bg-yellow-100 text-yellow-800"
                                               : "bg-gray-100 text-gray-800"
                                       }`}
                                     >
-                                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                      {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center text-sm text-gray-500">
                                     <span>
-                                      {new Date(booking.start_date).toLocaleDateString()} to{" "}
-                                      {new Date(booking.end_date).toLocaleDateString()}
+                                      {new Date(listing.availability.startDate).toLocaleDateString()} to{" "}
+                                      {new Date(listing.availability.endDate).toLocaleDateString()}
                                     </span>
-                                    <span className="font-medium text-gray-900">${booking.total_amount}</span>
+                                    <span className="font-medium text-gray-900">${listing.price}</span>
                                   </div>
                                   <div className="mt-4 flex gap-2 justify-end">
                                     <Button variant="outline" size="sm">
                                       Message
                                     </Button>
-                                    {booking.status === "pending" && (
+                                    {listing.status === "pending" && (
                                       <>
                                         <Button variant="destructive" size="sm">
                                           Decline
@@ -480,7 +451,7 @@ export default function HomePage() {
                             )}
                           </div>
                         </CardContent>
-                        {rentalHistory.length > 0 && (
+                        {userListings.length > 0 && (
                           <CardFooter className="bg-gray-50">
                             <Button variant="outline" className="w-full" onClick={() => navigate("/owner/bookings")}>
                               View All Booking Requests
@@ -488,398 +459,6 @@ export default function HomePage() {
                           </CardFooter>
                         )}
                       </Card>
-                    )}
-                  </div>
-                </TabsContent>
-              )}
-
-              {/* My Bookings Tab - For Tenants */}
-              {permissions.isTenant && (
-                <TabsContent value="bookings" className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-                    {isLoading ? (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {[...Array(3)].map((_, index) => (
-                              <div key={index} className="p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <Skeleton className="h-6 w-1/3" />
-                                  <Skeleton className="h-6 w-1/4" />
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <Skeleton className="h-4 w-1/4" />
-                                  <Skeleton className="h-4 w-1/5" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : rentalHistory.length > 0 ? (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {rentalHistory.map((booking) => (
-                              <div key={booking.id} className="p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <h3 className="font-bold">Booking #{booking.id.substring(0, 8)}</h3>
-                                  <span
-                                    className={`px-2 py-1 rounded text-xs font-medium ${
-                                      booking.status === "completed"
-                                        ? "bg-green-100 text-green-800"
-                                        : booking.status === "booked"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : booking.status === "pending"
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : "bg-gray-100 text-gray-800"
-                                    }`}
-                                  >
-                                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between items-center text-sm text-gray-500">
-                                  <span>
-                                    {new Date(booking.start_date).toLocaleDateString()} to {new Date(booking.end_date).toLocaleDateString()}
-                                  </span>
-                                  <span className="font-medium text-gray-900">${booking.total_amount}</span>
-                                </div>
-                                <div className="mt-4 flex gap-2 justify-end">
-                                  <Button variant="outline" size="sm">
-                                    Message Owner
-                                  </Button>
-                                  {booking.status === "pending" && (
-                                    <Button variant="destructive" size="sm">
-                                      Cancel
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => navigate(`/tenant/bookings/${booking.id}`)}
-                                  >
-                                    View Details
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                        {rentalHistory.length > 0 && (
-                          <CardFooter className="bg-gray-50">
-                            <Button variant="outline" className="w-full" onClick={() => navigate("/tenant/bookings")}>
-                              View All Bookings
-                            </Button>
-                          </CardFooter>
-                        )}
-                      </Card>
-                    ) : (
-                      <Card>
-                        <CardContent className="p-6 text-center">
-                          <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                          <h3 className="text-xl font-semibold mb-2">No Bookings Yet</h3>
-                          <p className="text-gray-500 mb-6">
-                            You haven't made any bookings yet. Browse listings to find your perfect rental.
-                          </p>
-                          <Button onClick={() => navigate("/browse")}>Browse Listings</Button>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </TabsContent>
-              )}
-
-              {/* Booking Requests Tab - For Owners */}
-              {permissions.isOwner && (
-                <TabsContent value="bookingRequests" className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-6">Booking Requests</h2>
-
-                    {isLoading ? (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {[...Array(3)].map((_, index) => (
-                              <div key={index} className="p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <Skeleton className="h-6 w-1/3" />
-                                  <Skeleton className="h-6 w-1/4" />
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <Skeleton className="h-4 w-1/4" />
-                                  <Skeleton className="h-4 w-1/5" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {rentalHistory.length > 0 ? (
-                              rentalHistory.map((booking) => (
-                                <div key={booking.id} className="p-4">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <h3 className="font-bold">Booking Request #{booking.id.substring(0, 8)}</h3>
-                                    <span
-                                      className={`px-2 py-1 rounded text-xs font-medium ${
-                                        booking.status === "completed"
-                                          ? "bg-green-100 text-green-800"
-                                          : booking.status === "booked"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : booking.status === "pending"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-gray-100 text-gray-800"
-                                      }`}
-                                    >
-                                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-sm text-gray-500">
-                                    <span>
-                                      {new Date(booking.start_date).toLocaleDateString()} to{" "}
-                                      {new Date(booking.end_date).toLocaleDateString()}
-                                    </span>
-                                    <span className="font-medium text-gray-900">${booking.total_amount}</span>
-                                  </div>
-                                  <div className="mt-4 flex gap-2 justify-end">
-                                    <Button variant="outline" size="sm">
-                                      Message
-                                    </Button>
-                                    {booking.status === "pending" && (
-                                      <>
-                                        <Button variant="destructive" size="sm">
-                                          Decline
-                                        </Button>
-                                        <Button size="sm">Accept</Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-12 text-center">
-                                <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">No Booking Requests</h3>
-                                <p className="text-gray-500">
-                                  You don't have any booking requests yet. They will appear here when tenants book your
-                                  properties.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                        {rentalHistory.length > 0 && (
-                          <CardFooter className="bg-gray-50">
-                            <Button variant="outline" className="w-full" onClick={() => navigate("/owner/bookings")}>
-                              View All Booking Requests
-                            </Button>
-                          </CardFooter>
-                        )}
-                      </Card>
-                    )}
-                  </div>
-                </TabsContent>
-              )}
-
-              {/* My Bookings Tab - For Tenants */}
-              {permissions.isTenant && (
-                <TabsContent value="bookings" className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-6">My Bookings</h2>
-
-                    {isLoading ? (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {[...Array(3)].map((_, index) => (
-                              <div key={index} className="p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <Skeleton className="h-6 w-1/3" />
-                                  <Skeleton className="h-6 w-1/4" />
-                                </div>
-                                <div className="flex justify-between items-center">
-                                  <Skeleton className="h-4 w-1/4" />
-                                  <Skeleton className="h-4 w-1/5" />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <Card>
-                        <CardContent className="p-0">
-                          <div className="divide-y">
-                            {rentalHistory.length > 0 ? (
-                              rentalHistory.map((booking) => (
-                                <div key={booking.id} className="p-4">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <h3 className="font-bold">Booking #{booking.id.substring(0, 8)}</h3>
-                                    <span
-                                      className={`px-2 py-1 rounded text-xs font-medium ${
-                                        booking.status === "completed"
-                                          ? "bg-green-100 text-green-800"
-                                          : booking.status === "booked"
-                                            ? "bg-blue-100 text-blue-800"
-                                            : booking.status === "pending"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-gray-100 text-gray-800"
-                                      }`}
-                                    >
-                                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-sm text-gray-500">
-                                    <span>
-                                      {new Date(booking.start_date).toLocaleDateString()} to{" "}
-                                      {new Date(booking.end_date).toLocaleDateString()}
-                                    </span>
-                                    <span className="font-medium text-gray-900">${booking.total_amount}</span>
-                                  </div>
-                                  <div className="mt-4 flex gap-2 justify-end">
-                                    <Button variant="outline" size="sm">
-                                      Message Owner
-                                    </Button>
-                                    {booking.status === "pending" && (
-                                      <Button variant="destructive" size="sm">
-                                        Cancel
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/tenant/bookings/${booking.id}`)}
-                                    >
-                                      View Details
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-12 text-center">
-                                <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">No Bookings Yet</h3>
-                                <p className="text-gray-500 mb-6">
-                                  You haven't made any bookings yet. Browse listings to find your perfect rental.
-                                </p>
-                                <Button onClick={() => navigate("/browse")}>Browse Listings</Button>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                        {rentalHistory.length > 0 && (
-                          <CardFooter className="bg-gray-50">
-                            <Button variant="outline" className="w-full" onClick={() => navigate("/tenant/bookings")}>
-                              View All Bookings
-                            </Button>
-                          </CardFooter>
-                        )}
-                      </Card>
-                    )}
-                  </div>
-
-                  <div>
-                    <h2 className="text-2xl font-bold mb-6">Upcoming Payments</h2>
-                    <Card>
-                      <CardContent className="p-4">
-                        {isLoading ? (
-                          <div className="space-y-4">
-                            {[...Array(2)].map((_, index) => (
-                              <div key={index} className="flex justify-between items-center">
-                                <div>
-                                  <Skeleton className="h-5 w-40 mb-1" />
-                                  <Skeleton className="h-4 w-24" />
-                                </div>
-                                <Skeleton className="h-8 w-24" />
-                              </div>
-                            ))}
-                          </div>
-                        ) : rentalHistory.some((booking) => booking.status === "booked") ? (
-                          <div className="space-y-4">
-                            {rentalHistory
-                              .filter((booking) => booking.status === "booked")
-                              .slice(0, 2)
-                              .map((booking) => (
-                                <div key={booking.id} className="flex justify-between items-center">
-                                  <div>
-                                    <p className="font-medium">
-                                      Due on {new Date(booking.start_date).toLocaleDateString()}
-                                    </p>
-                                    <p className="text-sm text-gray-500">Booking #{booking.id.substring(0, 8)}</p>
-                                  </div>
-                                  <Button size="sm">${booking.total_amount}</Button>
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-40 text-gray-500">
-                            No upcoming payments due
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-              )}
-
-              {/* Saved Listings Tab - For Tenants */}
-              {permissions.isTenant && (
-                <TabsContent value="saved" className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-6">Saved Listings</h2>
-
-                    {isLoading ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[...Array(3)].map((_, index) => (
-                          <Card key={index} className="overflow-hidden">
-                            <Skeleton className="h-48 w-full" />
-                            <CardContent className="p-4">
-                              <Skeleton className="h-4 w-1/4 mb-2" />
-                              <Skeleton className="h-6 w-3/4 mb-2" />
-                              <Skeleton className="h-4 w-1/2 mb-4" />
-                              <Skeleton className="h-4 w-full mb-4" />
-                              <div className="flex justify-between">
-                                <Skeleton className="h-6 w-1/4" />
-                                <Skeleton className="h-8 w-1/4" />
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : recommendedListings.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {recommendedListings.slice(0, 3).map((listing) => (
-                          <ListingCard
-                            key={listing.id}
-                            listing={listing}
-                            showFavorite={true}
-                            isFavorite={true}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <Card>
-                        <CardContent className="p-12 text-center">
-                          <Heart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                          <h3 className="text-xl font-semibold mb-2">No Saved Listings</h3>
-                          <p className="text-gray-500 mb-6">
-                            You haven't saved any listings yet. Browse and save listings you're interested in.
-                          </p>
-                          <Button onClick={() => navigate("/browse")}>Browse Listings</Button>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {recommendedListings.length > 0 && (
-                      <div className="mt-6 text-center">
-                        <Button variant="outline" onClick={() => navigate("/tenant/saved")}>
-                          View All Saved Listings
-                        </Button>
-                      </div>
                     )}
                   </div>
                 </TabsContent>
@@ -890,7 +469,6 @@ export default function HomePage() {
                 <TabsContent value="dashboard" className="space-y-8">
                   <div>
                     <h2 className="text-2xl font-bold mb-6">Platform Overview</h2>
-
                     {isLoading ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[...Array(6)].map((_, index) => (
@@ -911,39 +489,36 @@ export default function HomePage() {
                               <Users className="h-5 w-5" />
                               <span>Total Users</span>
                             </div>
-                            <p className="text-3xl font-bold mb-1">{adminStats?.total_users.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{adminStats?.total_users.toLocaleString()}</p>
                             <p className="text-sm text-green-600">
                               <TrendingUp className="h-4 w-4 inline mr-1" />
                               {adminStats?.new_users_this_month} new this month
                             </p>
                           </CardContent>
                         </Card>
-
                         <Card>
                           <CardContent className="p-6">
                             <div className="flex items-center gap-2 mb-2 text-gray-500">
                               <Building2 className="h-5 w-5" />
                               <span>Total Listings</span>
                             </div>
-                            <p className="text-3xl font-bold mb-1">{adminStats?.total_listings.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{adminStats?.total_listings.toLocaleString()}</p>
                             <p className="text-sm text-green-600">
                               <TrendingUp className="h-4 w-4 inline mr-1" />
                               {adminStats?.new_listings_this_month} new this month
                             </p>
                           </CardContent>
                         </Card>
-
                         <Card>
                           <CardContent className="p-6">
                             <div className="flex items-center gap-2 mb-2 text-gray-500">
                               <Calendar className="h-5 w-5" />
                               <span>Active Rentals</span>
                             </div>
-                            <p className="text-3xl font-bold mb-1">{adminStats?.active_rentals.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{adminStats?.active_rentals.toLocaleString()}</p>
                             <p className="text-sm text-gray-500">Across all categories</p>
                           </CardContent>
                         </Card>
-
                         <Card className="md:col-span-3">
                           <CardHeader>
                             <CardTitle>Revenue Overview</CardTitle>
@@ -958,17 +533,15 @@ export default function HomePage() {
                                 </div>
                                 <p className="text-3xl font-bold">${adminStats?.revenue.toLocaleString()}</p>
                               </div>
-
                               <div className="bg-gray-50 p-6 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2 text-gray-500">
                                   <BarChart3 className="h-5 w-5" />
                                   <span>Average Per Listing</span>
                                 </div>
                                 <p className="text-3xl font-bold">
-                                  ${Math.round(adminStats?.revenue || 0 / (adminStats?.total_listings || 0)).toLocaleString()}
+                                  ${Math.round(adminStats?.revenue || 0 / (adminStats?.total_listings || 1)).toLocaleString()}
                                 </p>
                               </div>
-
                               <div className="bg-gray-50 p-6 rounded-lg">
                                 <div className="flex items-center gap-2 mb-2 text-gray-500">
                                   <TrendingUp className="h-5 w-5" />
@@ -987,7 +560,6 @@ export default function HomePage() {
                       </div>
                     )}
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
@@ -1016,7 +588,6 @@ export default function HomePage() {
                         </Button>
                       </CardFooter>
                     </Card>
-
                     <Card>
                       <CardHeader>
                         <CardTitle>Recent Listings</CardTitle>
@@ -1051,6 +622,6 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-  </div>
+    </div>
   )
 }
