@@ -6,7 +6,7 @@ import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { tenantApi, type FeaturedListing, type Booking} from "../api/tenantApi"
+import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
@@ -16,7 +16,7 @@ import { Input } from "../../../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
-import { Footer } from "../../../components/layout/Footer"
+import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -81,7 +81,7 @@ export default function TenantHomePage() {
         // Find the listing in either recommended or trending listings
         const listing = [...recommendedListings, ...trendingListings].find((l) => l.id === listingId)
 
-        if (listing && !savedListings.some((l) => l.id === listingId)) {
+        if (listing && savedListings && !savedListings.some((l) => l.id === listingId)) {
           setSavedListings((prev) => [...prev, listing])
         }
       } else {
@@ -96,7 +96,7 @@ export default function TenantHomePage() {
 
   // Check if a listing is in the saved listings
   const isListingSaved = (listingId: string) => {
-    return savedListings.some((listing) => listing.id === listingId)
+    return savedListings?.some((listing) => listing.id === listingId)
   }
 
  const handleCancelBooking = async (listingId: string, bookingId: string) => {
@@ -183,7 +183,7 @@ export default function TenantHomePage() {
                     <div className="flex justify-center items-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                     </div>
-                  ) : recommendedListings.length > 0 ? (
+                  ) : recommendedListings?.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {recommendedListings.map((listing) => (
                         <ListingCard
@@ -208,7 +208,7 @@ export default function TenantHomePage() {
                     </Card>
                   )}
 
-                  {recommendedListings.length > 0 && (
+                  {recommendedListings?.length > 0 && (
                     <div className="mt-8 text-center">
                       <Button variant="outline" onClick={() => navigate("/browse")}>
                         View All Listings
@@ -224,7 +224,7 @@ export default function TenantHomePage() {
                     <div className="flex justify-center items-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                     </div>
-                  ) : trendingListings.length > 0 ? (
+                  ) : trendingListings?.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       {trendingListings.map((listing) => (
                         <ListingCard
@@ -255,7 +255,7 @@ export default function TenantHomePage() {
                     <div className="flex justify-center items-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                     </div>
-                  ) : bookings.length > 0 ? (
+                  ) : bookings?.length > 0 ? (
                     <Card>
                       <CardContent className="p-0">
                         <div className="divide-y">
@@ -335,7 +335,7 @@ export default function TenantHomePage() {
                     <div className="flex justify-center items-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                     </div>
-                  ) : savedListings.length > 0 ? (
+                  ) : savedListings?.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {savedListings.map((listing) => (
                         <ListingCard
@@ -360,7 +360,7 @@ export default function TenantHomePage() {
                     </Card>
                   )}
 
-                  {savedListings.length > 0 && (
+                  {savedListings?.length > 0 && (
                     <div className="mt-6 text-center">
                       <Button variant="outline" onClick={() => navigate("/tenant/saved")}>
                         View All Saved Listings

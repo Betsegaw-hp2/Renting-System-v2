@@ -1,9 +1,9 @@
 import {
-  publicAxiosInstance,
   convertApiListingToFeaturedListing,
-  type FeaturedListing,
-  type Booking,
+  publicAxiosInstance,
   type ApiListingResponse,
+  type Booking,
+  type FeaturedListing,
 } from "../../../api/publicApi"
 
 // Tenant API service
@@ -13,8 +13,8 @@ export const tenantApi = {
     try {
       console.log("Fetching saved listings from real API")
       const response = await publicAxiosInstance.get<ApiListingResponse[]>("/listings/favorites")
-      console.log(`Received ${response.data.length} saved listings from API`)
-      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
+      console.log(`Received ${response.data?.length} saved listings from API`)
+      return response.data && await  Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching saved listings:", error)
       return []
@@ -91,7 +91,7 @@ export const tenantApi = {
     try {
       console.log(`Fetching bookings for user ${userId} from real API`)
       const response = await publicAxiosInstance.get<Booking[]>(`/users/${userId}/bookings`)
-      console.log(`Received ${response.data.length} bookings from API`)
+      console.log(`Received ${response.data?.length} bookings from API`)
       return response.data
     } catch (error) {
       console.error("Error fetching user bookings:", error)
@@ -130,4 +130,5 @@ export const tenantApi = {
 
 }
 
-export type { FeaturedListing, Booking }
+export type { Booking, FeaturedListing }
+
