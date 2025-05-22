@@ -2,6 +2,7 @@
 
 import type React from "react"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
@@ -127,7 +128,13 @@ export default function TenantHomePage() {
         <section className="bg-blue-600 py-12 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
+                {user ? (
+                <h1 className="text-3xl font-bold mb-4" aria-live="polite">
+                  {`Welcome back, ${user.first_name}!`}
+                </h1>
+                ) : (
+                <Skeleton className="h-8 w-48 mb-4" />
+                )}
               <p className="text-blue-100 mb-8">Find your perfect rental and manage your bookings</p>
 
               <form onSubmit={handleSearch} className="flex gap-2">

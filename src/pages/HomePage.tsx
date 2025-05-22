@@ -1,6 +1,8 @@
 "use client"
 
-import type React from "react"
+import type { FeaturedListing } from "@/api/publicApi"
+import { ListingCard } from "@/components/listings/ListingCard"
+import type { RootState } from "@/store"
 import {
   AlertTriangle,
   BarChart3,
@@ -14,12 +16,10 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react"
+import type React from "react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import type { FeaturedListing } from "@/api/publicApi"
-import { ListingCard } from "@/components/listings/ListingCard"
-import type { RootState } from "@/store"
 import { mockHomeApi } from "../api/mockHomeApi"
 import { Header } from "../components/layout/Header"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
@@ -28,8 +28,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../components/ui/input"
 import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { usePermissions } from "../hooks/usePermissions"
 import TenantHomePage from "../features/tenant/pages/TenantHomePage"
+import { usePermissions } from "../hooks/usePermissions"
 import type { AdminStats, UserListingStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
 
@@ -113,7 +113,14 @@ export default function HomePage() {
         <section className="bg-blue-600 py-12 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
+              <h1 className="text-3xl font-bold mb-4" aria-live="polite">
+                <span>Welcome back, </span>
+                {user ? (
+                  <span>${user.first_name}!</span>
+                ) : (
+                  <Skeleton className="h-8 w-28 mb-4 inline-block trnasform translate-y-1/2" />
+                  )}
+              </h1>
               <p className="text-blue-100 mb-8">
                 {permissions.isOwner
                   ? "Manage your properties and view booking requests"

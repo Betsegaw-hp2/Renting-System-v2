@@ -1,107 +1,89 @@
-import { mockNotificationsApi } from "../../../api/mockNotificationsApi"
+import apiConfig from "@/config/api.config"
+import { getAuthToken } from "@/lib/cookies"
 import { store } from "../../../store"
-import type { Notification } from "../../../types/notification.types"
-import { addNotification } from "../slices/notificationsSlice"
+import { addNotification, setWsConnected, setWsDisconnected } from "../slices/notificationsSlice"
 
 class NotificationWebSocketService {
   private socket: WebSocket | null = null
-  private userId: string | null = null
+  private heartbeatTimer: NodeJS.Timeout | null = null
+  private reconnectTimer: NodeJS.Timeout | null = null
   private reconnectAttempts = 0
-  private reconnectTimeout: NodeJS.Timeout | null = null
-  private mockCleanup: (() => void) | null = null
+  private userId: string | null = null
 
-  connect(userId: string): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      return
-    }
-
+  connect(userId: string, authToken: string) {
+    if (this.socket?.readyState === WebSocket.OPEN) return
     this.userId = userId
 
-    // Use mock API in development
-    if (process.env.NODE_ENV === "development") {
-      console.log("Using mock WebSocket for notifications")
-      this.mockCleanup = mockNotificationsApi.connectToWebSocket(userId, (notification) => {
-        store.dispatch(addNotification(notification))
-      })
+    if (apiConfig.useMockApi) {
+      // ... your mock logic
       return
     }
 
-    const baseUrl =
-      process.env.NODE_ENV === "production"
-        ? window.location.origin.replace("http", "ws").replace("https", "wss")
-        : "ws://localhost:8080"
+    const url = new URL(apiConfig.apiBaseUrl)
+    url.protocol = url.protocol.replace("https", "wss")
+    url.pathname = `/v1/users/${userId}/notifications/connect`
+    url.searchParams.set("token", authToken)
 
-    // Updated to match the exact endpoint from the documentation
-    const socketURL = `${baseUrl}/v1/users/${userId}/notifications/connect`
+    this.socket = new WebSocket(url.toString())
 
-    try {
-      this.socket = new WebSocket(socketURL)
+    this.socket.onopen = () => {
+      console.log("✅ WS open")
+      this.reconnectAttempts = 0
+      // start heartbeat
+      this.heartbeatTimer = setInterval(() => {
+        this.socket?.send(JSON.stringify({ type: "ping" }))
+      }, 30_000)
+      store.dispatch(setWsConnected());
+    }
 
-      this.socket.onopen = () => {
-        console.log("Connected to notifications websocket")
-        this.reconnectAttempts = 0
+    this.socket.onmessage = (ev) => {
+      try {
+        const notification = JSON.parse(ev.data)
+        store.dispatch(addNotification(notification))
+      } catch {
+        console.error("❌ WS parse error")
       }
+    }
 
-      this.socket.onmessage = (event) => {
-        try {
-          const notification: Notification = JSON.parse(event.data)
-          store.dispatch(addNotification(notification))
-        } catch (error) {
-          console.error("Error parsing notification:", error)
-        }
-      }
+    this.socket.onclose = (ev) => {
+      console.log("🔒 WS closed", ev.code, ev.reason)
+      store.dispatch(setWsDisconnected());
+      if (!ev.wasClean) this.scheduleReconnect()
+      this.cleanupHeartbeat()
+    }
 
-      this.socket.onerror = (error) => {
-        console.error("WebSocket error:", error)
-      }
-
-      this.socket.onclose = (event) => {
-        console.log("WebSocket connection closed:", event.code, event.reason)
-        if (!event.wasClean) {
-          this.reconnect()
-        }
-      }
-    } catch (error) {
-      console.error("Error connecting to WebSocket:", error)
-      this.reconnect()
+    this.socket.onerror = (err) => {
+      console.error("⚠️ WS error", err)
+      store.dispatch(setWsDisconnected());
+      this.socket?.close()
     }
   }
 
-  disconnect(): void {
-    if (this.socket) {
-      this.socket.close()
-      this.socket = null
+  private scheduleReconnect() {
+    if (this.reconnectAttempts < 5 && this.userId) {
+      const delay = 2 ** this.reconnectAttempts * 1000
+      this.reconnectTimer = setTimeout(() => {
+        this.reconnectAttempts++
+        this.connect(this.userId!, getAuthToken()!) 
+      }, delay)
+    } else {
+      console.error("Max WS reconnect attempts reached")
     }
+  }
 
-    if (this.mockCleanup) {
-      this.mockCleanup()
-      this.mockCleanup = null
-    }
+  private cleanupHeartbeat() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = null
+  }
 
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = null
-    }
-
+  disconnect() {
+    this.socket?.close()
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
+    this.cleanupHeartbeat()
+    this.socket = null
     this.userId = null
     this.reconnectAttempts = 0
   }
-
-  private reconnect(): void {
-    if (this.reconnectAttempts < 5 && this.userId) {
-      const timeout = Math.pow(2, this.reconnectAttempts + 1) * 1000
-      console.log(`Attempting to reconnect in ${timeout / 1000} seconds`)
-      this.reconnectTimeout = setTimeout(() => {
-        this.reconnectAttempts++
-        if (this.userId) {
-          this.connect(this.userId)
-        }
-      }, timeout)
-    } else {
-      console.error("Max reconnect attempts reached.")
-    }
-  }
 }
 
-// Export a singleton instance
 export const notificationWebSocketService = new NotificationWebSocketService()

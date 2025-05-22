@@ -1,5 +1,6 @@
 "use client"
 
+import { getAuthToken } from "@/lib/cookies"
 import type React from "react"
 import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
@@ -19,7 +20,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(fetchUserNotifications(user.id) as any)
 
       // Connect to WebSocket for real-time notifications
-      notificationWebSocketService.connect(user.id)
+      notificationWebSocketService.connect(user.id, getAuthToken() ?? "")
 
       return () => {
         notificationWebSocketService.disconnect()
