@@ -9,78 +9,65 @@ interface StepIndicatorProps {
 }
 
 export function StepIndicator({ currentStep, role }: StepIndicatorProps) {
-  // Determine which steps to show based on the selected role
-  const steps: SignupStep[] = ["account"]
+  const steps: SignupStep[] = [
+    "account",
+    role === UserRole.TENANT ? "tenant-details" : "owner-details",
+    "verify-email",
+  ]
+  const currentIndex = steps.indexOf(currentStep)
+  const totalSegments = steps.length - 1
+  const offset = 20 // half circle diameter
 
-  if (role === UserRole.TENANT) {
-    steps.push("tenant-details")
-  } else {
-    steps.push("owner-details")
-  }
-
-  const currentStepIndex = steps.indexOf(currentStep)
-  const totalSteps = steps.length
+  // Available width for lines: 100% minus both offsets
+  const availableWidthCalc = `calc(100% - ${offset * 2}px)`
+  const completedWidthCalc = `calc(${availableWidthCalc} * ${currentIndex}/${totalSegments})`
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-center">
-        {steps.map((step, index) => {
-          const isCompleted = index < currentStepIndex
-          const isCurrent = index === currentStepIndex
-          return (
-            <div key={step} className="flex items-center">
-              {/* Step circle */}
-              <div
-                className={cn(
-                  "relative flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-200",
-                  isCompleted
-                    ? "border-blue-600 bg-blue-600 text-white"
-                    : isCurrent
-                      ? "border-blue-600 text-blue-600"
-                      : "border-gray-300 text-gray-300",
-                )}
-              >
-                {isCompleted ? (
-                  <CheckCircle2 className="h-6 w-6" />
-                ) : (
-                  <span className="text-lg font-semibold">{index + 1}</span>
-                )}
-                {isCurrent && (
-                  <span className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-blue-600"></span>
-                )}
-              </div>
+    <div className="mb-14">
+      <div className="relative h-10">
+        {/* Base line from first to last circle */}
+        <div
+          className="absolute top-1/2 h-0.5 bg-gray-300 transform -translate-y-1/2"
+          style={{ left: `${offset}px`, right: `${offset}px` }}
+        />
 
-              {/* Connector line */}
-              {index < totalSteps - 1 && (
+        {/* Progress line */}
+        <div
+          className="absolute top-1/2 h-0.5 bg-blue-600 transform -translate-y-1/2 transition-all duration-500"
+          style={{ left: `${offset}px`, width: completedWidthCalc }}
+        />
+
+        {/* Circles and labels */}
+        <div className="relative flex justify-between px-0">
+          {steps.map((step, idx) => {
+            const isDone = idx < currentIndex
+            const isActive = idx === currentIndex
+            return (
+              <div key={step} className="relative z-10 flex flex-col items-center">
                 <div
                   className={cn(
-                    "h-1 w-24 transition-all duration-500",
-                    index < currentStepIndex ? "bg-blue-600" : "bg-gray-300",
+                    "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
+                    isDone
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : isActive
+                        ? "border-blue-600 bg-white text-blue-600"
+                        : "border-gray-300 bg-white text-gray-300"
                   )}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Step labels */}
-      <div className="mt-4 flex justify-between px-6">
-        {steps.map((step, index) => {
-          const stepLabel = step === "account" ? "Basic Info" : SIGNUP_STEPS[step].title
-
-          return (
-            <div
-              key={`label-${step}`}
-              className={cn(
-                "text-center transition-colors duration-200",
-                index <= currentStepIndex ? "text-blue-600 font-medium" : "text-gray-400",
-              )}
-            >
-              {stepLabel}
-            </div>
-          )
-        })}
+                >
+                  {isDone ? <CheckCircle2 className="h-5 w-5" /> : <span className="font-medium">{idx + 1}</span>}
+                </div>
+                <span
+                  className={cn(
+                    "mt-2 text-xs text-center w-20",
+                    isActive ? "text-blue-600 font-semibold" : "text-gray-400"
+                  )}
+                >
+                  {SIGNUP_STEPS[step].title}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

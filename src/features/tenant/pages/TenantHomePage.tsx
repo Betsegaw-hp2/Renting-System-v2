@@ -87,7 +87,8 @@ export default function TenantHomePage() {
       } else {
         // Remove from saved listings
         await tenantApi.removeSavedListing(listingId)
-        setSavedListings((prev) => prev.filter((l) => l.id !== listingId))
+        setSavedListings((prev) => (prev ?? []).filter((l) => l.id !== listingId))
+
       }
     } catch (error) {
       console.error("Error updating saved listings:", error)
@@ -102,7 +103,7 @@ export default function TenantHomePage() {
  const handleCancelBooking = async (listingId: string, bookingId: string) => {
   try {
     await tenantApi.deleteBooking(listingId, bookingId)
-    setBookings((prev) => prev.filter((booking) => booking.id !== bookingId))
+    setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
     toast({
       title: "Success",
       description: "Booking cancelled successfully.",
