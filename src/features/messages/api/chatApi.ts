@@ -1,23 +1,34 @@
+import { mockMessagesApi } from "@/api/mockMessagesApi";
 import apiConfig from "@/config/api.config";
-import type { Message } from "@/types/message.types";
+import type { Conversation, CreateMessagePayload, Message } from "@/types/message.types";
 import apiClient from "../../../api/client";
 
+const useMock = apiConfig.useMockApi;
+
 export const chatApi = {
-  /** Fetch full history between current user and peer */
-  fetchHistory: async (senderId: string, receiverId: string): Promise<Message[]> => {
-    const { data } = await apiClient.get<Message[]>(
-      `${apiConfig.apiBaseUrl}/chat/history/${senderId}/${receiverId}`
-    );
-    return data;
-  },
+  // NEW!
+  getConversations: async (): Promise<Conversation[]> =>
+    useMock
+      ? mockMessagesApi.getConversations()
+      : (await apiClient.get<Conversation[]>(`${apiConfig.apiBaseUrl}/chat/conversations`)).data,
 
-  /** Mark a message as read */
-  markRead: async (messageId: string): Promise<void> => {
-    await apiClient.patch(`${apiConfig.apiBaseUrl}/chat/${messageId}/read`);
-  },
+  fetchHistory: async (senderId: string, receiverId: string): Promise<Message[]> =>
+    useMock
+      ? mockMessagesApi.getChatHistory(senderId, receiverId)
+      : (await apiClient.get<Message[]>(`${apiConfig.apiBaseUrl}/chat/history/${senderId}/${receiverId}`)).data,
 
-  updateMessage: async (messageId: string, payload: { content: string }): Promise<Message> => {
-    const { data } = await apiClient.patch<Message>(`${apiConfig.apiBaseUrl}/chat/${messageId}`, payload);
-    return data;
-  },
+  sendMessage: async (payload: CreateMessagePayload): Promise<Message> =>
+    useMock
+      ? mockMessagesApi.sendMessage(payload)
+      : (await apiClient.post<Message>(`${apiConfig.apiBaseUrl}/chat`, payload)).data,
+
+  markRead: async (messageId: string): Promise<void> =>
+    useMock
+      ? mockMessagesApi.markAsRead(messageId)
+      : apiClient.patch(`${apiConfig.apiBaseUrl}/chat/${messageId}/read`),
+
+  updateMessage: async (messageId: string, payload: { content: string }): Promise<Message> =>
+    useMock
+      ? mockMessagesApi.updateMessage(messageId, payload)
+      : (await apiClient.patch<Message>(`${apiConfig.apiBaseUrl}/chat/${messageId}`, payload)).data,
 };

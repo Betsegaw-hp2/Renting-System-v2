@@ -1,15 +1,15 @@
-import * as React from "react"
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function ScrollArea({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+export const ScrollArea = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof ScrollAreaPrimitive.Root>
+>(function ScrollArea({ className, children, ...props }, ref) {
   return (
     <ScrollAreaPrimitive.Root
+      ref={ref}
       data-slot="scroll-area"
       className={cn("relative", className)}
       {...props}
@@ -20,27 +20,27 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="horizontal" />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
-}
+})
 
-function ScrollBar({
-  className,
-  orientation = "vertical",
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+const ScrollBar = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
+>(function ScrollBar({ className, orientation = "vertical", ...props }, ref) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
+      ref={ref}
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
         "flex touch-none p-px transition-colors select-none",
-        orientation === "vertical" &&
-          "h-full w-2.5 border-l border-l-transparent",
-        orientation === "horizontal" &&
-          "h-2.5 flex-col border-t border-t-transparent",
+        orientation === "vertical"
+          ? "h-full w-2.5 border-l border-l-transparent"
+          : "h-2.5 flex-col border-t border-t-transparent",
         className
       )}
       {...props}
@@ -51,6 +51,7 @@ function ScrollBar({
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   )
-}
+})
 
-export { ScrollArea, ScrollBar }
+ScrollArea.displayName = "ScrollArea"
+ScrollBar.displayName = "ScrollBar"
