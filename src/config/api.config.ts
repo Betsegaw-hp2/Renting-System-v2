@@ -4,7 +4,7 @@ const config = {
 	useMockApi: false,
   
 	// Base URL for the real API
-	apiBaseUrl: 'https://all-in-one-development.up.railway.app/v1/',
+	apiBaseUrl: import.meta.env.VITE_API_PROD_BASE_URL,
   
 	// Mock API delay in milliseconds (to simulate network latency)
 	mockApiDelay: 500,

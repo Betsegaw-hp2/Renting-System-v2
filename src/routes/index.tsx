@@ -1,3 +1,4 @@
+import { ChatPage } from "@/features/messages/components/ChatPage"
 import type React from "react"
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
@@ -153,6 +154,16 @@ const router = createBrowserRouter([
         </Suspense>
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/messages/:listingId/:receiverId",
+    element: (
+      <ProtectedRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <ChatPage />
+        </Suspense>
+      </ProtectedRoute>
+    )
   },
 
   // Tenant-specific routes

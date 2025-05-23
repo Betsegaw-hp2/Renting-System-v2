@@ -8,14 +8,15 @@ const initialState: NotificationState = {
   isLoading: false,
   error: null,
   isOpen: false,
+  wsConnected: false,
 }
 
 // Helper function to extract error message
 const getErrorMessage = (error: any): string => {
   if (typeof error === "string") return error
-  if (error?.message) return error.message
   if (error?.response?.data?.message) return error.response.data.message
   if (error?.response?.data?.error) return error.response.data.error
+  if (error?.message) return error.message
   return "An unknown error occurred"
 }
 
@@ -49,7 +50,7 @@ export const markAllNotificationsAsRead = createAsyncThunk(
   async (userId: string, { rejectWithValue, dispatch, getState }) => {
     try {
       const state = getState() as { notifications: NotificationState }
-      const unreadNotifications = state.notifications.notifications.filter((n) => !n.is_read)
+      const unreadNotifications = (state.notifications.notifications ?? []).filter((n) => !n.is_read)
 
       // Mark each notification as read
       await Promise.all(
@@ -82,6 +83,8 @@ const notificationsSlice = createSlice({
     closeNotificationsPanel: (state) => {
       state.isOpen = false
     },
+    setWsConnected: (state) => { state.wsConnected = true },
+    setWsDisconnected: (state) => { state.wsConnected = false }
   },
   extraReducers: (builder) => {
     // Fetch notifications
@@ -92,7 +95,7 @@ const notificationsSlice = createSlice({
     builder.addCase(fetchUserNotifications.fulfilled, (state, action) => {
       state.isLoading = false
       state.notifications = action.payload
-      state.unreadCount = action.payload.filter((notification) => !notification.is_read).length
+      state.unreadCount = (action.payload ?? []).filter((notification) => !notification.is_read).length
     })
     builder.addCase(fetchUserNotifications.rejected, (state, action) => {
       state.isLoading = false
@@ -126,5 +129,5 @@ const notificationsSlice = createSlice({
   },
 })
 
-export const { addNotification, toggleNotificationsPanel, closeNotificationsPanel } = notificationsSlice.actions
+export const { addNotification, toggleNotificationsPanel, closeNotificationsPanel, setWsConnected, setWsDisconnected } = notificationsSlice.actions
 export default notificationsSlice.reducer

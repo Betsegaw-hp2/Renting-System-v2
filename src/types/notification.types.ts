@@ -12,5 +12,6 @@ export interface Notification {
 	isLoading: boolean
 	error: string | null
 	isOpen: boolean
+	wsConnected: boolean
   }
   

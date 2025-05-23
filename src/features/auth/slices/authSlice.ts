@@ -3,8 +3,6 @@ import { getAuthToken, removeAuthToken, setAuthToken } from "../../../lib/cookie
 import type { AuthState, LoginCredentials, User } from "../../../types/user.types"
 import * as authApi from "../api/authApi"
 import type { SignupFormData } from "../types/signup.types"
-import type { AuthResponse } from "../api/authApi"
-import type { AppDispatch } from "@/store"
 
 const initialState: AuthState = {
   user: null,
@@ -18,11 +16,12 @@ const initialState: AuthState = {
 const getErrorMessage = (error: any): string => {
   if (typeof error === "string") return error
 
-  if (error?.message) return error.message
-
+  
   if (error?.response?.data?.message) return error.response.data.message
-
+  
   if (error?.response?.data?.error) return error.response.data.error
+  
+  if (error?.message) return error.message
 
   // If error is an object but not in expected format, stringify it safely
   if (typeof error === "object" && error !== null) {
@@ -82,23 +81,6 @@ export const loginUser = createAsyncThunk(
     }
   },
 )
-// export const loginUser = createAsyncThunk<
-//   AuthResponse,
-//   LoginUserParams,
-//   { dispatch: AppDispatch }
-// >(
-//   "auth/login",
-//   async (creds, { dispatch, rejectWithValue }) => {
-//     try {
-//       const response = await authApi.login(creds);
-//       setAuthToken(response.token, creds.remember_me);      
-//       await dispatch(fetchCurrentUser()).unwrap();
-//       return response;
-//     } catch (err: any) {
-//       return rejectWithValue(getErrorMessage(err));
-//     }
-//   }
-// );
 
 
 export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {

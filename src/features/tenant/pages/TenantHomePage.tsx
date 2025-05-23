@@ -2,10 +2,11 @@
 
 import type React from "react"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
@@ -87,7 +88,8 @@ export default function TenantHomePage() {
       } else {
         // Remove from saved listings
         await tenantApi.removeSavedListing(listingId)
-        setSavedListings((prev) => prev.filter((l) => l.id !== listingId))
+        setSavedListings((prev) => (prev ?? []).filter((l) => l.id !== listingId))
+
       }
     } catch (error) {
       console.error("Error updating saved listings:", error)
@@ -102,7 +104,7 @@ export default function TenantHomePage() {
  const handleCancelBooking = async (listingId: string, bookingId: string) => {
   try {
     await tenantApi.deleteBooking(listingId, bookingId)
-    setBookings((prev) => prev.filter((booking) => booking.id !== bookingId))
+    setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
     toast({
       title: "Success",
       description: "Booking cancelled successfully.",
@@ -126,7 +128,13 @@ export default function TenantHomePage() {
         <section className="bg-blue-600 py-12 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
+                {user ? (
+                <h1 className="text-3xl font-bold mb-4" aria-live="polite">
+                  {`Welcome back, ${user.first_name}!`}
+                </h1>
+                ) : (
+                <Skeleton className="h-8 w-48 mb-4" />
+                )}
               <p className="text-blue-100 mb-8">Find your perfect rental and manage your bookings</p>
 
               <form onSubmit={handleSearch} className="flex gap-2">
@@ -285,9 +293,11 @@ export default function TenantHomePage() {
                                 <span className="font-medium text-gray-900">${booking.total_amount}</span>
                               </div>
                               <div className="mt-4 flex gap-2 justify-end">
-                                <Button variant="outline" size="sm">
-                                  Message Owner
-                                </Button>
+                                <Link to={`/messages/${booking.listing_id}/${booking.owner_id}`}>
+                                  <Button variant="outline" size="sm">
+                                    Message Owner
+                                  </Button>
+                                </Link>
                                 {booking.status === "pending" && (
                                   <Button variant="destructive" size="sm" onClick={() => handleCancelBooking(booking.listing_id, booking.id)}>
                                     Cancel

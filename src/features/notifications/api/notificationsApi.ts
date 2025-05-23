@@ -1,34 +1,18 @@
+// api/notificationsApi.ts
+import apiConfig from "@/config/api.config"
 import apiClient from "../../../api/client"
-import { mockNotificationsApi } from "../../../api/mockNotificationsApi"
 import type { Notification } from "../../../types/notification.types"
 
-// Use mock API in development
-const isDevelopment =  process.env.NODE_ENV === "development"
-
 export const notificationsApi = {
-  getNotification: async (id: string): Promise<Notification> => {
-    if (isDevelopment) {
-      return mockNotificationsApi.getNotification(id)
-    }
+  getNotification: (id: string) =>
+    apiClient.get<Notification>(`${apiConfig.apiBaseUrl}/notifications/${id}`)
+      .then(res => res.data),
 
-    const response = await apiClient.get(`/notifications/${id}`)
-    return response.data
-  },
+  getUserNotifications: (userId: string) =>
+    apiClient.get<Notification[]>(`${apiConfig.apiBaseUrl}/users/${userId}/notifications`)
+      .then(res => res.data),
 
-  getUserNotifications: async (userId: string): Promise<Notification[]> => {
-    if (isDevelopment) {
-      return mockNotificationsApi.getUserNotifications(userId)
-    }
-
-    const response = await apiClient.get(`/users/${userId}/notifications`)
-    return response.data
-  },
-
-  markAsRead: async (id: string): Promise<void> => {
-    if (isDevelopment) {
-      return mockNotificationsApi.markAsRead(id)
-    }
-
-    await apiClient.patch(`/notification/${id}/read`)
-  },
+  markAsRead: (id: string) =>
+    apiClient.patch(`${apiConfig.apiBaseUrl}/notification/${id}/read`)
+      .then(res => res.status === 204),
 }

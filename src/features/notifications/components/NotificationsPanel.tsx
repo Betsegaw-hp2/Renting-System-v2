@@ -77,15 +77,15 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen }
         </div>
       </div>
       <ScrollArea className="h-[400px] p-2">
-        {notifications.length === 0 ? (
-          <div className="text-center text-gray-500 p-4">No new notifications</div>
-        ) : (
-          notifications.map((notification) => (
+        {notifications?.length > 0 ? (
+          (notifications ?? []).map((notification) => (
             <NotificationItem key={notification.id} notification={notification} onClick={handleNotificationClick} />
           ))
+        ) : (
+          <div className="text-center text-gray-500 p-4">No new notifications</div>
         )}
       </ScrollArea>
-      {notifications.length > 0 && unreadCount > 0 && (
+      {notifications?.length > 0 && unreadCount > 0 && (
         <div className="p-4 border-t">
           <Button
             variant="outline"

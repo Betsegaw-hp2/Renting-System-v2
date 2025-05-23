@@ -9,6 +9,7 @@ import { UserRole } from "../../../types/user.types"
 import { useMultiStepSignup } from "../hooks/useMultiStepSignup"
 import { SIGNUP_STEPS } from "../types/signup.types"
 import { AccountInfoStep } from "./signup/AccountInfoStep"
+import { OtpVerificationStep } from "./signup/OtpVerficationStep"
 import { OwnerDetailsStep } from "./signup/OwnerDetailsStep"
 import { StepIndicator } from "./signup/StepIndicator"
 import { TenantDetailsStep } from "./signup/TenantDetailsStep"
@@ -25,7 +26,26 @@ export function SignupForm() {
     goToPreviousStep,
     handleSubmit,
     skipAndCreateAccount,
+    handleOtpVerified,
+    registeredUserId,
   } = useMultiStepSignup()
+
+  console.log("Error:", error)
+
+  // Render OTP step exclusively
+  if (currentStep === "verify-email" && registeredUserId) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <StepIndicator currentStep={currentStep} role={formData.role} />
+        <OtpVerificationStep
+          userId={registeredUserId}
+          email={formData.email}
+          onVerified={handleOtpVerified}
+          onEmailChange={(newEmail) => updateFormData("email", newEmail)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="w-full max-w-2xl">
@@ -55,26 +75,29 @@ export function SignupForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className={cn("transition-all duration-300", currentStep !== "account" && "hidden")}>
+          {/* Account Info */}
+          <div className={cn("transition-all duration-300", currentStep !== "account" && "hidden")}>  
             <AccountInfoStep formData={formData} errors={errors} updateFormData={updateFormData} />
           </div>
 
-          <div className={cn("transition-all duration-300", currentStep !== "tenant-details" && "hidden")}>
+          {/* Tenant Details */}
+          <div className={cn("transition-all duration-300", currentStep !== "tenant-details" && "hidden")}>  
             {formData.role === UserRole.TENANT && (
               <TenantDetailsStep formData={formData} errors={errors} updateFormData={updateFormData} />
             )}
           </div>
 
-          <div className={cn("transition-all duration-300", currentStep !== "owner-details" && "hidden")}>
+          {/* Owner Details */}
+          <div className={cn("transition-all duration-300", currentStep !== "owner-details" && "hidden")}>  
             {formData.role === UserRole.PROPERTY_OWNER && (
               <OwnerDetailsStep formData={formData} errors={errors} updateFormData={updateFormData} />
             )}
           </div>
 
+          {/* Action Buttons */}
           <div className="flex justify-between pt-4">
-            {currentStep === "account" ? (
-              <div></div> // Empty div to maintain flex spacing
-            ) : (
+            {/* Back Button */}
+            {currentStep !== "account" && (
               <Button
                 type="button"
                 variant="outline"
@@ -87,8 +110,9 @@ export function SignupForm() {
               </Button>
             )}
 
+            {/* Next/Submit Buttons */}
             {currentStep === "account" ? (
-              <Button type="submit" onClick={goToNextStep} disabled={isLoading} className="flex items-center gap-2">
+              <Button type="button" onClick={goToNextStep} disabled={isLoading} className="flex items-center gap-2">
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -121,7 +145,7 @@ export function SignupForm() {
       </div>
 
       <div className="mt-6 text-center text-sm">
-        Already have an account?{" "}
+        Already have an account?{' '}
         <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 underline underline-offset-4">
           Log in
         </Link>
