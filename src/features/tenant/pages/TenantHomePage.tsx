@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
@@ -293,9 +293,11 @@ export default function TenantHomePage() {
                                 <span className="font-medium text-gray-900">${booking.total_amount}</span>
                               </div>
                               <div className="mt-4 flex gap-2 justify-end">
-                                <Button variant="outline" size="sm">
-                                  Message Owner
-                                </Button>
+                                <Link to={`/messages/${booking.listing_id}/${booking.owner_id}`}>
+                                  <Button variant="outline" size="sm">
+                                    Message Owner
+                                  </Button>
+                                </Link>
                                 {booking.status === "pending" && (
                                   <Button variant="destructive" size="sm" onClick={() => handleCancelBooking(booking.listing_id, booking.id)}>
                                     Cancel
