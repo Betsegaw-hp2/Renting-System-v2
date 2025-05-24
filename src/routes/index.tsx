@@ -1,7 +1,7 @@
 import type React from "react"
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
-import { PropertyListingForm } from "../features/owner/components/PropertyListingForm"
+import { AddPropertyForm } from "../features/owner/components/AddPropertyForm"
 import { AccessDeniedPage } from "../pages/AccessDeniedPage"
 import { UserRole } from "../types/user.types"
 import ProtectedRoute from "./protectedRoute"
@@ -29,7 +29,7 @@ const TenantHomePage = lazy(() => import("../features/tenant/pages/TenantHomePag
 // const TenantBookingsPage = lazy(() => import("../features/tenant/pages/RentalHistoryPage"))
 
 // // Owner pages
-// const OwnerListingsPage = lazy(() => import("../features/owner/pages/ListingsPage"))
+const OwnerProfilePage = lazy(() => import("../features/owner/pages/OwnerProfilePage"))
 // const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
 const HomePage = lazy(() => import("../pages/HomePage"))
 const BrowsePage = lazy(() => import("../pages/BrowsePage"))
@@ -207,23 +207,25 @@ const router = createBrowserRouter([
 
   // Owner-specific routes
   {
-    path: "/owner/listings",
+    path: "/owner/profile",
     element: (
       <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>{/* <OwnerListingsPage /> */}</Suspense>
+        <Suspense fallback={<LoadingFallback />}><OwnerProfilePage /></Suspense>
       </OwnerRoute>
     ),
   },
   {
-    path: "/owner/listings/new",
+    path: "/owner/listings/:id",
     element: (
       <ListingRoute>
         <Suspense fallback={<LoadingFallback />}>
-          <PropertyListingForm />
+          <AddPropertyForm />
         </Suspense>
       </ListingRoute>
     ),
   },
+
+  
   {
     path: "/owner/bookings",
     element: (

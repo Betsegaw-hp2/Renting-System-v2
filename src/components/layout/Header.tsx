@@ -405,14 +405,16 @@ export function Header({
                   variant={getButtonVariant(true)}
                   asChild
                   className={
-                    variant === "transparent" && !isScrolled ? "border-white text-white hover:bg-white/10" : ""
+                    variant === "transparent" && !isScrolled
+                      ? "border-2 border-transparent bg-gradient-to-r from-blue-800 to-blue-500 text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600"
+                      : "bg-gradient-to-r from-white-800 to-blue-500 text-black hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-50"
                   }
                 >
                   <Link to="/login">Login</Link>
                 </Button>
                 <Button
                   asChild
-                  className="bg-blue-600 text-white hover:bg-blue-500"
+                  className="bg-gradient-to-r from-blue-800 to-blue-500 text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600"
                 >
                   <Link to="/signup">Sign up</Link>
                 </Button>

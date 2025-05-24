@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
+import { SearchFilters } from "@/components/search/SearchFilters"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -99,23 +100,23 @@ export default function TenantHomePage() {
     return savedListings?.some((listing) => listing.id === listingId)
   }
 
- const handleCancelBooking = async (listingId: string, bookingId: string) => {
-  try {
-    await tenantApi.deleteBooking(listingId, bookingId)
-    setBookings((prev) => prev.filter((booking) => booking.id !== bookingId))
-    toast({
-      title: "Success",
-      description: "Booking cancelled successfully.",
-    })
-  } catch (error) {
-    console.error("Error cancelling booking:", error)
-    toast({
-      title: "Error",
-      description: "Failed to cancel booking. Please try again.",
-      variant: "destructive",
-    })
+  const handleCancelBooking = async (listingId: string, bookingId: string) => {
+    try {
+      await tenantApi.deleteBooking(listingId, bookingId)
+      setBookings((prev) => prev.filter((booking) => booking.id !== bookingId))
+      toast({
+        title: "Success",
+        description: "Booking cancelled successfully.",
+      })
+    } catch (error) {
+      console.error("Error cancelling booking:", error)
+      toast({
+        title: "Error",
+        description: "Failed to cancel booking. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
-}
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -129,21 +130,10 @@ export default function TenantHomePage() {
               <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
               <p className="text-blue-100 mb-8">Find your perfect rental and manage your bookings</p>
 
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="relative flex-1">
-                  <HomeIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search for rentals..."
-                    className="pl-10 bg-white text-gray-900 h-12 w-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="bg-white text-blue-600 hover:bg-blue-50 h-12">
-                  Search
-                </Button>
-              </form>
+              {/* Search Box */}
+              <Button type="submit" className="bg-white text-blue-600 hover:bg-blue-50 h-12">
+                Search
+              </Button>
             </div>
           </div>
         </section>
@@ -264,15 +254,14 @@ export default function TenantHomePage() {
                               <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-bold">Booking #{booking.id.substring(0, 8)}</h3>
                                 <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${
-                                    booking.status === "completed"
-                                      ? "bg-green-100 text-green-800"
-                                      : booking.status === "booked"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : booking.status === "pending"
-                                          ? "bg-yellow-100 text-yellow-800"
-                                          : "bg-gray-100 text-gray-800"
-                                  }`}
+                                  className={`px-2 py-1 rounded text-xs font-medium ${booking.status === "completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : booking.status === "booked"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : booking.status === "pending"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
                                 >
                                   {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                                 </span>

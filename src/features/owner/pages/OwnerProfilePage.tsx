@@ -14,10 +14,22 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/useToast"
 import { userApi, type UpdateUserInfoPayload, type UpdatePasswordPayload } from "@/features/auth/api/userApi"
-import { Loader2, Upload, Calendar, MapPin, Star, Download, AlertTriangle } from "lucide-react"
-import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
+import { ownerApi } from "@/features/owner/api/ownerApi"
+import {
+  Loader2,
+  Upload,
+  Calendar,
+  MapPin,
+  Star,
+  Download,
+  AlertTriangle,
+  Home,
+  Building,
+  DollarSign,
+  Users,
+} from "lucide-react"
 
-const TenantProfilePage = () => {
+const OwnerProfilePage = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
   const user = useSelector((state: any) => state.auth.user)
@@ -28,6 +40,10 @@ const TenantProfilePage = () => {
     last_name: "",
     email: "",
     username: "",
+    company_name: "",
+    business_address: "",
+    tax_id: "",
+    phone_number: "",
   })
 
   // Password form state
@@ -36,8 +52,19 @@ const TenantProfilePage = () => {
     confirmPassword: "",
   })
 
+  // Properties state
+  const [properties, setProperties] = useState([])
+  const [businessStats, setBusinessStats] = useState({
+    totalProperties: 0,
+    activeListings: 0,
+    totalBookings: 0,
+    averageRating: 0,
+    totalRevenue: 0,
+  })
+
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+  const [isLoadingProperties, setIsLoadingProperties] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
 
@@ -58,8 +85,11 @@ const TenantProfilePage = () => {
           last_name: userData.last_name || "",
           email: userData.email || "",
           username: userData.username || "",
+          company_name: userData.company_name || "",
+          business_address: userData.business_address || "",
+          tax_id: userData.tax_id || "",
+          phone_number: userData.phone_number || "",
         })
-        // log successful fetch
       } catch (error: any) {
         toast({
           title: "Error fetching profile",
@@ -74,8 +104,54 @@ const TenantProfilePage = () => {
     fetchUserData()
   }, [user?.id, toast])
 
+  // Fetch owner properties
+  useEffect(() => {
+    const fetchOwnerProperties = async () => {
+      if (!user?.id) return
+
+      setIsLoadingProperties(true)
+      try {
+        const propertiesData = await ownerApi.getOwnerProperties(user.id)
+        setProperties(propertiesData)
+
+        // Calculate business stats
+        const activeListings = propertiesData.filter((property: any) => property.status === "available").length
+        const totalBookings = propertiesData.reduce(
+          (acc: number, property: any) => acc + (property.bookings_count || 0),
+          0,
+        )
+        const totalRatings = propertiesData.reduce((acc: number, property: any) => {
+          return property.rating ? acc + property.rating : acc
+        }, 0)
+        const averageRating = propertiesData.length > 0 ? (totalRatings / propertiesData.length).toFixed(1) : 0
+        const totalRevenue = propertiesData.reduce(
+          (acc: number, property: any) => acc + (property.total_revenue || 0),
+          0,
+        )
+
+        setBusinessStats({
+          totalProperties: propertiesData.length,
+          activeListings,
+          totalBookings,
+          averageRating: Number(averageRating),
+          totalRevenue,
+        })
+      } catch (error: any) {
+        toast({
+          title: "Error fetching properties",
+          description: error.message || "Failed to load your properties",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingProperties(false)
+      }
+    }
+
+    fetchOwnerProperties()
+  }, [user?.id, toast])
+
   // Handle personal info form changes
-  const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setPersonalInfo((prev) => ({ ...prev, [name]: value }))
 
@@ -126,6 +202,10 @@ const TenantProfilePage = () => {
       errors.username = "Username is required"
     }
 
+    if (!personalInfo.phone_number.trim()) {
+      errors.phone_number = "Phone number is required"
+    }
+
     setPersonalInfoErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -165,9 +245,18 @@ const TenantProfilePage = () => {
         username: personalInfo.username,
       }
 
+      // Additional owner-specific fields would be handled by a separate API call
+      // This is a simplified example
       await userApi.updateUserInfo(user.id, payload)
-      console.log("Profile updated successfully")
-      
+
+      // Update owner-specific information
+      await ownerApi.updateOwnerInfo(user.id, {
+        company_name: personalInfo.company_name,
+        business_address: personalInfo.business_address,
+        tax_id: personalInfo.tax_id,
+        phone_number: personalInfo.phone_number,
+      })
+
       toast({
         title: "Profile updated",
         description: "Your personal information has been updated successfully",
@@ -251,11 +340,10 @@ const TenantProfilePage = () => {
                   {user?.first_name} {user?.last_name}
                 </h2>
                 <p className="text-muted-foreground">{user?.email}</p>
-                {user?.is_verified && (
-                  <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
-                    KYC Verified
-                  </Badge>
-                )}
+                <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
+                  Property Owner
+                </Badge>
+                {personalInfo.company_name && <p className="text-sm font-medium mt-2">{personalInfo.company_name}</p>}
               </div>
 
               <div className="mt-8 space-y-4">
@@ -270,28 +358,66 @@ const TenantProfilePage = () => {
                 <div className="flex items-center">
                   <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {user?.location?.city || "Not specified"}, {user?.location?.country || ""}
-                    </p>
+                    <p className="text-sm font-medium">Business Location</p>
+                    <p className="text-sm text-muted-foreground">{personalInfo.business_address || "Not specified"}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center">
                   <Star className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Tenant Rating</p>
+                    <p className="text-sm font-medium">Owner Rating</p>
                     <div className="flex items-center">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`h-4 w-4 ${star <= 5 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                            className={`h-4 w-4 ${
+                              star <= businessStats.averageRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                            }`}
                           />
                         ))}
                       </div>
-                      <span className="ml-2 text-sm font-medium">5.0</span>
+                      <span className="ml-2 text-sm font-medium">{businessStats.averageRating}</span>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Stats */}
+              <div className="mt-8 pt-6 border-t">
+                <h3 className="font-medium mb-4">Business Overview</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="flex items-center">
+                      <Home className="h-4 w-4 text-blue-500 mr-2" />
+                      <span className="text-sm font-medium">Properties</span>
+                    </div>
+                    <p className="text-xl font-bold mt-1">{businessStats.totalProperties}</p>
+                  </div>
+
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="flex items-center">
+                      <Building className="h-4 w-4 text-green-500 mr-2" />
+                      <span className="text-sm font-medium">Active</span>
+                    </div>
+                    <p className="text-xl font-bold mt-1">{businessStats.activeListings}</p>
+                  </div>
+
+                  <div className="bg-purple-50 p-3 rounded-lg">
+                    <div className="flex items-center">
+                      <Users className="h-4 w-4 text-purple-500 mr-2" />
+                      <span className="text-sm font-medium">Bookings</span>
+                    </div>
+                    <p className="text-xl font-bold mt-1">{businessStats.totalBookings}</p>
+                  </div>
+
+                  <div className="bg-amber-50 p-3 rounded-lg">
+                    <div className="flex items-center">
+                      <DollarSign className="h-4 w-4 text-amber-500 mr-2" />
+                      <span className="text-sm font-medium">Revenue</span>
+                    </div>
+                    <p className="text-xl font-bold mt-1">${businessStats.totalRevenue.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -321,8 +447,8 @@ const TenantProfilePage = () => {
           <Tabs defaultValue="personal-info">
             <TabsList className="grid grid-cols-3 mb-8">
               <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-              <TabsTrigger value="kyc-documents">KYC Documents</TabsTrigger>
-              <TabsTrigger value="preferences">Preferences</TabsTrigger>
+              <TabsTrigger value="business-info">Business Info</TabsTrigger>
+              <TabsTrigger value="properties">My Properties</TabsTrigger>
             </TabsList>
 
             {/* Personal Info Tab */}
@@ -391,6 +517,20 @@ const TenantProfilePage = () => {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="phone_number">Phone Number</Label>
+                      <Input
+                        id="phone_number"
+                        name="phone_number"
+                        value={personalInfo.phone_number}
+                        onChange={handlePersonalInfoChange}
+                        className={personalInfoErrors.phone_number ? "border-red-500" : ""}
+                      />
+                      {personalInfoErrors.phone_number && (
+                        <p className="text-sm text-red-500">{personalInfoErrors.phone_number}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="bio">Bio</Label>
                       <Textarea id="bio" placeholder="Tell us a little about yourself" className="resize-none" />
                     </div>
@@ -449,124 +589,190 @@ const TenantProfilePage = () => {
               </Card>
             </TabsContent>
 
-            {/* KYC Documents Tab */}
-            <TabsContent value="kyc-documents">
+            {/* Business Info Tab */}
+            <TabsContent value="business-info">
               <Card>
                 <CardHeader>
-                  <CardTitle>KYC Documents</CardTitle>
-                  <CardDescription>
-                    {user?.is_verified
-                      ? "Your identity has been verified successfully."
-                      : "Verify your identity by uploading your ID documents."}
-                  </CardDescription>
+                  <CardTitle>Business Information</CardTitle>
+                  <CardDescription>Update your business details</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  {user?.is_verified ? (
-                    <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
-                      <div className="bg-green-100 rounded-full p-2 mr-4">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-green-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-green-800">Verification Complete</h3>
-                        <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
-                      </div>
+                <form onSubmit={handleUpdatePersonalInfo}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="company_name">Company Name</Label>
+                      <Input
+                        id="company_name"
+                        name="company_name"
+                        value={personalInfo.company_name}
+                        onChange={handlePersonalInfoChange}
+                      />
                     </div>
-                  ) : (
-                    <KycVerificationForm />
-                  )}
-                </CardContent>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="business_address">Business Address</Label>
+                      <Textarea
+                        id="business_address"
+                        name="business_address"
+                        value={personalInfo.business_address}
+                        onChange={handlePersonalInfoChange}
+                        className="resize-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tax_id">Tax ID / Business Registration Number</Label>
+                      <Input
+                        id="tax_id"
+                        name="tax_id"
+                        value={personalInfo.tax_id}
+                        onChange={handlePersonalInfoChange}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="business_description">Business Description</Label>
+                      <Textarea
+                        id="business_description"
+                        placeholder="Tell us about your business"
+                        className="resize-none"
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
+                      {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Business Info
+                    </Button>
+                  </CardFooter>
+                </form>
               </Card>
-            </TabsContent>
 
-            {/* Preferences Tab */}
-            <TabsContent value="preferences">
-              <Card>
+              <Card className="mt-8">
                 <CardHeader>
-                  <CardTitle>Preferences</CardTitle>
-                  <CardDescription>Manage your account preferences</CardDescription>
+                  <CardTitle>Payment Information</CardTitle>
+                  <CardDescription>Update your payment details</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Email Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates about your bookings via email</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="email-notifications" className="sr-only">
-                            Email Notifications
-                          </Label>
-                          <input type="checkbox" id="email-notifications" className="toggle" defaultChecked />
-                        </div>
-                      </div>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_name">Bank Name</Label>
+                    <Input id="bank_name" placeholder="Enter your bank name" />
+                  </div>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">SMS Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates about your bookings via SMS</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="sms-notifications" className="sr-only">
-                            SMS Notifications
-                          </Label>
-                          <input type="checkbox" id="sms-notifications" className="toggle" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Marketing Communications</p>
-                          <p className="text-sm text-muted-foreground">
-                            Receive updates about new features and promotions
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="marketing-communications" className="sr-only">
-                            Marketing Communications
-                          </Label>
-                          <input type="checkbox" id="marketing-communications" className="toggle" />
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="account_number">Account Number</Label>
+                      <Input id="account_number" placeholder="Enter your account number" type="password" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="routing_number">Routing Number</Label>
+                      <Input id="routing_number" placeholder="Enter your routing number" />
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t">
-                    <h3 className="text-lg font-medium mb-4">Language & Region</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="language">Language</Label>
-                        <select id="language" className="w-full border rounded-md p-2">
-                          <option value="en">English</option>
-                          <option value="fr">French</option>
-                          <option value="es">Spanish</option>
-                          <option value="de">German</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="timezone">Timezone</Label>
-                        <select id="timezone" className="w-full border rounded-md p-2">
-                          <option value="utc">UTC (Coordinated Universal Time)</option>
-                          <option value="est">EST (Eastern Standard Time)</option>
-                          <option value="cst">CST (Central Standard Time)</option>
-                          <option value="pst">PST (Pacific Standard Time)</option>
-                        </select>
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="account_holder">Account Holder Name</Label>
+                    <Input id="account_holder" placeholder="Enter the account holder name" />
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button className="ml-auto">Save Preferences</Button>
+                  <Button className="ml-auto">Save Payment Info</Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* Properties Tab */}
+            <TabsContent value="properties">
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Properties</CardTitle>
+                  <CardDescription>Manage your property listings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingProperties ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <span className="ml-2">Loading properties...</span>
+                    </div>
+                  ) : properties.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Building className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <h3 className="mt-4 text-lg font-medium">No properties yet</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        You haven't added any properties to your account yet.
+                      </p>
+                      <Button className="mt-4" onClick={() => navigate("/add-property")}>
+                        Add Your First Property
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {properties.map((property: any) => (
+                        <div key={property.id} className="border rounded-lg overflow-hidden">
+                          <div className="flex flex-col md:flex-row">
+                            <div className="md:w-1/3">
+                              <img
+                                src={property.thumbnail || "/placeholder.svg?height=200&width=300"}
+                                alt={property.title}
+                                className="h-48 w-full object-cover"
+                              />
+                            </div>
+                            <div className="p-4 md:w-2/3">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="font-medium text-lg">{property.title}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {property.address}, {property.city}, {property.region}
+                                  </p>
+                                </div>
+                                <Badge
+                                  className={`${
+                                    property.status === "available"
+                                      ? "bg-green-50 text-green-700 border-green-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
+                                  }`}
+                                >
+                                  {property.status === "available" ? "Available" : "Unavailable"}
+                                </Badge>
+                              </div>
+                              <div className="mt-2">
+                                <p className="text-sm">{property.description.substring(0, 100)}...</p>
+                              </div>
+                              <div className="mt-4 flex justify-between items-center">
+                                <div className="flex items-center">
+                                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                  <span className="ml-1 font-medium">${property.price}/night</span>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/properties/${property.id}`)}
+                                  >
+                                    View Details
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => navigate(`/properties/${property.id}/edit`)}
+                                  >
+                                    Edit
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Showing {properties.length} of {properties.length} properties
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate("/add-property")}>Add New Property</Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -577,4 +783,4 @@ const TenantProfilePage = () => {
   )
 }
 
-export default TenantProfilePage
+export default OwnerProfilePage
