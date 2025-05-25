@@ -5,28 +5,32 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { Plus, Search } from "lucide-react"
 import { useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import type { Conversation } from "../types/message.types"
+import type { Conversation } from "../../../types/message.types"
 
-interface SidebarProps {
+interface ConversationListProps {
   conversations: Conversation[]
+  loading: boolean
+  onSelectConversation: (listingId: string, receiverId: string) => void
+  selectedListingId?: string
+  selectedReceiverId?: string
 }
 
-export function Sidebar({ conversations }: SidebarProps) {
+export function ConversationList({
+  conversations,
+  loading,
+  onSelectConversation,
+  selectedListingId,
+  selectedReceiverId,
+}: ConversationListProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const navigate = useNavigate()
-  const { listingId, receiverId } = useParams<{ listingId: string; receiverId: string }>()
 
   const filteredConversations = conversations.filter((conversation) =>
-    conversation.partnerName.toLowerCase().includes(searchQuery.toLowerCase()),
+    conversation?.partner_name?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
-
-  const handleConversationClick = (conversation: Conversation) => {
-    navigate(`/messages/${conversation.listing_id}/${conversation.partnerId}`)
-  }
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -48,10 +52,10 @@ export function Sidebar({ conversations }: SidebarProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-muted/10">
+    <div className="flex flex-col h-full">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Chats</h2>
+          <h2 className="text-xl font-semibold">Messages</h2>
           <Button variant="ghost" size="icon" className="rounded-full">
             <Plus className="h-4 w-4" />
           </Button>
@@ -68,37 +72,53 @@ export function Sidebar({ conversations }: SidebarProps) {
       </div>
 
       <ScrollArea className="flex-1">
-        {filteredConversations.length === 0 ? (
+        {loading ? (
+          <div className="p-4 space-y-4">
+            {Array(5)
+              .fill(0)
+              .map((_, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                  <Skeleton className="h-3 w-10" />
+                </div>
+              ))}
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground">No conversations found</div>
         ) : (
           <div>
             {filteredConversations.map((conversation) => {
-              const isActive = conversation.listing_id === listingId && conversation.partnerId === receiverId
+              const isActive =
+                conversation.listing_id === selectedListingId && conversation.partner_id === selectedReceiverId
 
               return (
                 <div
-                  key={`${conversation.listing_id}_${conversation.partnerId}`}
+                  key={`${conversation.listing_id}_${conversation.partner_id}`}
                   className={cn(
                     "px-4 py-3 cursor-pointer transition-colors",
                     isActive ? "bg-accent" : "hover:bg-accent/50",
                   )}
-                  onClick={() => handleConversationClick(conversation)}
+                  onClick={() => onSelectConversation(conversation.listing_id, conversation.partner_id)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative flex-shrink-0">
                       <Avatar>
                         <AvatarImage
-                          src={conversation.partnerAvatar || "/placeholder.svg"}
-                          alt={conversation.partnerName}
+                          src={conversation.partner_avatar || "/placeholder.svg?height=40&width=40"}
+                          alt={conversation.partner_name}
                         />
                         <AvatarFallback>
-                          {conversation.partnerName
+                          {conversation.partner_name
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      {conversation.isOnline && (
+                      {conversation.is_online && (
                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
                       )}
                     </div>
@@ -106,22 +126,22 @@ export function Sidebar({ conversations }: SidebarProps) {
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex justify-between items-center w-full">
                         <span className={cn("font-medium truncate", isActive && "text-accent-foreground")}>
-                          {conversation.partnerName}
+                          {conversation.partner_name}
                         </span>
                         <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                          {formatTimestamp(conversation.lastUpdated)}
+                          {formatTimestamp(conversation.last_updated || conversation.updated_at)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center w-full mt-1">
-                        <span className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</span>
+                        <span className="text-sm text-muted-foreground truncate">{conversation.last_message}</span>
 
-                        {conversation.unreadCount > 0 && (
+                        {conversation.unread_count && conversation.unread_count > 0 && (
                           <Badge
                             variant="default"
                             className="ml-2 bg-primary h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0"
                           >
-                            {conversation.unreadCount}
+                            {conversation.unread_count}
                           </Badge>
                         )}
                       </div>

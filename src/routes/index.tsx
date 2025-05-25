@@ -1,4 +1,5 @@
-import { ChatPage } from "@/features/messages/components/ChatPage"
+import { ChatThread } from "@/features/messages/components/ChatThread"
+import { MessagesPage } from "@/features/messages/components/MessagesPage"
 import type React from "react"
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
@@ -155,15 +156,37 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  // {
+  //   path: "/messages/:listingId/:receiverId",
+  //   element: (
+  //     <ProtectedRoute>
+  //       <Suspense fallback={<LoadingFallback />}>
+  //         <ChatPage />
+  //       </Suspense>
+  //     </ProtectedRoute>
+  //   )
+  // },
   {
-    path: "/messages/:listingId/:receiverId",
-    element: (
-      <ProtectedRoute>
-        <Suspense fallback={<LoadingFallback />}>
-          <ChatPage />
-        </Suspense>
-      </ProtectedRoute>
-    )
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <MessagesPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: ":listingId/:receiverId",
+            element: (
+              <ProtectedRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ChatThread />
+                </Suspense>
+              </ProtectedRoute>
+            ),
+          },
+        ],
   },
 
   // Tenant-specific routes

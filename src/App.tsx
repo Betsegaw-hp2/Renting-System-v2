@@ -1,14 +1,15 @@
 // App.tsx
 "use client"
 
+import { useEffect } from "react"
 import { Provider, useDispatch, useSelector } from "react-redux"
 import { ThemeProvider } from "./components/layout/ThemeProvider"
 import { Toaster } from "./components/ui/toaster"
+import { UserProvider } from "./contexts/UserContext"
+import { fetchCurrentUser } from "./features/auth/slices/authSlice"
 import { NotificationsProvider } from "./features/notifications/components/NotificationProvider"
 import Routes from "./routes"
 import { store, type AppDispatch, type RootState } from "./store"
-import { useEffect } from "react"
-import { fetchCurrentUser } from "./features/auth/slices/authSlice"
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>()
@@ -22,10 +23,12 @@ function AppContent() {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="rental-theme">
-      <NotificationsProvider>
-        <Routes />
-        <Toaster />
-      </NotificationsProvider>
+        <UserProvider>
+          <NotificationsProvider>
+            <Routes />
+            <Toaster />
+          </NotificationsProvider>
+        </UserProvider>
     </ThemeProvider>
   )
 }
