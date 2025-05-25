@@ -25,7 +25,7 @@ export function ChatHeader({ partner, onBackClick, showBackButton }: ChatHeaderP
         <Avatar>
           <AvatarImage src={partner.partnerAvatar || "/placeholder.svg?height=40&width=40"} alt={partner.partnerName} />
           <AvatarFallback>
-            {partner.partnerName
+            {partner?.partnerName
               .split(" ")
               .map((n) => n[0])
               .join("")}
@@ -33,10 +33,10 @@ export function ChatHeader({ partner, onBackClick, showBackButton }: ChatHeaderP
         </Avatar>
 
         <div>
-          <div className="font-medium">{partner.partnerName}</div>
+          <div className="font-medium">{partner?.partnerName}</div>
           <div className="text-xs text-muted-foreground flex items-center">
             <span
-              className={`inline-block w-2 h-2 rounded-full mr-1 ${partner.isOnline ? "bg-green-500" : "bg-gray-300"}`}
+              className={`inline-block w-2 h-2 rounded-full mr-1 ${partner?.isOnline ? "bg-green-500" : "bg-gray-300"}`}
             />
             {partner.isOnline ? "Online" : "Offline"}
           </div>

@@ -29,7 +29,7 @@ export function ConversationList({
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredConversations = conversations.filter((conversation) =>
-    conversation?.partner_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+    conversation?.partnerName?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const formatTimestamp = (timestamp: string) => {
@@ -93,32 +93,32 @@ export function ConversationList({
           <div>
             {filteredConversations.map((conversation) => {
               const isActive =
-                conversation.listing_id === selectedListingId && conversation.partner_id === selectedReceiverId
+                conversation.listing_id === selectedListingId && conversation.partnerId === selectedReceiverId
 
               return (
                 <div
-                  key={`${conversation.listing_id}_${conversation.partner_id}`}
+                  key={`${conversation.listing_id}_${conversation.partnerId}`}
                   className={cn(
                     "px-4 py-3 cursor-pointer transition-colors",
                     isActive ? "bg-accent" : "hover:bg-accent/50",
                   )}
-                  onClick={() => onSelectConversation(conversation.listing_id, conversation.partner_id)}
+                  onClick={() => onSelectConversation(conversation.listing_id, conversation.partnerId)}
                 >
                   <div className="flex items-start gap-3">
                     <div className="relative flex-shrink-0">
                       <Avatar>
                         <AvatarImage
-                          src={conversation.partner_avatar || "/placeholder.svg?height=40&width=40"}
-                          alt={conversation.partner_name}
+                          src={conversation.partnerAvatar || "/placeholder.svg?height=40&width=40"}
+                          alt={conversation.partnerName}
                         />
                         <AvatarFallback>
-                          {conversation.partner_name
+                          {conversation.partnerName
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      {conversation.is_online && (
+                      {conversation.isOnline && (
                         <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
                       )}
                     </div>
@@ -126,22 +126,22 @@ export function ConversationList({
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex justify-between items-center w-full">
                         <span className={cn("font-medium truncate", isActive && "text-accent-foreground")}>
-                          {conversation.partner_name}
+                          {conversation.partnerName}
                         </span>
                         <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                          {formatTimestamp(conversation.last_updated || conversation.updated_at)}
+                          {formatTimestamp(conversation.lastUpdated || conversation.updatedAt)}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center w-full mt-1">
-                        <span className="text-sm text-muted-foreground truncate">{conversation.last_message}</span>
+                        <span className="text-sm text-muted-foreground truncate">{conversation.lastMessage}</span>
 
-                        {conversation.unread_count && conversation.unread_count > 0 && (
+                        {conversation.unreadCount && conversation.unreadCount > 0 && (
                           <Badge
                             variant="default"
                             className="ml-2 bg-primary h-5 w-5 flex items-center justify-center rounded-full p-0 flex-shrink-0"
                           >
-                            {conversation.unread_count}
+                            {conversation.unreadCount}
                           </Badge>
                         )}
                       </div>

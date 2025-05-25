@@ -3,32 +3,32 @@ import apiConfig from "@/config/api.config"
 import type { Conversation, CreateMessagePayload, Message } from "@/types/message.types"
 
 // Mock data for development (only used when explicitly configured)
-// const mockConversations: Conversation[] = [
-//   {
-//     id: "conv1",
-//     listing_id: "3eacd0c2-5c75-428a-8d49-9cca79f3f1c5",
-//     partnerId: "1f8b7846-0177-4243-8775-afd1996247b8",
-//     partnerName: "John Smith",
-//     partnerAvatar: "/placeholder.svg?height=40&width=40",
-//     lastMessage: "Hey, is this property still available?",
-//     updatedAt: new Date(Date.now() - 3600000).toISOString(),
-//     lastUpdated: new Date(Date.now() - 3600000).toISOString(),
-//     unreadCount: 2,
-//     isOnline: true,
-//   },
-//   {
-//     id: "conv2",
-//     listing_id: "listing2",
-//     partnerId: "user2",
-//     partnerName: "Sarah Johnson",
-//     partnerAvatar: "/placeholder.svg?height=40&width=40",
-//     lastMessage: "Thanks for the quick response!",
-//     updatedAt: new Date(Date.now() - 7200000).toISOString(),
-//     lastUpdated: new Date(Date.now() - 7200000).toISOString(),
-//     unreadCount: 0,
-//     isOnline: false,
-//   },
-// ]
+const mockConversations: Conversation[] = [
+  {
+    id: "conv1",
+    listing_id: "3eacd0c2-5c75-428a-8d49-9cca79f3f1c5",
+    partnerId: "1f8b7846-0177-4243-8775-afd1996247b8",
+    partnerName: "John Smith",
+    partnerAvatar: "/placeholder.svg?height=40&width=40",
+    lastMessage: "Hey, is this property still available?",
+    updatedAt: new Date(Date.now() - 3600000).toISOString(),
+    lastUpdated: new Date(Date.now() - 3600000).toISOString(),
+    unreadCount: 2,
+    isOnline: true,
+  },
+  {
+    id: "conv2",
+    listing_id: "listing2",
+    partnerId: "user2",
+    partnerName: "Sarah Johnson",
+    partnerAvatar: "/placeholder.svg?height=40&width=40",
+    lastMessage: "Thanks for the quick response!",
+    updatedAt: new Date(Date.now() - 7200000).toISOString(),
+    lastUpdated: new Date(Date.now() - 7200000).toISOString(),
+    unreadCount: 0,
+    isOnline: false,
+  },
+]
 
 const mockMessages: Message[] = [
   {
@@ -107,7 +107,7 @@ export const chatApi = {
     if (apiConfig.useMockApi) {
       console.log("🎭 Using mock conversations (configured)")
       await new Promise((resolve) => setTimeout(resolve, apiConfig.mockApiDelay))
-      // return mockConversations || []
+      return mockConversations
     }
 
     try {
@@ -221,28 +221,28 @@ export const chatApi = {
       return {
         id: `temp_${listingId}_${partnerId}`,
         listing_id: listingId,
-        partner_id: partnerId, // This is the receiver
-        partner_name: partnerInfo.name, // Display receiver's name
-        partner_avatar: partnerInfo.avatar || "/placeholder.svg?height=40&width=40",
-        last_message: lastMessage?.content || "Start a conversation...",
-        updated_at: lastMessage?.sent_at || new Date().toISOString(),
-        last_updated: lastMessage?.sent_at || new Date().toISOString(),
-        unread_count: messages.filter((msg) => !msg.is_read && msg.sender_id === partnerId).length,
-        is_online: partnerInfo.isOnline,
+        partnerId: partnerId, // This is the receiver
+        partnerName: partnerInfo.name, // Display receiver's name
+        partnerAvatar: partnerInfo.avatar || "/placeholder.svg?height=40&width=40",
+        lastMessage: lastMessage?.content || "Start a conversation...",
+        updatedAt: lastMessage?.sent_at || new Date().toISOString(),
+        lastUpdated: lastMessage?.sent_at || new Date().toISOString(),
+        unreadCount: messages.filter((msg) => !msg.is_read && msg.sender_id === partnerId).length,
+        isOnline: partnerInfo.isOnline,
       }
     } catch (error) {
       console.error("❌ Error creating conversation:", error)
       return {
         id: `temp_${listingId}_${partnerId}`,
         listing_id: listingId,
-        partner_id: partnerId,
-        partner_name: "Unknown User",
-        partner_avatar: "/placeholder.svg?height=40&width=40",
-        last_message: "Start a conversation...",
-        updated_at: new Date().toISOString(),
-        last_updated: new Date().toISOString(),
-        unread_count: 0,
-        is_online: false,
+        partnerId: partnerId,
+        partnerName: "Unknown User",
+        partnerAvatar: "/placeholder.svg?height=40&width=40",
+        lastMessage: "Start a conversation...",
+        updatedAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+        unreadCount: 0,
+        isOnline: false,
       }
     }
   },

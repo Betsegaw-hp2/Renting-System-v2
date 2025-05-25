@@ -21,12 +21,12 @@ export interface CreateMessagePayload {
 export interface Conversation {
   id: string
   listing_id: string
-  partner_id: string
-  partner_name: string
-  partner_avatar: string
-  last_message: string
-  updated_at: string
-  last_updated: string // Keep both for compatibility
-  unread_count: number
-  is_online?: boolean
+  partnerId: string
+  partnerName: string
+  partnerAvatar: string
+  lastMessage: string
+  updatedAt: string
+  lastUpdated: string // Keep both for compatibility
+  unreadCount: number
+  isOnline?: boolean
 }

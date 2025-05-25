@@ -1,6 +1,7 @@
 "use client"
 
 import { getCurrentUser } from "@/features/auth/api/authApi"
+import { getAuthToken } from "@/lib/cookies"
 import type { User } from "@/types/api.types"
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
@@ -21,6 +22,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchUser = async () => {
+    if(!getAuthToken()) {
+      console.warn("⚠️ No auth token found, skipping user fetch")
+      setCurrentUser(null)
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
