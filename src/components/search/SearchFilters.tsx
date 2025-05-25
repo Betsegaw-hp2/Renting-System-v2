@@ -10,7 +10,7 @@ import { Label } from "../ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { cn } from "../../lib/utils"
 import { addDays, subDays } from "date-fns"
-import { publicApi, type CategoryCount } from "@/api/publicApi"
+import { publicApi, type CategoryCount, type FeaturedListing } from "@/api/publicApi"
 
 interface SearchFiltersProps {
   onSearch?: (filters: SearchFilters) => void
@@ -262,7 +262,7 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
           </div>
 
           {/* Search Button */}
-          <Button className="flex-shrink-0" onClick={handleSearch}>
+          <Button className="flex-shrink-0 bg-gradient-to-r from-blue-800 to-blue-500 text-white hover:bg-gradient-to-r hover:from-blue-900 hover:to-blue-600" onClick={handleSearch}>
             <Search className="mr-2 h-4 w-4" />
             Search
           </Button>
