@@ -10,7 +10,7 @@ import { Label } from "../ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { cn } from "../../lib/utils"
 import { addDays, subDays } from "date-fns"
-import { publicApi, type CategoryCount } from "@/api/publicApi"
+import { publicApi, type CategoryCount, type FeaturedListing } from "@/api/publicApi"
 
 interface SearchFiltersProps {
   onSearch?: (filters: SearchFilters) => void

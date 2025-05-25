@@ -1,8 +1,9 @@
 import axios from "axios"
 import config from "@/config/api.config"
 import { getAuthToken } from "@/lib/cookies"
-import {convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing} from "../../../api/publicApi"
+import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
 import apiClient from "../../../api/client"
+import { error } from "console"
 // import { CategoryCount } from "@/api/publicApi"
 
 // Create axios instance for listings API endpoints
@@ -58,7 +59,7 @@ export const ownerApi = {
         ...payload
       };
       const response = await publicAxiosInstance.post<ApiListingResponse>("/listings", formattedPayload)
-  
+
       return await convertApiListingToFeaturedListing(response.data)
     } catch (error) {
       console.error("Error creating listing:", error)
@@ -99,7 +100,7 @@ export const ownerApi = {
       throw error
     }
   },
-  getOwnerProperties: async (userId: string) : Promise<FeaturedListing[]> => {
+  getOwnerProperties: async (userId: string): Promise<FeaturedListing[]> => {
     try {
       const response = await apiClient.get(`/users/${userId}/listings`)
       console.log("Owner properties response:", response.data)
@@ -110,7 +111,53 @@ export const ownerApi = {
       throw error
     }
   },
-  
+
+  // get listing by Id ...
+  getListingById: async (listingId: string): Promise<FeaturedListing> => {
+    try {
+      const response = await publicAxiosInstance.get<ApiListingResponse>(`/listings/${listingId}`)
+      return await convertApiListingToFeaturedListing(response.data)
+    } catch (error) {
+      console.error("Error fetching listing by ID:", error)
+      throw error
+    }
+  },
+
+  // get listing media 
+  getListingMedia: async (listingId: string): Promise<string[]> => {
+    try {
+      const response = await publicAxiosInstance.get(`/listings/${listingId}/media`)
+      return response.data
+    } catch (error) {
+      console.error("Error fetching listing media:", error)
+      throw error
+    }
+  },
+
+  // get listing review 
+  getListingReview: async (listingId: string): Promise<string[]> => {
+    try {
+      const response = await publicAxiosInstance.get(`listings/${listingId}/reviews`)
+      return response.data;
+    } catch {
+      console.error("Error fetching reviews:", error);
+
+      // console.error("Error fetching reviews: ", error)
+      throw error
+    }
+  }
+
+    // get Listing booking (not implemented yet)
+    // getListingBookings: async (listingId: string): Promise<string[]> => {
+    //   try {
+    //     const response = await publicAxiosInstance.get<string []>(`/bookings?listing_id=${listingId}`);
+    //     return response.data;
+    //   } catch (error) {
+    //     console.error("Error fetching listing bookings:", error);
+    //     throw error;
+    //   }
+    // },
+
   // // Update owner business information
   // updateOwnerInfo: async (ownerId: string, data: UpdateOwnerInfoPayload) => {
   //   try {
@@ -120,7 +167,7 @@ export const ownerApi = {
   //     throw error
   //   }
   // },
-  
+
   // // Get owner statistics
   // getOwnerStats: async (ownerId: string) => {
   //   try {
@@ -130,7 +177,7 @@ export const ownerApi = {
   //     throw error
   //   }
   // },
-  
+
   // // Get owner bookings
   // getOwnerBookings: async (ownerId: string) => {
   //   try {
@@ -140,6 +187,7 @@ export const ownerApi = {
   //     throw error
   //   }
   // },
+
+
+
 }
-
-

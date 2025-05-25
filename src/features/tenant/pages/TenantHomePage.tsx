@@ -12,12 +12,20 @@ import { ListingCard } from "../../../components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardFooter } from "../../../components/ui/card"
-import { Input } from "../../../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
-import { SearchFilters } from "@/components/search/SearchFilters"
+import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
+
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  CarouselDots,
+} from "../../../components/ui/carousel"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -32,6 +40,10 @@ export default function TenantHomePage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("recommended")
+  const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
+  const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,9 +80,30 @@ export default function TenantHomePage() {
     fetchData()
   }, [user, toast])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    navigate(`/browse?query=${encodeURIComponent(searchQuery)}`)
+  const handleSearch = (filters: SearchFiltersType) => {
+    // Filter listings based on search criteria
+    const filtered = featuredListings.filter((listing) => {
+      // Filter by search query
+      const matchesQuery =
+        !filters.query ||
+        listing.title.toLowerCase().includes(filters.query.toLowerCase()) ||
+        listing.description.toLowerCase().includes(filters.query.toLowerCase()) ||
+        listing.category.name.toLowerCase().includes(filters.query.toLowerCase())
+
+      // Filter by category
+      const matchesCategory =
+        !filters.category ||
+        filters.category === "all" ||
+        listing.category.name.toLowerCase() === filters.category.toLowerCase()
+
+      // Filter by date range (if applicable)
+      // This is a simplified example - in a real app, you'd need to check if the listing is available during the selected date range
+      const matchesDateRange = true
+
+      return matchesQuery && matchesCategory && matchesDateRange
+    })
+
+    setFilteredListings(filtered)
   }
 
   const handleSaveToggle = async (listingId: string, isSaved: boolean) => {
@@ -123,17 +156,85 @@ export default function TenantHomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section with Search */}
-        <section className="bg-blue-600 py-12 text-white">
+        {/* Hero Section with Carousel */}
+        <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
+          <Carousel className="h-full" itemsPerSlide={1}>
+            <CarouselContent className="h-full">
+              <CarouselItem className="relative h-[80vh] px-0">
+                <div className="relative h-full w-full">
+                  <img
+                    src="/images/hero-1.jpg"
+                    alt="Minimalist organized living space with rustic wooden shelves"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">Find Your Perfect Space</h1>
+                      <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+                        Discover beautifully organized and thoughtfully designed rental spaces
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+
+              <CarouselItem className="relative h-[80vh] px-0">
+                <div className="relative h-full w-full">
+                  <img
+                    src="/images/hero-2.jpg"
+                    alt="Modern container home with sustainable design"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">Sustainable Living</h1>
+                      <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+                        Experience eco-friendly homes designed for modern living
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+
+              <CarouselItem className="relative h-[80vh] px-0">
+                <div className="relative h-full w-full">
+                  <img
+                    src="/images/hero-3.jpg"
+                    alt="Tropical themed interior with warm lighting and plants"
+                    className="object-cover w-full h-full"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">Tropical Escapes</h1>
+                      <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
+                        Unwind in serene spaces that bring nature indoors
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+
+            <CarouselPrevious className="left-6 h-12 w-12 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+            <CarouselNext className="right-6 h-12 w-12 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+
+            <CarouselDots count={3} className="absolute bottom-6 left-1/2 transform -translate-x-1/2" />
+          </Carousel>
+
+          {/* Welcome Message Overlay */}
+          <div className="absolute top-6 left-6 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-white">
+            <p className="text-sm font-medium">Welcome back, {user?.first_name || "User"}!</p>
+          </div>
+        </section>
+
+        {/* Search Section */}
+        <section className="bg-gray-50 py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
-              <p className="text-blue-100 mb-8">Find your perfect rental and manage your bookings</p>
-
-              {/* Search Box */}
-              <Button type="submit" className="bg-white text-blue-600 hover:bg-blue-50 h-12">
-                Search
-              </Button>
+              <SearchFilters className="rounded-xl shadow-lg bg-white border border-gray-100" onSearch={handleSearch} />
             </div>
           </div>
         </section>
@@ -278,7 +379,11 @@ export default function TenantHomePage() {
                                   Message Owner
                                 </Button>
                                 {booking.status === "pending" && (
-                                  <Button variant="destructive" size="sm" onClick={() => handleCancelBooking(booking.listing_id, booking.id)}>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleCancelBooking(booking.listing_id, booking.id)}
+                                  >
                                     Cancel
                                   </Button>
                                 )}

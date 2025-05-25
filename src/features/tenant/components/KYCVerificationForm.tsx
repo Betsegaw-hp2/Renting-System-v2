@@ -19,8 +19,8 @@ const CaptureState = {
   SUBMITTING: 5,
   SUCCESS: 6,
   ERROR: 7,
-} as const
-type CaptureState = typeof CaptureState[keyof typeof CaptureState]
+} as const;
+type CaptureState = (typeof CaptureState)[keyof typeof CaptureState];
 
 interface KycResponse {
   backside: string

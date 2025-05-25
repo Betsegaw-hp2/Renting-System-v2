@@ -30,6 +30,7 @@ const TenantHomePage = lazy(() => import("../features/tenant/pages/TenantHomePag
 
 // // Owner pages
 const OwnerProfilePage = lazy(() => import("../features/owner/pages/OwnerProfilePage"))
+// const OwnerListingDetail = lazy(() => import("../features/owner/pages/OwnerListingDetail"))
 // const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
 const HomePage = lazy(() => import("../pages/HomePage"))
 const BrowsePage = lazy(() => import("../pages/BrowsePage"))
@@ -234,6 +235,15 @@ const router = createBrowserRouter([
       </OwnerRoute>
     ),
   },
+
+  //  {
+  //   path: "/owner/listings/:id",
+  //   element: (
+  //     <OwnerRoute>
+  //       <Suspense fallback={<LoadingFallback />}><OwnerListingDetail/></Suspense>
+  //     </OwnerRoute>
+  //   ),
+  // },
 
   // Admin-specific routes
   {
