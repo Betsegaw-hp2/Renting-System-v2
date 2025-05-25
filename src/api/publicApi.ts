@@ -3,6 +3,7 @@ import { format } from "date-fns"
 import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
 import { getAuthToken } from "@/lib/cookies"
+import type { get } from "http"
 
 // Types for public API responses
 export interface FeaturedListing {
@@ -222,6 +223,17 @@ export const publicApi = {
     } catch (error) {
       console.error("Error fetching featured listings:", error)
       throw error // Throw error instead of returning empty array
+    }
+  },
+
+  // get listing by Id ...
+  getListingById: async (listingId: string): Promise<FeaturedListing> => {
+    try {
+      const response = await publicAxiosInstance.get<ApiListingResponse>(`/listings/${listingId}`)
+      return await convertApiListingToFeaturedListing(response.data)
+    } catch (error) {
+      console.error("Error fetching listing by ID:", error)
+      throw error
     }
   },
 

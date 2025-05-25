@@ -3,7 +3,6 @@ import config from "@/config/api.config"
 import { getAuthToken } from "@/lib/cookies"
 import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
 import apiClient from "../../../api/client"
-import { error } from "console"
 // import { CategoryCount } from "@/api/publicApi"
 
 // Create axios instance for listings API endpoints
@@ -139,7 +138,7 @@ export const ownerApi = {
     try {
       const response = await publicAxiosInstance.get(`listings/${listingId}/reviews`)
       return response.data;
-    } catch {
+    } catch (error) {
       console.error("Error fetching reviews:", error);
 
       // console.error("Error fetching reviews: ", error)

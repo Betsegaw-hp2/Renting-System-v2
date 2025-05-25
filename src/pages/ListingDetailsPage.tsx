@@ -21,6 +21,7 @@ import {
 import { DatePicker } from "@/components/ui/date-picker"
 import { useToast } from "@/hooks/useToast"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
+import { ownerApi } from "@/features/owner/api/ownerApi"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -83,6 +84,7 @@ export default function ListingDetailsPage() {
   useEffect(() => {
     const fetchListing = async () => {
       if (!id) {
+        console.error("No listing ID provided")
         setError("No listing ID provided")
         setIsLoading(false)
         return
@@ -93,9 +95,8 @@ export default function ListingDetailsPage() {
 
       try {
         // Fetch all listings and find the one with matching ID
-        const listings = await publicApi.getFeaturedListings()
-        const foundListing = listings.find((listing) => listing.id === id)
-
+        const foundListing = await publicApi.getListingById(id)
+        console.log("Fetched found lisitng:", foundListing)
 
 
         if (foundListing) {
