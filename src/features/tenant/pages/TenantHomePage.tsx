@@ -160,8 +160,8 @@ export default function TenantHomePage() {
                 </div>
               </CarouselItem>
 
-              <CarouselItem className="relative h-[80vh] px-0">
-                <div className="relative h-full w-full">
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
                   <img
                     src="/images/hero-2.jpg"
                     alt="Modern container home with sustainable design"
@@ -179,8 +179,8 @@ export default function TenantHomePage() {
                 </div>
               </CarouselItem>
 
-              <CarouselItem className="relative h-[80vh] px-0">
-                <div className="relative h-full w-full">
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
                   <img
                     src="/images/hero-3.jpg"
                     alt="Tropical themed interior with warm lighting and plants"

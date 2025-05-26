@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/useToast"
 import { userApi, type UpdateUserInfoPayload, type UpdatePasswordPayload } from "@/features/auth/api/userApi"
 import { Loader2, Upload, Calendar, MapPin, Star, Download, AlertTriangle } from "lucide-react"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
+import { Header } from "@radix-ui/react-accordion"
 
 const TenantProfilePage = () => {
   const { toast } = useToast()
@@ -228,6 +229,8 @@ const TenantProfilePage = () => {
   }
 
   return (
+     <div className="min-h-screen bg-gray-50">
+      <Header/>
     <div className="container mx-auto py-8 px-4 md:px-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left sidebar */}
@@ -573,6 +576,7 @@ const TenantProfilePage = () => {
           </Tabs>
         </div>
       </div>
+    </div>
     </div>
   )
 }

@@ -128,7 +128,7 @@ export const ownerApi = {
     try {
       const response = await publicAxiosInstance.get(`listings/${listingId}/reviews`)
       return response.data;
-    } catch (error) {
+    } catch(error) {
       console.error("Error fetching reviews:", error);
 
       // console.error("Error fetching reviews: ", error)

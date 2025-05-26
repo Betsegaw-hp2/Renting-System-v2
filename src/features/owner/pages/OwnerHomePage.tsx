@@ -308,8 +308,8 @@ export default function OwnerHomePage() {
               </CarouselItem>
 
               {/* Slide 2 - Modern Container Home */}
-              <CarouselItem>
-                <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
                   <img
                     src="/images/hero-2.jpg"
                     alt="Modern sustainable home"
@@ -328,8 +328,8 @@ export default function OwnerHomePage() {
               </CarouselItem>
 
               {/* Slide 3 - Tropical Living */}
-              <CarouselItem>
-                <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
                   <img
                     src="/images/hero-3.jpg"
                     alt="Tropical living space"
