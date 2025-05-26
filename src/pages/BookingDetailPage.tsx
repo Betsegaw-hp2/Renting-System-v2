@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/useToast"
 import { Badge } from "@/components/ui/badge"
+import { Header } from "@radix-ui/react-accordion"
 
 interface Listing {
   id: string
@@ -227,6 +228,7 @@ const BookingDetailPage = () => {
   }
 
   return (
+    
     <div className="container mx-auto mt-10 max-w-4xl px-4 pb-16">
       <Card>
         <CardHeader>
