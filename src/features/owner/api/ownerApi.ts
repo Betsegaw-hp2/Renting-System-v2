@@ -1,18 +1,8 @@
-import axios from "axios"
-import config from "@/config/api.config"
-import { getAuthToken } from "@/lib/cookies"
-import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
-import apiClient from "../../../api/client"
-// import { CategoryCount } from "@/api/publicApi"
 
-// Create axios instance for listings API endpoints
-// const listingsAxiosInstance = axios.create({
-//   baseURL: config.apiBaseUrl,
-//   headers: {
-//     "Content-Type": "application/json",
-//     Authorization: `Bearer ${getAuthToken()}`,
-//   },
-// })
+import { getAuthToken } from "@/lib/cookies"
+import apiClient from "../../../api/client"
+import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
+
 
 export interface CreateListingPayload {
   address: string
@@ -101,10 +91,10 @@ export const ownerApi = {
   },
   getOwnerProperties: async (userId: string): Promise<FeaturedListing[]> => {
     try {
-      const response = await apiClient.get(`/users/${userId}/listings`)
+      const response = await apiClient.get<ApiListingResponse[]>(`/users/${userId}/listings`)
       console.log("Owner properties response:", response.data)
       return await Promise.all(
-        (response.data as ApiListingResponse[]).map(convertApiListingToFeaturedListing)
+        (response.data ?? []).map(convertApiListingToFeaturedListing)
       )
     } catch (error) {
       throw error

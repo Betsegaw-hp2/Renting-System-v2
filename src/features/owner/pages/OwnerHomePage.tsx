@@ -1,45 +1,45 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
+import { mockHomeApi } from "@/api/mockHomeApi"
+import type { FeaturedListing } from "@/api/publicApi"
+import { Header } from "@/components/layout/Header"
+import { ListingCard } from "@/components/listings/ListingCard"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AddPropertyDialog } from "@/features/owner/components/AddPropertyDialog"
+import { tenantApi } from "@/features/tenant/api/tenantApi"
+import type { RootState } from "@/store"
+import type { UserListingStats } from "@/types/listing.types"
 import {
   AlertTriangle,
   Building2,
   Calendar,
+  DollarSign,
+  Edit,
+  Eye,
+  Grid3X3,
   HomeIcon,
+  List,
+  MapPin,
+  MoreVertical,
   Plus,
   Search,
   Star,
-  Grid3X3,
-  List,
-  MapPin,
-  Eye,
-  Edit,
-  MoreVertical,
-  DollarSign,
-  Users,
   TrendingUp,
+  Users,
 } from "lucide-react"
-import type { FeaturedListing } from "@/api/publicApi"
-import { mockHomeApi } from "@/api/mockHomeApi"
-import { ListingCard } from "@/components/listings/ListingCard"
-import { Header } from "@/components/layout/Header"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { AddPropertyDialog } from "@/features/owner/components/AddPropertyDialog"
-import type { RootState } from "@/store"
-import type { UserListingStats } from "@/types/listing.types"
-import { tenantApi } from "@/features/tenant/api/tenantApi"
+import type React from "react"
+import { useEffect, useState } from "react"
+import { useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom"
 import { ownerApi } from "../api/ownerApi"
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 type ViewMode = "grid" | "list"
 
@@ -84,7 +84,7 @@ export default function OwnerHomePage() {
 
           // Fetch owner-specific data
           const listing = await ownerApi.getOwnerProperties(user.id)
-          const ownedListings = listing.map((listing: FeaturedListing) => ({
+          const ownedListings = (listing ?? []).map((listing: FeaturedListing) => ({
             ...listing,
           }))
           setUserListings(ownedListings)
@@ -130,7 +130,7 @@ export default function OwnerHomePage() {
   // Render properties in grid format
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {userListings.map((listing) => (
+      {(userListings ?? []).map((listing) => (
         <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
           <div className="aspect-video relative">
             <img
@@ -192,7 +192,7 @@ export default function OwnerHomePage() {
   // Render properties in list format
   const renderListView = () => (
     <div className="space-y-4">
-      {userListings.map((listing) => (
+      {(userListings ?? []).map((listing) => (
         <Card key={listing.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
           <CardContent className="p-0">
             <div className="flex">
@@ -434,7 +434,7 @@ export default function OwnerHomePage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {recommendedListings.map((listing) => (
+                      {(recommendedListings ?? []).map((listing) => (
                         <ListingCard key={listing.id} listing={listing} showSaveButton={false} />
                       ))}
                     </div>
@@ -463,7 +463,7 @@ export default function OwnerHomePage() {
                           </CardContent>
                         </Card>
                       ))
-                      : trendingListings.map((listing) => (
+                      : (trendingListings ?? []).map((listing) => (
                         <ListingCard key={listing.id} listing={listing} showSaveButton={false} />
                       ))}
                   </div>
@@ -546,7 +546,7 @@ export default function OwnerHomePage() {
                         </Card>
                       ))}
                     </div>
-                  ) : userListings.length > 0 ? (
+                  ) : userListings?.length > 0 ? (
                     <>{viewMode === "grid" ? renderGridView() : renderListView()}</>
                   ) : (
                     <Card>
@@ -565,7 +565,7 @@ export default function OwnerHomePage() {
                     </Card>
                   )}
 
-                  {userListings.length > 0 && (
+                  {userListings?.length > 0 && (
                     <div className="mt-8">
                       <Card>
                         <CardHeader>
@@ -648,8 +648,8 @@ export default function OwnerHomePage() {
                     <Card>
                       <CardContent className="p-0">
                         <div className="divide-y">
-                          {userListings.length > 0 ? (
-                            userListings.map((listing) => (
+                          {userListings?.length > 0 ? (
+                            (userListings ?? []).map((listing) => (
                               <div key={listing.id} className="p-4">
                                 <div className="flex justify-between items-center mb-2">
                                   <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
@@ -701,7 +701,7 @@ export default function OwnerHomePage() {
                           )}
                         </div>
                       </CardContent>
-                      {userListings.length > 0 && (
+                      {userListings?.length > 0 && (
                         <CardFooter className="bg-gray-50">
                           <Button variant="outline" className="w-full" onClick={() => navigate("/owner/bookings")}>
                             View All Booking Requests

@@ -1,15 +1,6 @@
 "use client"
 
-import { ArrowLeft, CalendarIcon, DollarSign, Heart, Home, MapPin, Share2, Star, Tag, CheckCircle } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Link, useParams, useNavigate } from "react-router-dom"
-import { publicApi, type Booking } from "../api/publicApi"
-import { Footer } from "../components/layout/Footer"
-import { Header } from "../components/layout/Header"
-import { Badge } from "../components/ui/badge"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { format, differenceInDays, addDays, formatISO } from "date-fns"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Dialog,
   DialogContent,
@@ -18,10 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { DatePicker } from "@/components/ui/date-picker"
-import { useToast } from "@/hooks/useToast"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
-import { ownerApi } from "@/features/owner/api/ownerApi"
+import { usePermissions } from "@/hooks/usePermissions"
+import { useToast } from "@/hooks/useToast"
+import { addDays, differenceInDays, format, formatISO } from "date-fns"
+import { ArrowLeft, CalendarIcon, CheckCircle, DollarSign, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Link, useNavigate, useParams } from "react-router-dom"
+import { publicApi, type Booking } from "../api/publicApi"
+import { Footer } from "../components/layout/Footer"
+import { Header } from "../components/layout/Header"
+import { Badge } from "../components/ui/badge"
+import { Button } from "../components/ui/button"
+import { Card, CardContent } from "../components/ui/card"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -80,6 +80,7 @@ export default function ListingDetailsPage() {
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [showIllustration, setShowIllustration] = useState(false)
   const { toast } = useToast()
+  const { isTenant, isAdmin } = usePermissions()
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -452,12 +453,21 @@ export default function ListingDetailsPage() {
 
                   {/* Action buttons */}
                   <div className="space-y-3">
-                    <Button className="w-full" onClick={openBookingModal}>
-                      Book Now
-                    </Button>
-                    <Button variant="outline" className="w-full">
-                      Contact Owner
-                    </Button>
+                    {isTenant && (
+                      <>
+                        <Button className="w-full" onClick={openBookingModal}>
+                          Book Now
+                        </Button>
+                        <Button variant="outline" className="w-full">
+                          Contact Owner
+                        </Button>
+                      </>
+                    )}
+                    {!isTenant && (
+                      <Button variant="outline" className="w-full" disabled>
+                        Booking not available for your role
+                      </Button>
+                    )}
 
                     <div className="flex justify-between">
                       <Button variant="ghost" size="sm" className="flex items-center">
