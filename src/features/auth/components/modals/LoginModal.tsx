@@ -1,10 +1,12 @@
-// auth/components/modals/LoginModal.tsx
 "use client"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import type { AppDispatch } from "@/store"
+import { unwrapResult } from "@reduxjs/toolkit"
 import { useState } from "react"
-import { login as loginUser } from "../../api/authApi"
+import { useDispatch } from "react-redux"
+import { loginUser } from "../../slices/authSlice"
 
 export function LoginModal({
   initialEmail,
@@ -19,12 +21,14 @@ export function LoginModal({
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string|null>(null)
   const [loading, setLoading] = useState(false)
+  const dispatch = useDispatch<AppDispatch>();
 
   const submit = async () => {
     setLoading(true); setError(null)
     try {
-      const resp = await loginUser({ email, password })
-      onSuccess(resp.token)
+      const resultAction = await dispatch(loginUser({ email, password, remember_me: false }))
+      const result  = unwrapResult(resultAction)
+      onSuccess(result.token)
     } catch (e: any) {
       setError(e.message ?? "Login failed")
     } finally { setLoading(false) }

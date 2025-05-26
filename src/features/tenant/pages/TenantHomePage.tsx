@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
 
-import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
@@ -10,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
+import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardFooter } from "../../../components/ui/card"
@@ -17,15 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
-import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
 
 import {
   Carousel,
   CarouselContent,
+  CarouselDots,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  CarouselDots,
 } from "../../../components/ui/carousel"
 
 export default function TenantHomePage() {

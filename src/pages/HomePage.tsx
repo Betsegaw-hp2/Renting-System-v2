@@ -27,15 +27,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../components/ui/input"
 import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { usePermissions } from "../hooks/usePermissions"
 import OwnerHomePage from "../features/owner/pages/OwnerHomePage"
 import TenantHomePage from "../features/tenant/pages/TenantHomePage"
-import type { AdminStats, UserListingStats } from "../types/listing.types"
+import { usePermissions } from "../hooks/usePermissions"
+import type { AdminStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
+  const { user, is_authenticated , token } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
 
   // State and logic for admin
@@ -75,7 +75,7 @@ export default function HomePage() {
     if (permissions.isAdmin) {
       fetchData()
     }
-  }, [is_authenticated, user, navigate, permissions.isAdmin])
+  }, [is_authenticated, user, token, navigate, permissions.isAdmin])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
