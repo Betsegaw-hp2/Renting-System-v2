@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import { getAuthToken, removeAuthToken, setAuthToken } from "../../../lib/cookies"
 import type { AuthState, LoginCredentials, User } from "../../../types/user.types"
+import type { SignupResponse } from "../api/authApi"
 import * as authApi from "../api/authApi"
 import type { SignupFormData } from "../types/signup.types"
 
@@ -36,7 +37,11 @@ const getErrorMessage = (error: any): string => {
   return "An unknown error occurred"
 }
 
-export const signupUser = createAsyncThunk(
+export const signupUser = createAsyncThunk<
+  SignupResponse,  
+  Omit<SignupFormData, "confirmPassword">, 
+  { rejectValue: string }
+>(
   "auth/signup",
   async (credentials: Omit<SignupFormData, "confirmPassword">, { rejectWithValue }) => {
     try {
@@ -52,8 +57,8 @@ export const signupUser = createAsyncThunk(
 
       const response = await authApi.signup(signupCredentials)
 
-      // Store token in cookie
-      setAuthToken(response.token, true)
+      // no taken (recent change in the API)
+      // setAuthToken(response.token, true)
 
       return response
     } catch (error: any) {
@@ -66,7 +71,11 @@ export interface LoginUserParams extends LoginCredentials {
   remember_me?: boolean
 }
 
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<
+  authApi.LoginResponse,
+  LoginUserParams,
+  { rejectValue: string }
+>(
   "auth/login",
   async ({ email, password, remember_me = false }: LoginUserParams, { rejectWithValue }) => {
     try {
@@ -95,7 +104,7 @@ export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWith
   }
 })
 
-export const fetchCurrentUser = createAsyncThunk("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
+export const fetchCurrentUser = createAsyncThunk<User,void, { rejectValue: string }>("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
   try {
     const user = await authApi.getCurrentUser()
     return user
@@ -122,11 +131,11 @@ const authSlice = createSlice({
       state.is_loading = true
       state.error = null
     })
-    builder.addCase(signupUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
+    builder.addCase(signupUser.fulfilled, (state, action: PayloadAction<authApi.SignupResponse>) => {
       state.is_loading = false
       state.is_authenticated = true
-      state.user = action.payload.user
-      state.token = action.payload.token
+      state.user = action.payload.data.user
+      state.token = null // Token is not returned in the signup response
     })
     builder.addCase(signupUser.rejected, (state, action) => {
       state.is_loading = false
@@ -138,11 +147,12 @@ const authSlice = createSlice({
       state.is_loading = true
       state.error = null
     })
-    builder.addCase(loginUser.fulfilled, (state, action: PayloadAction<authApi.AuthResponse>) => {
+    builder.addCase(loginUser.fulfilled, (state, action: PayloadAction<authApi.LoginResponse>) => {
       state.is_loading = false
       state.is_authenticated = true
-      state.user = action.payload.user
-      state.token = action.payload.token
+      const { token, ...userProperties } = action.payload;
+      state.user = userProperties;
+      state.token = token
     })
     builder.addCase(loginUser.rejected, (state, action) => {
       state.is_loading = false

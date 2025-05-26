@@ -4,9 +4,12 @@ import config from "../../../config/api.config"
 import { removeAuthToken } from "../../../lib/cookies"
 import type { LoginCredentials, SignupCredentials, User } from "../../../types/user.types"
 
-export interface AuthResponse {
-  user: User
+export interface LoginResponse extends User {
   token: string
+}
+export interface SignupResponse {
+  message: string;
+  data: { user: User }
 }
 
 export interface VerifyEmailPayload {
@@ -24,13 +27,13 @@ export interface VerifyEmailPayload {
   otp_code: string;
 }
 
-export const signup = async (credentials: SignupCredentials): Promise<AuthResponse> => {
+export const signup = async (credentials: SignupCredentials): Promise<SignupResponse> => {
   try {
     if (config.useMockApi) {
       return mockApi.signup(credentials)
     }
 
-    const response = await apiClient.post<AuthResponse>("/authentication/register", credentials)
+    const response = await apiClient.post<SignupResponse>("/authentication/register", credentials)
     return response.data
   } catch (error) {
     // Format the error before throwing
@@ -44,13 +47,13 @@ export const signup = async (credentials: SignupCredentials): Promise<AuthRespon
   }
 }
 
-export const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
+export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   try {
     if (config.useMockApi) {
       return mockApi.login(credentials)
     }
 
-    const response = await apiClient.post<AuthResponse>("/authentication/login", credentials)
+    const response = await apiClient.post<LoginResponse>("/authentication/login", credentials)
     return response.data
   } catch (error) {
     // Format the error before throwing
@@ -128,8 +131,12 @@ export const verifyEmail = async (payload: VerifyEmailPayload): Promise<string> 
     if (config.useMockApi) {
       return mockApi.verifyEmail(payload)
     }
-    const response = await apiClient.post<string>("/authentication/verify-email", payload)
-    return response.data
+    const response = await apiClient.post<{ message: string, data: { token: string } }>("authentication/verify-email", payload)
+    const resData = response.data
+    
+    console.log(resData.message)
+
+    return resData.data.token
   } catch (error) {
     // Format the error before throwing
     if (error instanceof Error) {

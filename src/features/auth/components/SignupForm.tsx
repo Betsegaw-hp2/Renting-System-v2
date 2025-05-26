@@ -41,7 +41,6 @@ export function SignupForm() {
           userId={registeredUserId}
           email={formData.email}
           onVerified={handleOtpVerified}
-          onEmailChange={(newEmail) => updateFormData("email", newEmail)}
         />
       </div>
     )

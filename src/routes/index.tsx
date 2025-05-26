@@ -1,3 +1,4 @@
+import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
 import { ChatThread } from "@/features/messages/components/ChatThread"
 import { MessagesPage } from "@/features/messages/components/MessagesPage"
 import type React from "react"
@@ -145,8 +146,17 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
-
+  {
+    path: "/verify-email/:userId",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <VerifyEmailPage />
+      </Suspense>
+    )
+  },
+  
   // Protected routes
+  
   {
     path: "/home",
     element: (
