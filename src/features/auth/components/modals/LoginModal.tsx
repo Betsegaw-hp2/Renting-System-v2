@@ -30,7 +30,7 @@ export function LoginModal({
       const result  = unwrapResult(resultAction)
       onSuccess(result.token)
     } catch (e: any) {
-      setError(e.message ?? "Login failed")
+      setError(e.response?.data?.message ?? e.message ?? "Login failed")
     } finally { setLoading(false) }
   }
 

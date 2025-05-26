@@ -1,3 +1,4 @@
+import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage"
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
 import { ChatThread } from "@/features/messages/components/ChatThread"
 import { MessagesPage } from "@/features/messages/components/MessagesPage"
@@ -151,6 +152,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <VerifyEmailPage />
+      </Suspense>
+    )
+  },
+  {
+    path: "/oauth/:provider/callback",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <OAuthCallbackPage />
       </Suspense>
     )
   },
