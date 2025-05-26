@@ -1,14 +1,15 @@
 "use client"
 
-import type React from "react"
 
-import { BookOpen, HomeIcon, Loader2, Star } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { BookOpen, HomeIcon, Loader2, Search, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
+import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardFooter } from "../../../components/ui/card"
@@ -16,16 +17,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
-import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
 
 import {
   Carousel,
   CarouselContent,
+  CarouselDots,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-  CarouselDots,
 } from "../../../components/ui/carousel"
+import { Input } from "@/components/ui/input"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -80,30 +81,9 @@ export default function TenantHomePage() {
     fetchData()
   }, [user, toast])
 
-  const handleSearch = (filters: SearchFiltersType) => {
-    // Filter listings based on search criteria
-    const filtered = featuredListings.filter((listing) => {
-      // Filter by search query
-      const matchesQuery =
-        !filters.query ||
-        listing.title.toLowerCase().includes(filters.query.toLowerCase()) ||
-        listing.description.toLowerCase().includes(filters.query.toLowerCase()) ||
-        listing.category.name.toLowerCase().includes(filters.query.toLowerCase())
-
-      // Filter by category
-      const matchesCategory =
-        !filters.category ||
-        filters.category === "all" ||
-        listing.category.name.toLowerCase() === filters.category.toLowerCase()
-
-      // Filter by date range (if applicable)
-      // This is a simplified example - in a real app, you'd need to check if the listing is available during the selected date range
-      const matchesDateRange = true
-
-      return matchesQuery && matchesCategory && matchesDateRange
-    })
-
-    setFilteredListings(filtered)
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    navigate(`/browse?query=${encodeURIComponent(searchQuery)}`)
   }
 
   const handleSaveToggle = async (listingId: string, isSaved: boolean) => {
@@ -121,7 +101,8 @@ export default function TenantHomePage() {
       } else {
         // Remove from saved listings
         await tenantApi.removeSavedListing(listingId)
-        setSavedListings((prev) => prev.filter((l) => l.id !== listingId))
+        setSavedListings((prev) => (prev ?? []).filter((l) => l.id !== listingId))
+
       }
     } catch (error) {
       console.error("Error updating saved listings:", error)
@@ -136,7 +117,7 @@ export default function TenantHomePage() {
   const handleCancelBooking = async (listingId: string, bookingId: string) => {
     try {
       await tenantApi.deleteBooking(listingId, bookingId)
-      setBookings((prev) => prev.filter((booking) => booking.id !== bookingId))
+      setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
       toast({
         title: "Success",
         description: "Booking cancelled successfully.",
@@ -157,11 +138,11 @@ export default function TenantHomePage() {
 
       <main className="flex-1">
         {/* Hero Section with Carousel */}
-        <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
+        <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
           <Carousel className="h-full" itemsPerSlide={1}>
             <CarouselContent className="h-full">
-              <CarouselItem className="relative h-[80vh] px-0">
-                <div className="relative h-full w-full">
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
                   <img
                     src="/images/hero-1.jpg"
                     alt="Minimalist organized living space with rustic wooden shelves"
@@ -225,18 +206,35 @@ export default function TenantHomePage() {
           </Carousel>
 
           {/* Welcome Message Overlay */}
-          <div className="absolute top-6 left-6 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 text-white">
-            <p className="text-sm font-medium">Welcome back, {user?.first_name || "User"}!</p>
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 border border-white/20">
+              <p className="text-white text-sm font-medium">Welcome back, {user?.first_name || "User"}! 👋</p>
+            </div>
+          </div>
+
+          {/* Search Section */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 mb-8 z-[5]">
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search for rentals in your area..."
+                  className="pl-10 bg-white/90 text-gray-900 h-12 w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-8 rounded-lg">
+                Search
+              </Button>
+            </form>
           </div>
         </section>
 
         {/* Search Section */}
         <section className="bg-gray-50 py-8">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <SearchFilters className="rounded-xl shadow-lg bg-white border border-gray-100" onSearch={handleSearch} />
-            </div>
-          </div>
+
         </section>
 
         {/* Main Content */}
@@ -271,8 +269,22 @@ export default function TenantHomePage() {
                   <h2 className="text-2xl font-bold mb-6">Recommended for You</h2>
 
                   {isLoading ? (
-                    <div className="flex justify-center items-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {[...Array(4)].map((_, index) => (
+                        <Card key={index} className="overflow-hidden">
+                          <Skeleton className="h-48 w-full" />
+                          <CardContent className="p-4">
+                            <Skeleton className="h-4 w-1/4 mb-2" />
+                            <Skeleton className="h-6 w-3/4 mb-2" />
+                            <Skeleton className="h-4 w-1/2 mb-4" />
+                            <Skeleton className="h-4 w-full mb-4" />
+                            <div className="flex justify-between">
+                              <Skeleton className="h-6 w-1/4" />
+                              <Skeleton className="h-8 w-1/4" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   ) : recommendedListings?.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -375,9 +387,11 @@ export default function TenantHomePage() {
                                 <span className="font-medium text-gray-900">${booking.total_amount}</span>
                               </div>
                               <div className="mt-4 flex gap-2 justify-end">
-                                <Button variant="outline" size="sm">
-                                  Message Owner
-                                </Button>
+                                <Link to={`/messages/${booking.listing_id}/${booking.owner_id}`}>
+                                  <Button variant="outline" size="sm">
+                                    Message Owner
+                                  </Button>
+                                </Link>
                                 {booking.status === "pending" && (
                                   <Button
                                     variant="destructive"

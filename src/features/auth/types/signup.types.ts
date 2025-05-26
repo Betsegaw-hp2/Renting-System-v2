@@ -36,7 +36,7 @@ export interface SignupFormData {
   agreeToTerms?: boolean
 }
 
-export type SignupStep = "account" | "tenant-details" | "owner-details"
+export type SignupStep = "account" | "tenant-details" | "owner-details" | "verify-email";
 
 export interface StepConfig {
   title: string
@@ -55,5 +55,9 @@ export const SIGNUP_STEPS: Record<SignupStep, StepConfig> = {
   "owner-details": {
     title: "Property Details",
     description: "Provide your property details (optional)",
+  },
+  "verify-email": {  
+    title: "Verify Email",
+    description: "Enter the code we sent you",
   },
 }

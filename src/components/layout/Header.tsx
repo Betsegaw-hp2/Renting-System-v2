@@ -2,6 +2,7 @@
 
 import type React from "react"
 
+import { MessageIcon } from "@/features/messages/components/MessageIcon"
 import {
   BookOpen,
   Building2,
@@ -11,14 +12,13 @@ import {
   Home,
   LogOut,
   Menu,
-  MessageSquare,
   PieChart,
   Search,
   Settings,
   Tag,
   User,
   Users,
-  X,
+  X
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
@@ -213,13 +213,6 @@ export function Header({
                         <Calendar className="h-4 w-4" />
                         <span>Booking Requests</span>
                       </Link>
-                      <Link
-                        to="/owner/messages"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        <span>Messages</span>
-                      </Link>
                     </>
                   )}
 
@@ -239,13 +232,6 @@ export function Header({
                       >
                         <Heart className="h-4 w-4" />
                         <span>Saved</span>
-                      </Link>
-                      <Link
-                        to="/tenant/messages"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        <span>Messages</span>
                       </Link>
                     </>
                   )}
@@ -320,9 +306,10 @@ export function Header({
               </div>
             )}
 
-            {is_authenticated && (
+            {is_authenticated && user?.is_verified && (
               <div className={variant === "transparent" && !isScrolled ? "text-white" : ""}>
                 <NotificationBell />
+                <MessageIcon />
               </div>
             )}
 

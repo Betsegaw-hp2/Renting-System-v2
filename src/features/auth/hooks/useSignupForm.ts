@@ -2,13 +2,14 @@
 
 import type React from "react"
 
+import { unwrapResult } from "@reduxjs/toolkit"
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateSignupForm, type ValidationError } from "../../../lib/validation"
 import type { AppDispatch, RootState } from "../../../store"
 import { type SignupCredentials, UserRole } from "../../../types/user.types"
-import { signupUser } from "../slices/authSlice"
+import { fetchCurrentUser, signupUser } from "../slices/authSlice"
 
 export const useSignupForm = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -50,7 +51,14 @@ export const useSignupForm = () => {
     const resultAction = await dispatch(signupUser(credentials))
 
     if (signupUser.fulfilled.match(resultAction)) {
-      navigate("/home")
+      try {
+        const fetchMeAction = await dispatch(fetchCurrentUser());
+        unwrapResult(fetchMeAction);
+      } catch {
+        console.error("Failed to fetch user data after login");
+      }
+
+      // navigate("/login");
     }
   }
 

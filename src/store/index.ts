@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit"
 import authReducer from "../features/auth/slices/authSlice"
+import chatReducer from "../features/messages/slices/chatSlice"
 import notificationsReducer from "../features/notifications/slices/notificationsSlice"
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     notifications: notificationsReducer,
+    chat: chatReducer,
     // Add other reducers here as your app grows
     // ... other reducers
   },

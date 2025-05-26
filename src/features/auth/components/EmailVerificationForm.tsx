@@ -1,13 +1,13 @@
 "use client"
 
+import { AlertCircle, CheckCircle, Loader2, Mail } from "lucide-react"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card"
-import { OtpInput } from "./OtpInput"
-import { verifyEmail, resendVerificationEmail } from "../api/authApi"
 import { useToast } from "../../../hooks/useToast"
-import { Mail, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { resendVerifyEmail, verifyEmail } from "../api/authApi"
+import { OtpInput } from "./OtpInput"
 
 interface EmailVerificationFormProps {
   userId: string
@@ -53,7 +53,7 @@ export const EmailVerificationForm: React.FC<EmailVerificationFormProps> = ({
     try {
       const response = await verifyEmail({ otp_code: otpCode, user_id: userId })
 
-      if (response.verified) {
+      if (response !== null) {
         setStatus("success")
         toast({
           title: "Email Verified",
@@ -86,10 +86,10 @@ export const EmailVerificationForm: React.FC<EmailVerificationFormProps> = ({
     setResendCountdown(60) // 60 seconds cooldown
 
     try {
-      const response = await resendVerificationEmail(userId)
+      const response = await resendVerifyEmail(userId)
       toast({
         title: "Verification Code Sent",
-        description: response.message || "A new verification code has been sent to your email.",
+        description:  "A new verification code has been sent to your email.",
         variant: "default",
       })
     } catch (error) {

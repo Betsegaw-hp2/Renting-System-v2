@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid"
 import config from "../config/api.config"
-import type { AuthResponse } from "../features/auth/api/authApi"
+import { type AuthResponse, type VerifyEmailPayload } from "../features/auth/api/authApi"
 import { getAuthToken } from "../lib/cookies"
 import type { LoginCredentials, SignupCredentials, User, UserRole } from "../types/user.types"
 
@@ -165,4 +165,57 @@ export const mockApi = {
 
     return user
   },
+  updateEmail: async (userId: string, newEmail: string): Promise<void> => {
+    await delay(config.mockApiDelay)
+
+    // Find user by ID
+    const user = mockUsers.find((user) => user.id === userId)
+
+    if (!user) {
+      const error = new Error("User not found")
+      throw error
+    }
+
+    // Check if email already exists
+    if (mockUsers.some((user) => user.email === newEmail)) {
+      const error = new Error("Email already exists")
+      throw error
+    }
+
+    // Update email
+    user.email = newEmail
+
+    // Simulate sending verification email
+    console.log(`Sending verification email to ${newEmail}`)
+  },
+  verifyEmail: async (payload: VerifyEmailPayload): Promise<string> => {
+    await delay(config.mockApiDelay)
+
+    // Simulate email verification
+    const user = mockUsers.find((user) => user.id === payload.user_id)
+
+    if (!user) {
+      const error = new Error("User not found")
+      throw error
+    }
+
+    // In a real app, we'd check the verification code
+    payload.otp_code === "123456" && (user.is_verified = true)
+
+    return "Email verified successfully"
+  },
+  resendVerifyEmail: async (userId: string): Promise<void> => {
+    await delay(config.mockApiDelay)
+
+    // Simulate resending verification email
+    const user = mockUsers.find((user) => user.id === userId)
+
+    if (!user) {
+      const error = new Error("User not found")
+      throw error
+    }
+
+    // In a real app, we'd send an email
+    console.log(`Resending verification email to ${user.email}`)
+  }
 }

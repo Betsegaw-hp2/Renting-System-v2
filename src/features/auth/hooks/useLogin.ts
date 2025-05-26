@@ -2,13 +2,13 @@
 
 import type React from "react"
 
+import { unwrapResult } from "@reduxjs/toolkit"
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateEmail, validateRequired } from "../../../lib/validation"
 import type { AppDispatch, RootState } from "../../../store"
-import { fetchCurrentUser, loginUser } from "../slices/authSlice"
-import { unwrapResult } from "@reduxjs/toolkit"
+import { loginUser } from "../slices/authSlice"
 
 export const useLogin = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -49,14 +49,16 @@ export const useLogin = () => {
     const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
     if (loginUser.fulfilled.match(resultAction)) {
-      try {
-        const fetchMeAction = await dispatch(fetchCurrentUser());
-        unwrapResult(fetchMeAction);
-      } catch {
-        console.error("Failed to fetch user data after login");
-      }
-
-      navigate("/home");
+        try {
+          const user = unwrapResult(resultAction)
+          if (!user?.is_verified) {
+            return navigate(`/verify-email/${user.id}`)
+          } else if(user) {
+            return navigate("/home")
+          }
+        } catch (e) {
+          console.error("Login failed or bad payload:", e)
+        }
     }
   }
 

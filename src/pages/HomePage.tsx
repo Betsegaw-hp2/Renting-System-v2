@@ -1,6 +1,8 @@
 "use client"
 
-import type React from "react"
+import type { FeaturedListing } from "@/api/publicApi"
+import { ListingCard } from "@/components/listings/ListingCard"
+import type { RootState } from "@/store"
 import {
   AlertTriangle,
   BarChart3,
@@ -13,12 +15,10 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react"
+import type React from "react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import type { FeaturedListing } from "@/api/publicApi"
-import { ListingCard } from "@/components/listings/ListingCard"
-import type { RootState } from "@/store"
 import { mockHomeApi } from "../api/mockHomeApi"
 import { Header } from "../components/layout/Header"
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert"
@@ -27,15 +27,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../components/ui/input"
 import { Skeleton } from "../components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import { usePermissions } from "../hooks/usePermissions"
 import OwnerHomePage from "../features/owner/pages/OwnerHomePage"
 import TenantHomePage from "../features/tenant/pages/TenantHomePage"
+import { usePermissions } from "../hooks/usePermissions"
 import type { AdminStats } from "../types/listing.types"
 import { UserRole } from "../types/user.types"
 
 export default function HomePage() {
   const navigate = useNavigate()
-  const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
+  const { user, is_authenticated , token } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
 
   // State and logic for admin
@@ -75,7 +75,7 @@ export default function HomePage() {
     if (permissions.isAdmin) {
       fetchData()
     }
-  }, [is_authenticated, user, navigate, permissions.isAdmin])
+  }, [is_authenticated, user, token, navigate, permissions.isAdmin])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,7 +101,13 @@ export default function HomePage() {
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
               <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
-              <p className="text-blue-100 mb-8">Monitor platform activity and manage users</p>
+              <p className="text-blue-100 mb-8">
+                {permissions.isOwner
+                  ? "Manage your properties and view booking requests"
+                  : permissions.isAdmin
+                    ? "Monitor platform activity and manage users"
+                    : "Find your perfect rental and manage your bookings"}
+              </p>
               <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />

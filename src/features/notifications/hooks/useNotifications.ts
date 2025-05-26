@@ -1,37 +1,22 @@
-"use client"
-
 import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import type { RootState } from "../../../store"
+import type { AppDispatch, RootState } from "../../../store"
 import { notificationWebSocketService } from "../services/notificationWebSocket"
 import { fetchUserNotifications } from "../slices/notificationsSlice"
 
 export const useNotifications = () => {
-  const dispatch = useDispatch()
-  const { user } = useSelector((state: RootState) => state.auth)
-  const { notifications, unreadCount, isLoading, error, isOpen } = useSelector(
-    (state: RootState) => state.notifications,
-  )
+  const dispatch = useDispatch<AppDispatch>()
+  const { user, token } = useSelector((s: RootState) => s.auth)
+  const { notifications, unreadCount, isLoading, error, isOpen } =
+    useSelector((s: RootState) => s.notifications)
 
   useEffect(() => {
-    if (user?.id) {
-      // Fetch initial notifications
-      dispatch(fetchUserNotifications(user.id) as any)
-
-      // Connect to WebSocket for real-time notifications
-      notificationWebSocketService.connect(user.id)
-
-      return () => {
-        notificationWebSocketService.disconnect()
-      }
+    if (user?.id && token) {
+      dispatch(fetchUserNotifications(user.id))
+      notificationWebSocketService.connect(user.id, token)
+      return () => { notificationWebSocketService.disconnect() }
     }
-  }, [dispatch, user?.id])
+  }, [dispatch, user?.id, token])
 
-  return {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    isOpen,
-  }
+  return { notifications, unreadCount, isLoading, error, isOpen }
 }

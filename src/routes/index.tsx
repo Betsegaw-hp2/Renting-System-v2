@@ -1,3 +1,6 @@
+import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
+import { ChatThread } from "@/features/messages/components/ChatThread"
+import { MessagesPage } from "@/features/messages/components/MessagesPage"
 import type React from "react"
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom"
@@ -143,8 +146,17 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
-
+  {
+    path: "/verify-email/:userId",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <VerifyEmailPage />
+      </Suspense>
+    )
+  },
+  
   // Protected routes
+  
   {
     path: "/home",
     element: (
@@ -154,6 +166,38 @@ const router = createBrowserRouter([
         </Suspense>
       </ProtectedRoute>
     ),
+  },
+  // {
+  //   path: "/messages/:listingId/:receiverId",
+  //   element: (
+  //     <ProtectedRoute>
+  //       <Suspense fallback={<LoadingFallback />}>
+  //         <ChatPage />
+  //       </Suspense>
+  //     </ProtectedRoute>
+  //   )
+  // },
+  {
+        path: "messages",
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <MessagesPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            path: ":listingId/:receiverId",
+            element: (
+              <ProtectedRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ChatThread />
+                </Suspense>
+              </ProtectedRoute>
+            ),
+          },
+        ],
   },
 
   // Tenant-specific routes

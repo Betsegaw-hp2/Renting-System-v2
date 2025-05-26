@@ -39,6 +39,7 @@ import type { RootState } from "@/store"
 import type { UserListingStats } from "@/types/listing.types"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { ownerApi } from "../api/ownerApi"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 
 type ViewMode = "grid" | "list"
 
@@ -84,7 +85,7 @@ export default function OwnerHomePage() {
           // Fetch owner-specific data
           const listing = await ownerApi.getOwnerProperties(user.id)
           const ownedListings = listing.map((listing: FeaturedListing) => ({
-            ...listing
+            ...listing,
           }))
           setUserListings(ownedListings)
 
@@ -139,10 +140,10 @@ export default function OwnerHomePage() {
             />
             <Badge
               className={`absolute top-3 right-3 ${listing.status === "completed"
-                  ? "bg-green-500 hover:bg-green-600"
-                  : listing.status === "booked"
-                    ? "bg-blue-500 hover:bg-blue-600"
-                    : "bg-gray-500 hover:bg-gray-600"
+                ? "bg-green-500 hover:bg-green-600"
+                : listing.status === "booked"
+                  ? "bg-blue-500 hover:bg-blue-600"
+                  : "bg-gray-500 hover:bg-gray-600"
                 }`}
             >
               {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
@@ -209,10 +210,10 @@ export default function OwnerHomePage() {
                       <h3 className="font-bold text-lg">{listing.title}</h3>
                       <Badge
                         className={`${listing.status === "completed"
-                            ? "bg-green-500 hover:bg-green-600"
-                            : listing.status === "booked"
-                              ? "bg-blue-500 hover:bg-blue-600"
-                              : "bg-gray-500 hover:bg-gray-600"
+                          ? "bg-green-500 hover:bg-green-600"
+                          : listing.status === "booked"
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : "bg-gray-500 hover:bg-gray-600"
                           }`}
                       >
                         {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
@@ -282,30 +283,101 @@ export default function OwnerHomePage() {
     <div className="flex min-h-screen flex-col">
       <Header showSidebarToggle={false} />
       <main className="flex-1 bg-gray-50">
-        {/* Hero Section with Search */}
-        <section className="bg-blue-600 py-12 text-white">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-3xl font-bold mb-4">Welcome back, {user?.first_name || "User"}!</h1>
-              <p className="text-blue-100 mb-8">Manage your properties and view booking requests</p>
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search for rentals..."
-                    className="pl-10 bg-white text-gray-900 h-12 w-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+        {/* Hero Section with Carousel */}
+        <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
+          <Carousel className="h-full" itemsPerSlide={1}>
+            <CarouselContent className="h-full">
+              {/* Slide 1 - Organized Living */}
+              <CarouselItem className="relative h-[90vh] px-0">
+                <div className="relative h-full min-h-[60px] overflow-hidden">
+                  <img
+                    src="/images/hero-1.jpg"
+                    alt="Organized living space"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white max-w-4xl mx-auto px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">List Your Property</h1>
+                      <p className="text-xl md:text-2xl text-white/90 mb-8">
+                        Turn your space into a profitable rental with our platform
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <Button type="submit" className="bg-white text-blue-600 hover:bg-blue-50 h-12">
-                  Search
-                </Button>
-              </form>
+              </CarouselItem>
+
+              {/* Slide 2 - Modern Container Home */}
+              <CarouselItem>
+                <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+                  <img
+                    src="/images/hero-2.jpg"
+                    alt="Modern sustainable home"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white max-w-4xl mx-auto px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">Maximize Your Income</h1>
+                      <p className="text-xl md:text-2xl text-white/90 mb-8">
+                        Reach thousands of potential tenants and optimize your rental revenue
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+
+              {/* Slide 3 - Tropical Living */}
+              <CarouselItem>
+                <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
+                  <img
+                    src="/images/hero-3.jpg"
+                    alt="Tropical living space"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center text-white max-w-4xl mx-auto px-4">
+                      <h1 className="text-4xl md:text-6xl font-bold mb-4">Professional Management</h1>
+                      <p className="text-xl md:text-2xl text-white/90 mb-8">
+                        Streamline bookings, manage tenants, and grow your property portfolio
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CarouselItem>
+            </CarouselContent>
+
+            <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+            <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+          </Carousel>
+
+          {/* Welcome Message Overlay */}
+          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3 border border-white/20">
+              <p className="text-white text-sm font-medium">Welcome back, {user?.first_name || "User"}! 👋</p>
             </div>
           </div>
+          {/* Search Section */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 mb-8 z-[5]">
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search for rentals in your area..."
+                  className="pl-10 bg-white/90 text-gray-900 h-12 w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-8 rounded-lg">
+                Search
+              </Button>
+            </form>
+          </div>
         </section>
+
 
         {/* Role-specific alert */}
         <div className="container mx-auto px-4 mt-6">
@@ -583,12 +655,12 @@ export default function OwnerHomePage() {
                                   <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
                                   <span
                                     className={`px-2 py-1 rounded text-xs font-medium ${listing.status === "completed"
-                                        ? "bg-green-100 text-green-800"
-                                        : listing.status === "booked"
-                                          ? "bg-blue-100 text-blue-800"
-                                          : listing.status === "pending"
-                                            ? "bg-yellow-100 text-yellow-800"
-                                            : "bg-gray-100 text-gray-800"
+                                      ? "bg-green-100 text-green-800"
+                                      : listing.status === "booked"
+                                        ? "bg-blue-100 text-blue-800"
+                                        : listing.status === "pending"
+                                          ? "bg-yellow-100 text-yellow-800"
+                                          : "bg-gray-100 text-gray-800"
                                       }`}
                                   >
                                     {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
