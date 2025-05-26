@@ -1,11 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import { format, differenceInDays } from "date-fns"
-import { CalendarIcon, Clock, Edit2Icon, Save } from "lucide-react"
-import { publicApi } from "../api/publicApi"
-import { tenantApi, type Booking } from "@/features/tenant/api/tenantApi"
+import { Footer } from "@/components/layout/Footer"
+import { Header } from "@/components/layout/Header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { DatePicker } from "@/components/ui/date-picker"
@@ -17,9 +14,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { tenantApi, type Booking } from "@/features/tenant/api/tenantApi"
 import { useToast } from "@/hooks/useToast"
-import { Badge } from "@/components/ui/badge"
-import { Header } from "@radix-ui/react-accordion"
+import { differenceInDays, format } from "date-fns"
+import { CalendarIcon, Clock, Edit2Icon, Save } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { publicApi } from "../api/publicApi"
 
 interface Listing {
   id: string
@@ -228,191 +229,194 @@ const BookingDetailPage = () => {
   }
 
   return (
-    
-    <div className="container mx-auto mt-10 max-w-4xl px-4 pb-16">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">Booking Details</CardTitle>
-              <CardDescription>Booking #{booking.id.substring(0, 8)}</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(true)}
-              disabled={booking.status === "completed" || booking.status === "cancelled"}
-            >
-              <Edit2Icon className="mr-2 h-4 w-4" />
-              Edit Booking
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Status Section */}
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Booking Status</p>
-              <Badge className={`mt-1 ${getStatusBadgeColor(booking.status)}`}>
-                {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Payment Status</p>
-              <Badge className={`mt-1 ${getPaymentStatusBadgeColor(booking.payment_status)}`}>
-                {booking.payment_status
-                  .split("_")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ")}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Dates Section */}
-          <div className="rounded-lg bg-gray-50 p-4">
-            <h3 className="mb-3 font-medium">Booking Period</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-start gap-3">
-                <CalendarIcon className="mt-0.5 h-5 w-5 text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Check-in Date</p>
-                  <p className="font-medium">{format(new Date(booking.start_date), "PPP")}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CalendarIcon className="mt-0.5 h-5 w-5 text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Check-out Date</p>
-                  <p className="font-medium">{format(new Date(booking.end_date), "PPP")}</p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 flex items-start gap-3">
-              <Clock className="mt-0.5 h-5 w-5 text-gray-500" />
+    <>
+      <Header />
+      <div className="container mx-auto mt-10 max-w-4xl px-4 pb-16">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Duration</p>
-                <p className="font-medium">
-                  {differenceInDays(new Date(booking.end_date), new Date(booking.start_date))} days
-                </p>
-              </div> 
-            </div>
-          </div>
-
-          {/* Payment Section */}
-          <div className="rounded-lg bg-gray-50 p-4">
-            <h3 className="mb-3 font-medium">Payment Details</h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between">
-                <p className="text-gray-600">Total Amount</p>
-                <p className="font-medium">${booking.total_amount.toFixed(2)}</p>
+                <CardTitle className="text-2xl">Booking Details</CardTitle>
+                <CardDescription>Booking #{booking.id.substring(0, 8)}</CardDescription>
               </div>
-              {booking.payment_reference && (
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(true)}
+                disabled={booking.status === "completed" || booking.status === "cancelled"}
+              >
+                <Edit2Icon className="mr-2 h-4 w-4" />
+                Edit Booking
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Status Section */}
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Booking Status</p>
+                <Badge className={`mt-1 ${getStatusBadgeColor(booking.status)}`}>
+                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Payment Status</p>
+                <Badge className={`mt-1 ${getPaymentStatusBadgeColor(booking.payment_status)}`}>
+                  {booking.payment_status
+                    .split("_")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Dates Section */}
+            <div className="rounded-lg bg-gray-50 p-4">
+              <h3 className="mb-3 font-medium">Booking Period</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="mt-0.5 h-5 w-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Check-in Date</p>
+                    <p className="font-medium">{format(new Date(booking.start_date), "PPP")}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="mt-0.5 h-5 w-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Check-out Date</p>
+                    <p className="font-medium">{format(new Date(booking.end_date), "PPP")}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-start gap-3">
+                <Clock className="mt-0.5 h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Duration</p>
+                  <p className="font-medium">
+                    {differenceInDays(new Date(booking.end_date), new Date(booking.start_date))} days
+                  </p>
+                </div> 
+              </div>
+            </div>
+
+            {/* Payment Section */}
+            <div className="rounded-lg bg-gray-50 p-4">
+              <h3 className="mb-3 font-medium">Payment Details</h3>
+              <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
-                  <p className="text-gray-600">Payment Reference</p>
-                  <p className="font-medium">{booking.payment_reference}</p>
+                  <p className="text-gray-600">Total Amount</p>
+                  <p className="font-medium">${booking.total_amount.toFixed(2)}</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Timestamps */}
-          <div className="grid gap-4 text-sm text-gray-500 md:grid-cols-2">
-            <div>
-              <p>Created: {format(new Date(booking.created_at), "PPP 'at' p")}</p>
-            </div>
-            <div>
-              <p>Last Updated: {format(new Date(booking.updated_at), "PPP 'at' p")}</p>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            Go Back
-          </Button>
-          {booking.status === "pending" && <Button variant="destructive">Cancel Booking</Button>}
-        </CardFooter>
-      </Card>
-
-      {/* Edit Booking Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Booking Dates</DialogTitle>
-            <DialogDescription>Update the start and end dates for your booking.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="start-date" className="text-sm font-medium">
-                Start Date
-              </label>
-              <DatePicker
-                date={startDate}
-                setDate={setStartDate}
-                disabledDates={(date) => {
-                  // Disable dates in the past
-                  return date < new Date()
-                }}
-              />
-              <p className="text-xs text-gray-500">Select the new check-in date</p>
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="end-date" className="text-sm font-medium">
-                End Date
-              </label>
-              <DatePicker
-                date={endDate}
-                setDate={setEndDate}
-                disabledDates={(date) => {
-                  // Disable dates before start date
-                  return startDate ? date <= startDate : date <= new Date()
-                }}
-              />
-              <p className="text-xs text-gray-500">Select the new check-out date</p>
-            </div>
-
-            {startDate && endDate && endDate > startDate && listing && (
-              <div className="mt-2 rounded-md bg-blue-50 p-3">
-                <h4 className="font-medium text-blue-800">Booking Summary</h4>
-                <div className="mt-2 space-y-1 text-sm">
+                {booking.payment_reference && (
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Duration:</span>
-                    <span className="font-medium text-blue-900">{differenceInDays(endDate, startDate)} days</span>
+                    <p className="text-gray-600">Payment Reference</p>
+                    <p className="font-medium">{booking.payment_reference}</p>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-blue-700">Daily Rate:</span>
-                    <span className="font-medium text-blue-900">${calculateDailyRate(listing.price).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between border-t border-blue-200 pt-1">
-                    <span className="font-medium text-blue-700">New Total:</span>
-                    <span className="font-medium text-blue-900">${calculateTotalAmount().toFixed(2)}</span>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+            </div>
+
+            {/* Timestamps */}
+            <div className="grid gap-4 text-sm text-gray-500 md:grid-cols-2">
+              <div>
+                <p>Created: {format(new Date(booking.created_at), "PPP 'at' p")}</p>
+              </div>
+              <div>
+                <p>Last Updated: {format(new Date(booking.updated_at), "PPP 'at' p")}</p>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Go Back
             </Button>
-            <Button
-              onClick={handleUpdateBooking}
-              disabled={isUpdating || !startDate || !endDate || endDate <= startDate || calculateTotalAmount() <= 0}
-            >
-              {isUpdating ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </>
+            {booking.status === "pending" && <Button variant="destructive">Cancel Booking</Button>}
+          </CardFooter>
+        </Card>
+
+        {/* Edit Booking Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Booking Dates</DialogTitle>
+              <DialogDescription>Update the start and end dates for your booking.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <label htmlFor="start-date" className="text-sm font-medium">
+                  Start Date
+                </label>
+                <DatePicker
+                  date={startDate}
+                  setDate={setStartDate}
+                  disabledDates={(date) => {
+                    // Disable dates in the past
+                    return date < new Date()
+                  }}
+                />
+                <p className="text-xs text-gray-500">Select the new check-in date</p>
+              </div>
+              <div className="grid gap-2">
+                <label htmlFor="end-date" className="text-sm font-medium">
+                  End Date
+                </label>
+                <DatePicker
+                  date={endDate}
+                  setDate={setEndDate}
+                  disabledDates={(date) => {
+                    // Disable dates before start date
+                    return startDate ? date <= startDate : date <= new Date()
+                  }}
+                />
+                <p className="text-xs text-gray-500">Select the new check-out date</p>
+              </div>
+
+              {startDate && endDate && endDate > startDate && listing && (
+                <div className="mt-2 rounded-md bg-blue-50 p-3">
+                  <h4 className="font-medium text-blue-800">Booking Summary</h4>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Duration:</span>
+                      <span className="font-medium text-blue-900">{differenceInDays(endDate, startDate)} days</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-blue-700">Daily Rate:</span>
+                      <span className="font-medium text-blue-900">${calculateDailyRate(listing.price).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-200 pt-1">
+                      <span className="font-medium text-blue-700">New Total:</span>
+                      <span className="font-medium text-blue-900">${calculateTotalAmount().toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateBooking}
+                disabled={isUpdating || !startDate || !endDate || endDate <= startDate || calculateTotalAmount() <= 0}
+              >
+                {isUpdating ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Footer />
+    </>
   )
 }
 
