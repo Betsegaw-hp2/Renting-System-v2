@@ -58,7 +58,7 @@ export const useSignupForm = () => {
         console.error("Failed to fetch user data after login");
       }
 
-      navigate("/home");
+      // navigate("/login");
     }
   }
 

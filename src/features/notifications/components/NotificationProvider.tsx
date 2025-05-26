@@ -15,7 +15,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const { isOpen } = useSelector((state: RootState) => state.notifications)
 
   useEffect(() => {
-    if (user?.id) {
+      if (!user?.id || !user.is_verified) {
+        return
+      }
       // Fetch initial notifications
       dispatch(fetchUserNotifications(user.id) as any)
 
@@ -25,8 +27,8 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       return () => {
         notificationWebSocketService.disconnect()
       }
-    }
-  }, [dispatch, user?.id])
+
+  }, [dispatch, user])
 
   return (
     <>

@@ -7,8 +7,8 @@ import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { validateEmail, validatePassword, validateRequired } from "../../../lib/validation"
 import type { AppDispatch, RootState } from "../../../store"
-import { UserRole, type User } from "../../../types/user.types"
-import { fetchCurrentUser, signupUser } from "../slices/authSlice"
+import { UserRole } from "../../../types/user.types"
+import { signupUser } from "../slices/authSlice"
 import type { SignupFormData, SignupStep } from "../types/signup.types"
 
 const initialFormData: SignupFormData = {
@@ -92,13 +92,14 @@ export const useMultiStepSignup = () => {
     try {
       const { confirmPassword, ...signupData } = formData
       const signupAction = await dispatch(signupUser(signupData))
-      unwrapResult(signupAction)    
+      const result = unwrapResult(signupAction)    
+      const userId = result.data.user.id
+      
+      navigate(`/verify-email/${userId}`, {
+        state: { email: formData.email }
+      })
 
-      const fetchMeAction = await dispatch(fetchCurrentUser())
-      const user: User = unwrapResult(fetchMeAction)
 
-      setRegisteredUserId(user.id)
-      setCurrentStep("verify-email")
     } catch (err) {
       console.error("Signup or unwrapping failed:", err)
     }

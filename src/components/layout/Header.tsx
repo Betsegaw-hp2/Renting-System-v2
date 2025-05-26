@@ -306,7 +306,7 @@ export function Header({
               </div>
             )}
 
-            {is_authenticated && (
+            {is_authenticated && user?.is_verified && (
               <div className={variant === "transparent" && !isScrolled ? "text-white" : ""}>
                 <NotificationBell />
                 <MessageIcon />
