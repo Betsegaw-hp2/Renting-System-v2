@@ -338,7 +338,8 @@ export const adminApi = {
       return true // Mock successful deletion
     }
   },
-
+  
+  // TODO: FIX
   updateCategoryImage: async (id: string, formData: FormData) => {
     try {
       // First try the standard endpoint
@@ -382,7 +383,7 @@ export const adminApi = {
     }
   },
 
-  // Admin profile
+  // FIX: Admin profile
   getAdminProfile: async () => {
     try {
       const response = await apiClient.get("/admin/profile")
@@ -492,7 +493,7 @@ export const adminApi = {
   getReports: async (params: { limit?: number; offset?: number; since?: string; sort?: string }) => {
     try {
       const response = await apiClient.get("/reports", { params })
-      return toCamelCase(response.data)
+      return response.data
     } catch (error) {
       console.error("Error fetching reports:", error)
       throw error
@@ -502,17 +503,22 @@ export const adminApi = {
   getReport: async (id: string) => {
     try {
       const response = await apiClient.get(`/reports/${id}`)
-      return toCamelCase(response.data)
+      return response.data
     } catch (error) {
-      console.error("Error fetching report:", error)
-      throw error
+       if (error instanceof Error) {
+          throw error
+        } else if (typeof error === "object" && error !== null) {
+          throw new Error(JSON.stringify(error))
+        } else {
+          throw new Error("An unknown error occurred during signup")
+        }
     }
   },
 
   dismissReport: async (id: string) => {
     try {
       const response = await apiClient.get(`/reports/${id}/dismiss`)
-      return toCamelCase(response.data)
+      return response.data
     } catch (error) {
       console.error("Error dismissing report:", error)
       throw error
@@ -522,7 +528,7 @@ export const adminApi = {
   resolveReport: async (id: string) => {
     try {
       const response = await apiClient.get(`/reports/${id}/resolve`)
-      return toCamelCase(response.data)
+      return response.data
     } catch (error) {
       console.error("Error resolving report:", error)
       throw error
@@ -532,7 +538,7 @@ export const adminApi = {
   markReportUnderReview: async (id: string) => {
     try {
       const response = await apiClient.get(`/reports/${id}/under-review`)
-      return toCamelCase(response.data)
+      return response.data
     } catch (error) {
       console.error("Error marking report as under review:", error)
       throw error

@@ -14,7 +14,7 @@ const initialState: AuthState = {
 }
 
 // Helper function to extract error message from different error formats
-const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: any): string => {
   if (typeof error === "string") return error
 
   if (error?.response?.data?.message) {

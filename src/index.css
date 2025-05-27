@@ -104,3 +104,21 @@
 .animate-blob {
   animation: blob 7s infinite;
 }
+
+.dialog-content {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) hsl(var(--background));
+}
+
+.dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted));
+  border-radius: 4px;
+}
