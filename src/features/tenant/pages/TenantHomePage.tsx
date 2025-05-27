@@ -27,6 +27,7 @@ import {
   CarouselPrevious,
 } from "../../../components/ui/carousel"
 import { Input } from "@/components/ui/input"
+import type { isPending } from "@reduxjs/toolkit"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -114,9 +115,9 @@ export default function TenantHomePage() {
     return savedListings?.some((listing) => listing.id === listingId)
   }
 
-  const handleCancelBooking = async (listingId: string, bookingId: string) => {
+ const handleCancelBooking = async (bookingId: string) => {
     try {
-      await tenantApi.deleteBooking(listingId, bookingId)
+      await tenantApi.PaymentCancelled(bookingId)
       setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
       toast({
         title: "Success",
@@ -392,15 +393,25 @@ export default function TenantHomePage() {
                                     Message Owner
                                   </Button>
                                 </Link>
-                                {booking.status === "pending" && (
+
+                                {/* BOOKING STATUS and the RELEASE and CANCEL PAYMENT */}
+                                {/* {(booking.status === "pending" || booking.status === "booked") && (
                                   <Button
-                                    variant="destructive"
+                                    variant={booking.status == "pending" ? "destructive" :   "secondary"}
                                     size="sm"
-                                    onClick={() => handleCancelBooking(booking.listing_id, booking.id)}
+                                    onClick={
+                                      booking.status === "pending"
+                                      ? () => handleCancelBooking(booking.listing_id, booking.id)
+                                      : undefined
+                                    }
                                   >
-                                    Cancel
+                                    {booking.status === "pending" ? "Cancel Booking" : "Release Booking"}
                                   </Button>
-                                )}
+                                )} */}
+                                 
+                                <Button className="bg-green-500" size="sm">
+                                  Release
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"

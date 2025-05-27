@@ -26,6 +26,7 @@ import {
   Eye,
   Grid3X3,
   HomeIcon,
+  Link,
   List,
   MapPin,
   MoreVertical,
@@ -127,10 +128,12 @@ export default function OwnerHomePage() {
     setStoredViewMode(mode)
   }
 
+
   // Render properties in grid format
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {(userListings ?? []).map((listing) => (
+
         <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
           <div className="aspect-video relative">
             <img
@@ -159,7 +162,7 @@ export default function OwnerHomePage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
+                  <DropdownMenuItem onClick={() => navigate(`owner/listings/${listing.id}/details`)}>
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </DropdownMenuItem>
@@ -179,7 +182,7 @@ export default function OwnerHomePage() {
             <p className="text-gray-600 text-sm mb-4 line-clamp-2">{listing.description}</p>
             <div className="flex justify-between items-center">
               <span className="font-bold text-lg text-blue-600">${listing.price}/month</span>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
                 Manage
               </Button>
             </div>
@@ -188,7 +191,6 @@ export default function OwnerHomePage() {
       ))}
     </div>
   )
-
   // Render properties in list format
   const renderListView = () => (
     <div className="space-y-4">
@@ -233,10 +235,11 @@ export default function OwnerHomePage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+                    
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
                         <Edit className="h-4 w-4 mr-2" />
@@ -265,7 +268,7 @@ export default function OwnerHomePage() {
                       <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Manage
                     </Button>

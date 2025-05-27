@@ -14,7 +14,7 @@ export interface CreateListingPayload {
   description: string
   price: number
   region: string
-  status: "available" | "booked" | "inactive"
+  status: "booked" | "available" | "inactive" | "pending" | "cancelled" | "completed"
   title: string
 }
 
@@ -128,24 +128,48 @@ export const ownerApi = {
     try {
       const response = await publicAxiosInstance.get(`listings/${listingId}/reviews`)
       return response.data;
-    } catch(error) {
+    } catch (error) {
       console.error("Error fetching reviews:", error);
 
       // console.error("Error fetching reviews: ", error)
       throw error
     }
+  },
+
+  updateListing: async (listingId: string, data: Partial<CreateListingPayload>): Promise<FeaturedListing> => {
+    try {
+      console.log("Updating listing with ID:", listingId)
+      const response = await apiClient.patch(`/listings/${listingId}`, data)
+      return response.data
+    } catch (error) {
+      console.error("Error updating listing:", error)
+      throw error
+    }
   }
 
-    // get Listing booking (not implemented yet)
-    // getListingBookings: async (listingId: string): Promise<string[]> => {
-    //   try {
-    //     const response = await publicAxiosInstance.get<string []>(`/bookings?listing_id=${listingId}`);
-    //     return response.data;
-    //   } catch (error) {
-    //     console.error("Error fetching listing bookings:", error);
-    //     throw error;
-    //   }
-    // },
+  // UPDATE BOOKING STATUS FAKE VERSION
+  // updateBookingStatus: async (bookingId: string, status: "confirmed" | "cancelled"): Promise<void> => {
+  //   try {
+  //     console.log(`Updating booking ${bookingId} status to ${status}`)
+  //     // Simulate API call
+  //     await new Promise((resolve) => setTimeout(resolve, 1000))
+  //     console.log(`Booking ${bookingId} status updated to ${status}`)
+  //   } catch (error) {
+  //     console.error("Error updating booking status:", error)
+  //     throw error
+  //   }
+
+
+  // get Listing booking (not implemented yet)
+  // getListingBookings: async (listingId: string): Promise<string[]> => {
+  //   try {
+  //     const response = await publicAxiosInstance.get<string []>(`/bookings?listing_id=${listingId}`);
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Error fetching listing bookings:", error);
+  //     throw error;
+  //   }
+  // },
 
   // // Update owner business information
   // updateOwnerInfo: async (ownerId: string, data: UpdateOwnerInfoPayload) => {

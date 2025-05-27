@@ -74,8 +74,7 @@ const BookingDetailPage = () => {
         setEndDate(new Date(bookingData.end_date))
 
         // Fetch listing details
-        const listings = await publicApi.getFeaturedListings()
-        const foundListing = listings.find((l) => l.id === listingId)
+        const foundListing = await publicApi.getListingById(listingId)
         if (foundListing) {
           setListing(foundListing)
         } else {
@@ -191,7 +190,7 @@ const BookingDetailPage = () => {
       </div>
     )
   }
-
+  console.log(error)
   if (error) {
     return (
       <div className="container mx-auto mt-10 max-w-4xl px-4">

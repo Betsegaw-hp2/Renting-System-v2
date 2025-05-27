@@ -34,7 +34,8 @@ const TenantHomePage = lazy(() => import("../features/tenant/pages/TenantHomePag
 
 // // Owner pages
 const OwnerProfilePage = lazy(() => import("../features/owner/pages/OwnerProfilePage"))
-// const OwnerListingDetail = lazy(() => import("../features/owner/pages/OwnerListingDetail"))
+const OwnerListingDetail = lazy(() => import("../features/owner/pages/OwnerListingDetail"))
+const ManagePropertyPage = lazy(() => import("../features/owner/pages/ManageListingPage"))
 // const OwnerBookingsPage = lazy(() => import("../features/owner/pages/BookingsPage"))
 const HomePage = lazy(() => import("../pages/HomePage"))
 const BrowsePage = lazy(() => import("../pages/BrowsePage"))
@@ -163,9 +164,9 @@ const router = createBrowserRouter([
       </Suspense>
     )
   },
-  
+
   // Protected routes
-  
+
   {
     path: "/home",
     element: (
@@ -187,26 +188,26 @@ const router = createBrowserRouter([
   //   )
   // },
   {
-        path: "messages",
+    path: "messages",
+    element: (
+      <ProtectedRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <MessagesPage />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: ":listingId/:receiverId",
         element: (
           <ProtectedRoute>
             <Suspense fallback={<LoadingFallback />}>
-              <MessagesPage />
+              <ChatThread />
             </Suspense>
           </ProtectedRoute>
         ),
-        children: [
-          {
-            path: ":listingId/:receiverId",
-            element: (
-              <ProtectedRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ChatThread />
-                </Suspense>
-              </ProtectedRoute>
-            ),
-          },
-        ],
+      },
+    ],
   },
 
   // Tenant-specific routes
@@ -268,6 +269,14 @@ const router = createBrowserRouter([
       </OwnerRoute>
     ),
   },
+    {
+    path: "/owner/listings/:id/manage",
+    element: (
+      <OwnerRoute>
+        <Suspense fallback={<LoadingFallback />}><ManagePropertyPage /></Suspense>
+      </OwnerRoute>
+    ),
+  },
   {
     path: "/owner/listings/:id",
     element: (
@@ -279,24 +288,16 @@ const router = createBrowserRouter([
     ),
   },
 
-  
-  {
-    path: "/owner/bookings",
-    element: (
-      <OwnerRoute>
-        <Suspense fallback={<LoadingFallback />}>{/* <OwnerBookingsPage /> */}</Suspense>
-      </OwnerRoute>
-    ),
-  },
 
-  //  {
-  //   path: "/owner/listings/:id",
+  // {
+  //   path: "/owner/bookings",
   //   element: (
   //     <OwnerRoute>
-  //       <Suspense fallback={<LoadingFallback />}><OwnerListingDetail/></Suspense>
+  //       <Suspense fallback={<LoadingFallback />}><OwnerBookingsPage /></Suspense>
   //     </OwnerRoute>
   //   ),
   // },
+
 
   // Admin-specific routes
   {

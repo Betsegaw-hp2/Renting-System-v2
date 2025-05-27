@@ -15,7 +15,7 @@ export interface FeaturedListing {
   region: string
   country: string
   price: number
-  status: string
+  status: "pending" | "booked" | "completed" | "cancelled"
   availability: {
     startDate: string
     endDate: string
@@ -154,7 +154,7 @@ export const convertApiListingToFeaturedListing = async (apiListing: ApiListingR
     region: apiListing.region,
     country: apiListing.country,
     price: apiListing.price,
-    status: apiListing.status,
+    status: apiListing.status as "pending" | "booked" | "completed" | "cancelled",
     availability: {
       startDate: apiListing.availability_start,
       endDate: apiListing.availability_end,
