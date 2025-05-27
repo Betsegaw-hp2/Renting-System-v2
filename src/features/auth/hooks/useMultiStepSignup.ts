@@ -60,7 +60,7 @@ export const useMultiStepSignup = () => {
     if (!validateRequired(formData.email)) newErrors.email = "Email is required"
     else if (!validateEmail(formData.email)) newErrors.email = "Please enter a valid email address"
     if (!validateRequired(formData.password)) newErrors.password = "Password is required"
-    else if (!validatePassword(formData.password)) newErrors.password = "Password must be at least 8 characters with 1 uppercase, 1 lowercase, and 1 number"
+    else if (!validatePassword(formData.password)) newErrors.password = "Password must be at least 8 characters with uppercase, lowercase, special characters and number"
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match"
     if (!validateRequired(formData.first_name)) newErrors.firstName = "First name is required"
     if (!validateRequired(formData.last_name)) newErrors.lastName = "Last name is required"
@@ -101,7 +101,7 @@ export const useMultiStepSignup = () => {
 
 
     } catch (err) {
-      console.error("Signup or unwrapping failed:", err)
+      console.error("signup error or unwrapping result failed:", err)
     }
   }
 

@@ -43,6 +43,7 @@ export function SignupForm() {
       </div>
     )
   }
+  console.log("error in SignupForm.tsx: ", error)
 
   return (
     <div className="w-full max-w-2xl">
@@ -60,7 +61,8 @@ export function SignupForm() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            {typeof error === "string" ? error : "An error occurred during signup. Please try again."}
+           
+            {typeof error === "string" ? error : "An unexpected error occurred. Please try again."}
           </AlertDescription>
         </Alert>
       )}

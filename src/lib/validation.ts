@@ -1,13 +1,22 @@
+import PasswordValidator from 'password-validator';
+
 export const validateEmail = (email: string): boolean => {
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 	return emailRegex.test(email)
   }
   
-  export const validatePassword = (password: string): boolean => {
-	// At least 8 characters, 1 uppercase, 1 lowercase, 1 number, atleast on special character
-	const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-	return passwordRegex.test(password)
-  }
+export const validatePassword = (password: string): boolean => {
+	const schema = new PasswordValidator();
+	schema
+		.is().min(8)                                    // Minimum length 8
+		.has().uppercase()                              // Must have uppercase letters
+		.has().lowercase()                              // Must have lowercase letters
+		.has().digits()                                 // Must have digits
+		.has().symbols();                               // Must have symbols
+
+	console.log("Password validation schema:", schema.validate(password));
+	return schema.validate(password) as boolean;
+}
   
   export const validateRequired = (value: string): boolean => {
 	return value.trim().length > 0

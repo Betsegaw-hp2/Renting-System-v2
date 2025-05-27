@@ -17,17 +17,25 @@ const initialState: AuthState = {
 const getErrorMessage = (error: any): string => {
   if (typeof error === "string") return error
 
-  
-  if (error?.response?.data?.message) return error.response.data.message
-  
-  if (error?.response?.data?.error) return error.response.data.error
-  
+  if (error?.response?.data?.message) {
+    const message = error.response.data.message
+    const msgStr = typeof message === "string" ? message : JSON.stringify(message)
+    return msgStr.replace(/[^a-zA-Z0-9 ]/g, " ")
+  }
+
+  if (error?.response?.data?.error) {
+    const err = error.response.data.error
+    return typeof err === "string" ? err : JSON.stringify(err)
+  }
+
   if (error?.message) return error.message
 
   // If error is an object but not in expected format, stringify it safely
   if (typeof error === "object" && error !== null) {
     try {
       const errObj = JSON.stringify(error)
+      // Avoid overly verbose messages if the stringified object is too simple
+      if (errObj === "{}") return "An unknown error occurred"
       return `Request failed: ${errObj}`
     } catch (e) {
       return "An unknown error occurred"
