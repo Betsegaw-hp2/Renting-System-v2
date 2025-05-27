@@ -13,7 +13,7 @@ import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
 import { addDays, differenceInDays, format, formatISO } from "date-fns"
-import { ArrowLeft, CalendarIcon, CheckCircle, DollarSign, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
+import { ArrowLeft, CalendarIcon, CheckCircle, DollarSign, Flag, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { publicApi, type Booking } from "../api/publicApi"
@@ -73,6 +73,7 @@ export default function ListingDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [isBooking, setIsBooking] = useState(false)
@@ -236,6 +237,10 @@ export default function ListingDetailsPage() {
     // Reset any previous booking errors
     setBookingError(null)
     setIsBookingModalOpen(true)
+  }
+
+  const openReportModal = () => {
+    setIsReportModalOpen(true)
   }
 
   if (isLoading) {
@@ -458,9 +463,11 @@ export default function ListingDetailsPage() {
                         <Button className="w-full" onClick={openBookingModal}>
                           Book Now
                         </Button>
-                        <Button variant="outline" className="w-full">
-                          Contact Owner
-                        </Button>
+                        <Link to={`/messages/${listing.id}/${bookingId}`}>
+                          <Button variant="outline" className="w-full">
+                            Contact Owner
+                          </Button>
+                        </Link>
                       </>
                     )}
                     {!isTenant && (
@@ -477,6 +484,10 @@ export default function ListingDetailsPage() {
                       <Button variant="ghost" size="sm" className="flex items-center">
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
+                      </Button>
+                       <Button variant="ghost" size="sm" className="flex items-center" onClick={openReportModal}>
+                        <Flag className="h-4 w-4 mr-1" />
+                        Report
                       </Button>
                     </div>
                   </div>
@@ -690,6 +701,30 @@ export default function ListingDetailsPage() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Report Listing</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for reporting this listing.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>
+              Cancel
+            </Button>
+            {/* <Button
+              onClick={handleReport}
+              disabled={isReporting}
+              className="ml-2"
+            >
+              {isReporting ? "Processing..." : "Submit Report"}
+            </Button> */}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

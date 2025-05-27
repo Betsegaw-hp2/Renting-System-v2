@@ -27,6 +27,31 @@ export interface VerifyEmailPayload {
   otp_code: string;
 }
 
+export interface CheckUsernameResponse {
+  username: string;
+  exists: boolean;
+}
+
+export const checkUsername = async (username: string): Promise<CheckUsernameResponse> => {
+  try {
+    if (config.useMockApi) {
+      return mockApi.checkUsername(username)
+    }
+
+    const response = await apiClient.get<CheckUsernameResponse>(`/authentication/check-username?username=${username}`)
+    return response.data
+  } catch (error) {
+    // Format the error before throwing
+    if (error instanceof Error) {
+      throw error
+    } else if (typeof error === "object" && error !== null) {
+      throw new Error(JSON.stringify(error))
+    } else {
+      throw new Error("An unknown error occurred while checking username")
+    }
+  }
+}
+
 export const signup = async (credentials: SignupCredentials): Promise<SignupResponse> => {
   try {
     if (config.useMockApi) {

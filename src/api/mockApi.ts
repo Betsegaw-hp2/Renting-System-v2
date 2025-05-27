@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid"
 import config from "../config/api.config"
-import { type AuthResponse, type VerifyEmailPayload } from "../features/auth/api/authApi"
+import { type LoginResponse, type SignupResponse, type VerifyEmailPayload } from "../features/auth/api/authApi"
 import { getAuthToken } from "../lib/cookies"
 import type { LoginCredentials, SignupCredentials, User, UserRole } from "../types/user.types"
 
@@ -61,7 +61,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 // Mock API implementation
 export const mockApi = {
   // Authentication
-  signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
+  signup: async (credentials: SignupCredentials): Promise<SignupResponse> => {
     await delay(config.mockApiDelay)
 
     // Check if email already exists
@@ -104,13 +104,10 @@ export const mockApi = {
     const token = `mock-token-${newUser.id}`
     mockTokens[newUser.id] = token
 
-    return {
-      user: { ...newUser },
-      token
-    }
+    return { data: { user: newUser }, message: "User created successfully"}
   },
 
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  login: async (credentials: LoginCredentials): Promise<LoginResponse> => {
     await delay(config.mockApiDelay)
 
     // Find user by email
@@ -126,10 +123,7 @@ export const mockApi = {
     // Get token
     const token = mockTokens[user.id]
 
-    return {
-      user: { ...user },
-      token
-    }
+    return { ...user, token }
 
   },
 
@@ -217,5 +211,13 @@ export const mockApi = {
 
     // In a real app, we'd send an email
     console.log(`Resending verification email to ${user.email}`)
+  },
+  checkUsername: async (username: string): Promise<{ username: string, exists: boolean}> => {
+    await delay(config.mockApiDelay)
+
+    // Check if username already exists
+    const exists = mockUsers.some((user) => user.username === username)
+
+    return { username, exists }
   }
 }

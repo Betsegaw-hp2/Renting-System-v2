@@ -30,8 +30,6 @@ export function SignupForm() {
     registeredUserId,
   } = useMultiStepSignup()
 
-  console.log("Error:", error)
-
   // Render OTP step exclusively
   if (currentStep === "verify-email" && registeredUserId) {
     return (

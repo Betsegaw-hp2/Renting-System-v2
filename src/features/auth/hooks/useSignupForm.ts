@@ -1,8 +1,7 @@
 "use client"
 
-import type React from "react"
-
 import { unwrapResult } from "@reduxjs/toolkit"
+import type React from "react"
 import { useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -24,6 +23,7 @@ export const useSignupForm = () => {
   const [username, setUsername] = useState("")
   const [role, setRole] = useState<UserRole>(UserRole.TENANT)
   const [validationErrors, setValidationErrors] = useState<ValidationError>({})
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,13 +52,13 @@ export const useSignupForm = () => {
 
     if (signupUser.fulfilled.match(resultAction)) {
       try {
-        const fetchMeAction = await dispatch(fetchCurrentUser());
-        unwrapResult(fetchMeAction);
+        const fetchMeAction = await dispatch(fetchCurrentUser())
+        unwrapResult(fetchMeAction)
       } catch {
-        console.error("Failed to fetch user data after login");
+        console.error("Failed to fetch user data after signup")
       }
 
-      // navigate("/login");
+      // navigate("/login")
     }
   }
 
