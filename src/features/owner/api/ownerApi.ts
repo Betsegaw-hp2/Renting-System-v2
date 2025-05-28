@@ -2,6 +2,8 @@
 import { getAuthToken } from "@/lib/cookies"
 import apiClient from "../../../api/client"
 import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
+// import type { export Booking } from "./fakeOwnerApi"
+import type { Booking } from "@/types/listing.types"
 
 
 export interface CreateListingPayload {
@@ -91,7 +93,7 @@ export const ownerApi = {
   },
   getOwnerProperties: async (userId: string): Promise<FeaturedListing[]> => {
     try {
-      const response = await apiClient.get<ApiListingResponse[]>(`/users/${userId}/listings`)
+      const response = await publicAxiosInstance.get<ApiListingResponse[]>(`/users/${userId}/listings`)
       console.log("Owner properties response:", response.data)
       return await Promise.all(
         (response.data ?? []).map(convertApiListingToFeaturedListing)
@@ -145,7 +147,40 @@ export const ownerApi = {
       console.error("Error updating listing:", error)
       throw error
     }
+  },
+  
+  // Get owner bookings
+  // getOwnerBookings: async (ownerId: string) => {
+  //   try {
+  //     const response = await apiClient.get(`/owners/${ownerId}/bookings`)
+  //     return response.data
+  //   } catch (error) {
+  //     throw error
+  //   }
+  // },
+
+  //GET Booking history of a Listing /listings/{id}/bookings which can also be filtered by status
+  getListingBookings: async (listingId: string): Promise<Booking[]> => {
+    try {
+      const response = await publicAxiosInstance.get<Booking[]>(`/listings/${listingId}/bookings`)
+      return response.data ?? []
+    } catch (error) {
+      console.error("Error fetching listing bookings:", error)
+      return []
+    }
+  },
+
+  //get owner bookings
+  getOwnerBookings: async (ownerId: string): Promise<Booking[]> => {
+    try {
+      const response = await publicAxiosInstance.get<Booking[]>(`/users/${ownerId}/bookings`)
+      return response.data ?? []
+    } catch (error) {
+      console.error("Error fetching owner bookings:", error)
+      return []
+    }
   }
+
 
   // UPDATE BOOKING STATUS FAKE VERSION
   // updateBookingStatus: async (bookingId: string, status: "confirmed" | "cancelled"): Promise<void> => {
@@ -158,6 +193,7 @@ export const ownerApi = {
   //     console.error("Error updating booking status:", error)
   //     throw error
   //   }
+  // },
 
 
   // get Listing booking (not implemented yet)
@@ -191,15 +227,6 @@ export const ownerApi = {
   //   }
   // },
 
-  // // Get owner bookings
-  // getOwnerBookings: async (ownerId: string) => {
-  //   try {
-  //     const response = await apiClient.get(`/owners/${ownerId}/bookings`)
-  //     return response.data
-  //   } catch (error) {
-  //     throw error
-  //   }
-  // },
 
 
 

@@ -22,6 +22,7 @@ import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
+import { ListingStatus } from "@/types/listing.types"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -33,7 +34,7 @@ interface Listing {
   city?: string
   region?: string
   country?: string
-  status?: string
+  status?: ListingStatus
   views_count?: number
   owner_id?: string
   availability_start?: string
@@ -455,9 +456,15 @@ export default function ListingDetailsPage() {
                   <div className="space-y-3">
                     {isTenant && (
                       <>
-                        <Button className="w-full" onClick={openBookingModal}>
-                          Book Now
-                        </Button>
+                        {listing?.status === ListingStatus.AVAILABLE ? (
+                          <Button className="w-full" onClick={openBookingModal}>
+                            Book Now
+                          </Button>
+                        ): (
+                          <Button variant="outline" className="w-full" disabled>
+                            Booking Unavailable
+                          </Button>
+                        )}
                         <Button variant="outline" className="w-full">
                           Contact Owner
                         </Button>

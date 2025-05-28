@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/useToast"
-import type { Booking } from "@/features/owner/api/fakeOwnerApi"
-import { fakeOwnerApi } from "@/features/owner/api/fakeOwnerApi"
+import type { Booking } from "@/types/listing.types"
+// import { fakeOwnerApi } from "@/features/owner/api/fakeOwnerApi"
 
 interface BookingRequestsSectionProps {
   bookings: Booking[]
@@ -116,7 +116,7 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
       onBookingUpdate(bookingId, action)
     } else {
       try {
-        await fakeOwnerApi.updateBookingStatus(bookingId, action)
+        // await fakeOwnerApi.updateBookingStatus(bookingId, action)
         toast({
           title: "Success",
           description: `Booking ${action === "confirmed" ? "accepted" : "declined"} successfully`,
@@ -172,7 +172,7 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <Calendar className="h-5 w-5 text-blue-600" />
-          Booking Requests ({bookings.length})
+          Booking History ({bookings.length})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -14,7 +14,7 @@ import { EditPropertyDialog } from "@/features/owner/components/EditPropertyDial
 import ReviewsSection from "@/features/owner/components/ReviewSection"
 import BookingRequestsSection from "@/features/owner/components/BookingRequestSection"
 import type { Review } from "@/types/listing.types"
-import type { Booking } from "@/features/owner/api/fakeOwnerApi"
+import type { Booking } from "@/types/listing.types"
 import type { FeaturedListing } from "@/api/publicApi"
 
 // Mock data for demonstration
@@ -54,69 +54,69 @@ const mockReviews: Review[] = [
   },
 ]
 
-const mockBookings: Booking[] = [
-  {
-    id: "booking-1",
-    listing_id: "listing-1",
-    renter_id: "renter-1",
-    owner_id: "owner-1",
-    start_date: "2024-02-15T00:00:00Z",
-    end_date: "2024-02-20T00:00:00Z",
-    total_amount: 750.0,
-    status: "pending",
-    payment_status: "pending",
-    payment_reference: "PAY-001",
-    created_at: "2024-01-20T10:30:00Z",
-    updated_at: "2024-01-20T10:30:00Z",
-    renter: {
-      id: "renter-1",
-      first_name: "John",
-      last_name: "Smith",
-      email: "john.smith@example.com",
-      // profile_picture: null,
-    },
-  },
-  {
-    id: "booking-2",
-    listing_id: "listing-1",
-    renter_id: "renter-2",
-    owner_id: "owner-1",
-    start_date: "2024-03-01T00:00:00Z",
-    end_date: "2024-03-07T00:00:00Z",
-    total_amount: 1050.0,
-    status: "pending",
-    payment_status: "completed",
-    payment_reference: "PAY-002",
-    created_at: "2024-01-18T15:45:00Z",
-    updated_at: "2024-01-18T15:45:00Z",
-    renter: {
-      id: "renter-2",
-      first_name: "Sarah",
-      last_name: "Johnson",
-      email: "sarah.johnson@example.com",
-    },
-  },
-  {
-    id: "booking-3",
-    listing_id: "listing-1",
-    renter_id: "renter-3",
-    owner_id: "owner-1",
-    start_date: "2024-01-10T00:00:00Z",
-    end_date: "2024-01-15T00:00:00Z",
-    total_amount: 750.0,
-    status: "completed",
-    payment_status: "completed",
-    payment_reference: "PAY-003",
-    created_at: "2024-01-05T12:20:00Z",
-    updated_at: "2024-01-16T10:00:00Z",
-    renter: {
-      id: "renter-3",
-      first_name: "Michael",
-      last_name: "Brown",
-      email: "michael.brown@example.com",
-    },
-  },
-]
+// const mockBookings: Booking[] = [
+//   {
+//     id: "booking-1",
+//     listing_id: "listing-1",
+//     renter_id: "renter-1",
+//     owner_id: "owner-1",
+//     start_date: "2024-02-15T00:00:00Z",
+//     end_date: "2024-02-20T00:00:00Z",
+//     total_amount: 750.0,
+//     status: "pending",
+//     payment_status: "pending",
+//     payment_reference: "PAY-001",
+//     created_at: "2024-01-20T10:30:00Z",
+//     updated_at: "2024-01-20T10:30:00Z",
+//     renter: {
+//       id: "renter-1",
+//       first_name: "John",
+//       last_name: "Smith",
+//       email: "john.smith@example.com",
+//       // profile_picture: null,
+//     },
+//   },
+//   {
+//     id: "booking-2",
+//     listing_id: "listing-1",
+//     renter_id: "renter-2",
+//     owner_id: "owner-1",
+//     start_date: "2024-03-01T00:00:00Z",
+//     end_date: "2024-03-07T00:00:00Z",
+//     total_amount: 1050.0,
+//     status: "pending",
+//     payment_status: "completed",
+//     payment_reference: "PAY-002",
+//     created_at: "2024-01-18T15:45:00Z",
+//     updated_at: "2024-01-18T15:45:00Z",
+//     renter: {
+//       id: "renter-2",
+//       first_name: "Sarah",
+//       last_name: "Johnson",
+//       email: "sarah.johnson@example.com",
+//     },
+//   },
+//   {
+//     id: "booking-3",
+//     listing_id: "listing-1",
+//     renter_id: "renter-3",
+//     owner_id: "owner-1",
+//     start_date: "2024-01-10T00:00:00Z",
+//     end_date: "2024-01-15T00:00:00Z",
+//     total_amount: 750.0,
+//     status: "completed",
+//     payment_status: "completed",
+//     payment_reference: "PAY-003",
+//     created_at: "2024-01-05T12:20:00Z",
+//     updated_at: "2024-01-16T10:00:00Z",
+//     renter: {
+//       id: "renter-3",
+//       first_name: "Michael",
+//       last_name: "Brown",
+//       email: "michael.brown@example.com",
+//     },
+//   },
+// ]
 
 const ManageListingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -125,7 +125,7 @@ const ManageListingPage: React.FC = () => {
 
   const [listing, setListing] = useState<FeaturedListing | null>(null)
   const [reviews, setReviews] = useState<Review[]>(mockReviews)
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings)
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
@@ -142,6 +142,10 @@ const ManageListingPage: React.FC = () => {
     try {
       const listingData = await ownerApi.getListingById(id)
       setListing(listingData)
+
+      const bookings = await ownerApi.getListingBookings(id)
+      setBookings(bookings)
+      
     } catch (error) {
       console.error("Error fetching listing data:", error)
       toast({
