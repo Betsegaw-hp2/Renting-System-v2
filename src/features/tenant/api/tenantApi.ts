@@ -178,7 +178,28 @@ export const tenantApi = {
       }
       throw error
     }
-  }
+  },
+
+  PaymentCancelled: async (bookingId: string): Promise<void> => {
+    try {
+      console.log(`Cancelling payment for booking ${bookingId}`)
+      await publicAxiosInstance.get(`/bookings/${bookingId}/cancel`)
+      console.log(`Successfully cancelled payment for booking ${bookingId}`)
+    } catch (error) {
+      console.error(`Error cancelling payment for booking ${bookingId}:`, error)
+      throw error
+    }
+  },
+  PaymentReleased: async (bookingId: string): Promise<void> => {
+    try {
+      console.log(`Releasing payment for booking ${bookingId}`)
+      await publicAxiosInstance.get(`/bookings/${bookingId}/release`)
+      console.log(`Successfully released payment for booking ${bookingId}`)
+    } catch (error) {
+      console.error(`Error releasing payment for booking ${bookingId}:`, error)
+      throw error
+    }
+  },
 }
 
 export type { FeaturedListing, Booking, UpdateBookingPayload }

@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AddPropertyDialog } from "@/features/owner/components/AddPropertyDialog"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import type { RootState } from "@/store"
-import type { UserListingStats } from "@/types/listing.types"
+import { type UserListingStats, type Booking, ListingStatus } from "@/types/listing.types"
 import {
   AlertTriangle,
   Building2,
@@ -26,6 +26,7 @@ import {
   Eye,
   Grid3X3,
   HomeIcon,
+  Link,
   List,
   MapPin,
   MoreVertical,
@@ -65,7 +66,8 @@ export default function OwnerHomePage() {
   // State for owner-specific data
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
   const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
-  const [userListings, setUserListings] = useState<FeaturedListing[]>([])
+  const [userListings, setUserListings] = useState<Booking[]>([])
+  const [ownerListings, setOwnerListings] = useState<FeaturedListing[]>([])
   const [userStats, setUserStats] = useState<UserListingStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -82,12 +84,16 @@ export default function OwnerHomePage() {
           const trending = await tenantApi.getTrendingListings()
           setTrendingListings(trending)
 
-          // Fetch owner-specific data
-          const listing = await ownerApi.getOwnerProperties(user.id)
-          const ownedListings = (listing ?? []).map((listing: FeaturedListing) => ({
-            ...listing,
-          }))
-          setUserListings(ownedListings)
+          // Fetch owner-specific 
+          // use listing id for getListingBookings 
+          // Fetch all owner properties first to get their IDs
+          const ownedListings = await ownerApi.getOwnerProperties(user.id)
+          setOwnerListings(ownedListings)
+
+          // Fetch bookings for each property owned by the user
+          const bookings = await ownerApi.getOwnerBookings(user.id);
+          setUserListings(bookings);
+
 
           // const stats = await mockHomeApi.getUserListingStats(user.id)
           // setUserStats(stats)
@@ -107,12 +113,12 @@ export default function OwnerHomePage() {
     navigate(`/browse?query=${encodeURIComponent(searchQuery)}`)
   }
 
-  // Refresh user listings after adding a new property
+  // Refresh owner properties after adding a new property
   const handlePropertyAdded = async () => {
     if (user) {
       try {
         const ownedListings = await ownerApi.getOwnerProperties(user.id)
-        setUserListings(ownedListings)
+        setOwnerListings(ownedListings)
         const stats = await mockHomeApi.getUserListingStats(user.id)
         setUserStats(stats)
       } catch (error) {
@@ -127,19 +133,21 @@ export default function OwnerHomePage() {
     setStoredViewMode(mode)
   }
 
+
   // Render properties in grid format
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {(userListings ?? []).map((listing) => (
+      {(ownerListings ?? []).map((listing) => (
+
         <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <div className="aspect-video relative">
+          <div className="relative h-[300px] w-full overflow-hidden">
             <img
               src={listing.media[0]?.media_url || "/placeholder.svg?height=200&width=300"}
               alt={listing.title}
-              className="object-cover w-full h-full"
+              className="w-full h-full object-cover"
             />
             <Badge
-              className={`absolute top-3 right-3 ${listing.status === "completed"
+              className={`absolute top-3 right-3 ${listing.status === "available"
                 ? "bg-green-500 hover:bg-green-600"
                 : listing.status === "booked"
                   ? "bg-blue-500 hover:bg-blue-600"
@@ -163,10 +171,6 @@ export default function OwnerHomePage() {
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Listing
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -179,7 +183,7 @@ export default function OwnerHomePage() {
             <p className="text-gray-600 text-sm mb-4 line-clamp-2">{listing.description}</p>
             <div className="flex justify-between items-center">
               <span className="font-bold text-lg text-blue-600">${listing.price}/month</span>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
                 Manage
               </Button>
             </div>
@@ -188,11 +192,10 @@ export default function OwnerHomePage() {
       ))}
     </div>
   )
-
   // Render properties in list format
   const renderListView = () => (
     <div className="space-y-4">
-      {(userListings ?? []).map((listing) => (
+      {(ownerListings ?? []).map((listing) => (
         <Card key={listing.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
           <CardContent className="p-0">
             <div className="flex">
@@ -209,7 +212,7 @@ export default function OwnerHomePage() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-lg">{listing.title}</h3>
                       <Badge
-                        className={`${listing.status === "completed"
+                        className={`${listing.status === ListingStatus.AVAILABLE
                           ? "bg-green-500 hover:bg-green-600"
                           : listing.status === "booked"
                             ? "bg-blue-500 hover:bg-blue-600"
@@ -233,6 +236,7 @@ export default function OwnerHomePage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
                         <Eye className="h-4 w-4 mr-2" />
@@ -265,7 +269,7 @@ export default function OwnerHomePage() {
                       <Eye className="h-4 w-4 mr-1" />
                       View
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Manage
                     </Button>
@@ -546,7 +550,7 @@ export default function OwnerHomePage() {
                         </Card>
                       ))}
                     </div>
-                  ) : userListings?.length > 0 ? (
+                  ) : ownerListings?.length > 0 ? (
                     <>{viewMode === "grid" ? renderGridView() : renderListView()}</>
                   ) : (
                     <Card>
@@ -565,7 +569,7 @@ export default function OwnerHomePage() {
                     </Card>
                   )}
 
-                  {userListings?.length > 0 && (
+                  {ownerListings?.length > 0 && (
                     <div className="mt-8">
                       <Card>
                         <CardHeader>
@@ -668,11 +672,11 @@ export default function OwnerHomePage() {
                                 </div>
                                 <div className="flex justify-between items-center text-sm text-gray-500">
                                   <span>
-                                    {listing.availability?.startDate && listing.availability?.endDate
-                                      ? `${new Date(listing.availability.startDate).toISOString().split("T")[0]} to ${new Date(listing.availability.endDate).toISOString().split("T")[0]}`
+                                    {listing.start_date && listing.end_date
+                                      ? `${new Date(listing.start_date).toISOString().split("T")[0]} to ${new Date(listing.end_date).toISOString().split("T")[0]}`
                                       : "Dates not available"}
                                   </span>
-                                  <span className="font-medium text-gray-900">${listing.price}</span>
+                                  <span className="font-medium text-gray-900">${listing.total_amount}</span>
                                 </div>
                                 <div className="mt-4 flex gap-2 justify-end">
                                   <Button variant="outline" size="sm">

@@ -115,7 +115,7 @@ export default function TenantHomePage() {
     return savedListings?.some((listing) => listing.id === listingId)
   }
 
- const handleCancelBooking = async (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     try {
       await tenantApi.PaymentCancelled(bookingId)
       setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
@@ -130,6 +130,24 @@ export default function TenantHomePage() {
         description: "Failed to cancel booking. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleReleasePayment = async (bookingId: string) => {
+    try {
+        await tenantApi.PaymentReleased(bookingId)
+        setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
+        toast({
+            title: "Success",
+            description: "Payment released successfully.",
+        })
+        } catch (error) {
+        console.error("Error releasing payment:", error)
+        toast({
+            title: "Error",
+            description: "Failed to release payment. Please try again.",
+            variant: "destructive",
+        })
     }
   }
 
@@ -395,23 +413,19 @@ export default function TenantHomePage() {
                                 </Link>
 
                                 {/* BOOKING STATUS and the RELEASE and CANCEL PAYMENT */}
-                                {/* {(booking.status === "pending" || booking.status === "booked") && (
+                                {(booking.status === "pending" || booking.status === "booked") && (
                                   <Button
-                                    variant={booking.status == "pending" ? "destructive" :   "secondary"}
+                                    variant={booking.status === "pending" ? "secondary" : "destructive"}
                                     size="sm"
                                     onClick={
                                       booking.status === "pending"
-                                      ? () => handleCancelBooking(booking.listing_id, booking.id)
-                                      : undefined
+                                        ? () => handleReleasePayment(booking.id)
+                                        : () => handleCancelBooking(booking.id)
                                     }
                                   >
-                                    {booking.status === "pending" ? "Cancel Booking" : "Release Booking"}
+                                    {booking.status === "pending" ? "Release Booking" : "Cancel Booking"}
                                   </Button>
-                                )} */}
-                                 
-                                <Button className="bg-green-500" size="sm">
-                                  Release
-                                </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"

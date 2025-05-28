@@ -4,6 +4,8 @@ import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
 import { getAuthToken } from "@/lib/cookies"
 import type { get } from "http"
+import type { Listing } from "@/types/api.types"
+import type { ListingStatus } from "@/types/listing.types"
 
 // Types for public API responses
 export interface FeaturedListing {
@@ -15,7 +17,7 @@ export interface FeaturedListing {
   region: string
   country: string
   price: number
-  status: string
+  status: ListingStatus
   availability: {
     startDate: string
     endDate: string
@@ -76,7 +78,7 @@ export interface ApiListingResponse {
   city: string
   region: string
   country: string
-  status: string
+  status: ListingStatus
   views_count: number
   owner_id: string
   category_id: string

@@ -13,6 +13,7 @@ import { ReportButton } from "@/features/report/components/ReportButton"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
+import { ListingStatus } from "@/types/listing.types"
 import { addDays, differenceInDays, format, formatISO } from "date-fns"
 import { ArrowLeft, CalendarIcon, CheckCircle, DollarSign, Flag, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -34,7 +35,7 @@ interface Listing {
   city?: string
   region?: string
   country?: string
-  status?: string
+  status?: ListingStatus
   views_count?: number
   owner_id?: string
   availability_start?: string
@@ -457,9 +458,15 @@ export default function ListingDetailsPage() {
                   <div className="space-y-3">
                     {isTenant && (
                       <>
-                        <Button className="w-full" onClick={openBookingModal}>
-                          Book Now
-                        </Button>
+                        {listing?.status === ListingStatus.AVAILABLE ? (
+                          <Button className="w-full" onClick={openBookingModal}>
+                            Book Now
+                          </Button>
+                        ): (
+                          <Button variant="outline" className="w-full" disabled>
+                            Booking Unavailable
+                          </Button>
+                        )}
                         <Link to={`/messages/${listing.id}/${bookingId}`}>
                           <Button variant="outline" className="w-full">
                             Contact Owner

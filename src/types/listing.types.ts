@@ -1,4 +1,6 @@
 // Using string literal types instead of enums to avoid the 'erasableSyntaxOnly' error
+import { type User } from "./user.types"
+
 export type ListingStatus = "available" | "booked" | "inactive"
 export const ListingStatus = {
   AVAILABLE: "available" as ListingStatus,
@@ -95,12 +97,13 @@ export interface UpdateListing {
   availability_end?: string
 }
 
-export type BookingStatus = "pending" | "booked" | "completed" | "cancelled"
+export type BookingStatus = "pending" | "booked" | "completed" | "cancelled" | "confirmed"
 export const BookingStatus = {
   PENDING: "pending" as BookingStatus,
   BOOKED: "booked" as BookingStatus,
   COMPLETED: "completed" as BookingStatus,
   CANCELLED: "cancelled" as BookingStatus,
+  CONFIRMED: "confirmed" as BookingStatus,
 }
 
 export type PaymentStatus = "pending" | "completed" | "in_escrow" | "disputed" | "failed"
@@ -125,6 +128,7 @@ export interface Booking {
   payment_reference: string
   created_at: string
   updated_at: string
+  renter?: User
 }
 
 export interface Review {
