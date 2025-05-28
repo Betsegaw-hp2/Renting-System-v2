@@ -1,11 +1,9 @@
+import { getAuthToken } from "@/lib/cookies"
+import type { ListingStatus } from "@/types/listing.types"
 import axios from "axios"
 import { format } from "date-fns"
 import config from "../config/api.config"
 import { mockPublicApi } from "./mockPublicApi"
-import { getAuthToken } from "@/lib/cookies"
-import type { get } from "http"
-import type { Listing } from "@/types/api.types"
-import type { ListingStatus } from "@/types/listing.types"
 
 // Types for public API responses
 export interface FeaturedListing {
@@ -204,6 +202,16 @@ function getCategoryIcon(slug: string): string {
 
 // Public API service
 export const publicApi = {
+
+  getCountries: async (): Promise<Record<string, string>> => {
+    try {
+      const response = await publicAxiosInstance.get<Record<string, string>>("/countries")
+      return response.data
+    } catch (error) {
+      console.error("Error fetching countries:", error)
+      throw error
+    }
+  },
 
   // Get featured listings for the homepage
   getFeaturedListings: async (useMockApi = config.useMockApi): Promise<FeaturedListing[]> => {
