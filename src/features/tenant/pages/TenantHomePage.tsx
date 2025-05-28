@@ -9,7 +9,6 @@ import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
-import { SearchFilters, type SearchFilters as SearchFiltersType } from "../../../components/search/SearchFilters"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
 import { Card, CardContent, CardFooter } from "../../../components/ui/card"
@@ -18,6 +17,7 @@ import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
 
+import { Input } from "@/components/ui/input"
 import {
   Carousel,
   CarouselContent,
@@ -26,8 +26,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../../../components/ui/carousel"
-import { Input } from "@/components/ui/input"
-import type { isPending } from "@reduxjs/toolkit"
 
 export default function TenantHomePage() {
   const navigate = useNavigate()
@@ -42,8 +40,6 @@ export default function TenantHomePage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("recommended")
-  const [featuredListings, setFeaturedListings] = useState<FeaturedListing[]>([])
-  const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
 
 
 

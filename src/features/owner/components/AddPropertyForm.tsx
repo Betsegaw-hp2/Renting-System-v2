@@ -1,24 +1,25 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { useSelector } from "react-redux"
-import { format } from "date-fns"
-import { CalendarIcon, Loader2, ArrowRight, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/hooks/useToast"
-import type { RootState } from "@/store"
-import { ownerApi, type CreateListingPayload } from "../api/ownerApi"
-import { ImageUploadStep } from "../components/ImageUploadStep"
-import type { FeaturedListing } from "@/api/publicApi"
+import type { FeaturedListing } from "@/api/publicApi";
+import { publicApi } from "@/api/publicApi"; // Import publicApi
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/useToast";
+import type { RootState } from "@/store";
+import { format } from "date-fns";
+import { ArrowRight, CalendarIcon, Check, Loader2 } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { ownerApi, type CreateListingPayload } from "../api/ownerApi";
+import { ImageUploadStep } from "../components/ImageUploadStep";
 
 interface Category {
   id: string
@@ -29,6 +30,9 @@ interface Category {
   created_at: string
   updated_at: string
 }
+
+// Define a type for the countries state
+type CountriesState = Record<string, string>;
 
 interface AddPropertyFormProps {
   onSuccess?: () => void
@@ -45,7 +49,9 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSuccess, onC
   const [currentStep, setCurrentStep] = useState<FormStep>("details")
   const [createdListing, setCreatedListing] = useState<FeaturedListing | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [countries, setCountries] = useState<CountriesState>({}); // State for countries
+  const [isLoading, setIsLoading] = useState(false) // General loading for initial data
+  const [isLoadingCountries, setIsLoadingCountries] = useState(false) // Specific loading for countries
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Form state
@@ -70,13 +76,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSuccess, onC
   const [startDate, setStartDate] = useState<Date>(new Date())
   const [endDate, setEndDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() + 1)))
 
-  // Fetch categories on component mount
+  // Fetch categories and countries on component mount
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       setIsLoading(true)
+      setIsLoadingCountries(true)
       try {
-        const data = await ownerApi.getCategories()
-        setCategories(data)
+        const categoriesData = await ownerApi.getCategories()
+        setCategories(categoriesData)
       } catch (error) {
         console.error("Error fetching categories:", error)
         toast({
@@ -84,13 +91,26 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSuccess, onC
           description: "Failed to load property categories. Please try again.",
           variant: "destructive",
         })
+      }
+
+      try {
+        const countriesData = await publicApi.getCountries()
+        setCountries(countriesData)
+      } catch (error) {
+        console.error("Error fetching countries:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load countries. Please try again.",
+          variant: "destructive",
+        })
       } finally {
-        setIsLoading(false)
+        setIsLoading(false) // Combined loading state might need adjustment if one fails and other succeeds
+        setIsLoadingCountries(false)
       }
     }
 
-    fetchCategories()
-  }, [toast])
+    fetchData()
+  }, []) // Changed [toast] to []
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -335,7 +355,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSuccess, onC
   // Render details step
   const renderDetailsStep = () => (
     <form onSubmit={handleDetailsSubmit}>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 overflow-y-auto max-h-[60vh]">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Basic Information</h3>
@@ -459,14 +479,32 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSuccess, onC
 
             <div className="grid gap-2">
               <Label htmlFor="country">Country</Label>
-              <Input
-                id="country"
-                name="country"
-                placeholder="Country"
+              <Select
                 value={formData.country}
-                onChange={handleInputChange}
-                className={errors.country ? "border-red-500" : ""}
-              />
+                onValueChange={(value) => handleSelectChange(value, "country")}
+                disabled={isLoadingCountries || Object.keys(countries).length === 0}
+              >
+                <SelectTrigger className={errors.country ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select a country" />
+                </SelectTrigger>
+                <SelectContent className="overflow-y-auto max-h-60">
+                  {isLoadingCountries ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Loading countries...</span>
+                    </div>
+                  ) : (
+                    Object.entries(countries).map(([name, code]) => (
+                      <SelectItem key={code} value={code}>
+                        {name}
+                      </SelectItem>
+                    ))
+                  )}
+                  {!isLoadingCountries && Object.keys(countries).length === 0 && (
+                     <div className="p-4 text-sm text-muted-foreground">No countries available or failed to load.</div>
+                  )}
+                </SelectContent>
+              </Select>
               {errors.country && <p className="text-sm text-red-500">{errors.country}</p>}
             </div>
           </div>
