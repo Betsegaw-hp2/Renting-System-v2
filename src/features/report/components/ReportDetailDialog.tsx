@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +16,8 @@ export const ReportDialog = ({
   isOpen,
   onClose,
   selected,
-  loading,
+  loading, // For initial dialog skeleton loading
+  isActionSubmitting, // New prop for actions within the dialog
   onStatusChange,
   onDelete
 }: {
@@ -25,10 +25,11 @@ export const ReportDialog = ({
   onClose: () => void;
   selected?: Report;
   loading: boolean;
+  isActionSubmitting?: boolean; // Add new prop
   onStatusChange: (status: ReportStatus) => Promise<void>;
   onDelete: () => Promise<void>;
 }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeletingLocal, setIsDeletingLocal] = useState(false); // Renamed to avoid conflict if isDeleting prop is ever added
   const { toast } = useToast();
 
   const handleStatusAction = async (status: ReportStatus) => {
@@ -38,9 +39,24 @@ export const ReportDialog = ({
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update report status",
+        description: "Failed to update report status from dialog",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    setIsDeletingLocal(true); 
+    try {
+      await onDelete(); 
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to initiate deletion from dialog",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingLocal(false); 
     }
   };
 
@@ -183,10 +199,10 @@ export const ReportDialog = ({
                         <Button
                           variant="secondary"
                           onClick={() => handleStatusAction('under_review')}
-                          disabled={isDeleting || loading}  
+                          disabled={isActionSubmitting || isDeletingLocal}  
                         >
                           <Clock className="mr-2 h-4 w-4" />
-                          {loading ? "Processing..." : "Mark Under Review"}
+                          {isActionSubmitting ? "Processing..." : "Mark Under Review"}
                         </Button>
                       )}
 
@@ -195,29 +211,29 @@ export const ReportDialog = ({
                           <Button
                             variant="default"
                             onClick={() => handleStatusAction('resolved')}
-                            disabled={isDeleting || loading}  // Add loading state
+                            disabled={isActionSubmitting || isDeletingLocal}
                           >
                             <CheckCircle className="mr-2 h-4 w-4" />
-                            {loading ? "Processing..." : "Resolve Report"}
+                            {isActionSubmitting ? "Processing..." : "Resolve Report"}
                           </Button>
                           <Button
                             variant="destructive"
                             onClick={() => handleStatusAction('dismissed')}
-                            disabled={isDeleting || loading} 
+                            disabled={isActionSubmitting || isDeletingLocal} 
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            {loading ? "Processing..." : "Dismiss Report"}
+                            {isActionSubmitting ? "Processing..." : "Dismiss Report"}
                           </Button>
                         </>
                       )}
 
                       <Button
                         variant="destructive"
-                        onClick={onDelete}
-                        disabled={isDeleting || loading}
+                        onClick={handleDeleteClick}
+                        disabled={isActionSubmitting || isDeletingLocal}
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        {isDeleting ? "Deleting..." : "Delete Report"}
+                        {isActionSubmitting && !isDeletingLocal ? "Processing..." : isDeletingLocal ? "Deleting..." : "Delete Report"}
                       </Button>
                     </div>
                   </CardContent>

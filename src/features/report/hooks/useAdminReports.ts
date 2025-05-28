@@ -15,7 +15,15 @@ export function useAdminReports() {
   const dispatch = useDispatch<AppDispatch>();
   const { list, selected, loading, error } = useSelector((s: RootState) => s.adminReports) as AdminReportState;
 
-  const loadList = useCallback((params: { limit: number; offset: number; since?: string; sort?: string }) => dispatch(fetchReports(params)).unwrap(), [dispatch]);
+  const loadList = useCallback(
+    (params: {
+      limit: number;
+      offset: number;
+      since?: string;
+      sortOrder?: 'asc' | 'desc'; // Added for sort direction
+    }) => dispatch(fetchReports(params)).unwrap(),
+    [dispatch]
+  );
   const loadOne = useCallback((id: string) => dispatch(fetchReportById(id)).unwrap(), [dispatch]);
   const toUnderReview = useCallback((id: string) => dispatch(markUnderReview(id)).unwrap(), [dispatch]);
   const toResolve = useCallback((id: string) => dispatch(resolveReport(id)).unwrap(), [dispatch]);

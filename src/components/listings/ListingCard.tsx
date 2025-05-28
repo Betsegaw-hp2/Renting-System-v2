@@ -34,7 +34,7 @@ export function ListingCard({ listing, showSaveButton = false, isSaved = false, 
 
   const { id, title, city, region, price, category, media, rating, reviewCount } = listing
 
-  const formattedPrice = new Intl.NumberFormat("en-US").format(price)
+  const formattedPrice = new Intl.NumberFormat("am-ET").format(price)
   const mainImage = media && media.length > 0 ? media[0].media_url : "https://picsum.photos/200/300"
   const location = `${city || ""}${city && region ? ", " : ""}${region || ""}` || "Unknown location"
 
@@ -106,7 +106,7 @@ export function ListingCard({ listing, showSaveButton = false, isSaved = false, 
 
         <div className="flex justify-between items-center">
           <div>
-            <span className="font-bold text-lg">${formattedPrice}</span>
+            <span className="font-bold text-lg">ETB {formattedPrice}</span>
             <span className="text-gray-600 text-sm">/month</span>
           </div>
           <Button asChild variant="outline" size="sm">

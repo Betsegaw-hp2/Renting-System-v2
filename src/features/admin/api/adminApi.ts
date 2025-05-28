@@ -1,3 +1,4 @@
+import type { Report } from "@/features/report/types/report.types"
 import apiClient from "../../../api/client"
 import type { User } from "../../../types/user.types"
 import type { AdminAnalytics, AdminDashboardStats } from "../types"
@@ -490,13 +491,27 @@ export const adminApi = {
   },
 
   // Reports
-  getReports: async (params: { limit?: number; offset?: number; since?: string; sort?: string }) => {
+  getReports: async (params: {
+    limit: number;
+    offset: number;
+    since?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) => {
     try {
-      const response = await apiClient.get("/reports", { params })
-      return response.data
+      // Construct the query parameters for the API call
+      const queryParams: Record<string, string | number> = {
+        limit: params.limit,
+        offset: params.offset,
+      };
+      if (params.since) {
+        queryParams.since = params.since;
+      }
+
+      const response = await apiClient.get<Report[]>("/reports", { params: queryParams });
+      return response.data;
     } catch (error) {
-      console.error("Error fetching reports:", error)
-      throw error
+      console.error("Error fetching reports:", error);
+      throw error; // Re-throw to be caught by createAsyncThunk
     }
   },
 

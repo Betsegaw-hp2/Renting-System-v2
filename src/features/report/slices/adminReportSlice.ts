@@ -12,7 +12,7 @@ export interface AdminReportState {
 
 const initialState: AdminReportState = { list: [], loading: false };
 
-export const fetchReports = createAsyncThunk<Report[], { limit: number; offset: number; since?: string; sort?: string }>(
+export const fetchReports = createAsyncThunk<Report[], { limit: number; offset: number; since?: string; sortOrder?: 'asc' | 'desc' }>(
   'adminReports/fetchReports',
   async (params, { rejectWithValue }) => {
     try {

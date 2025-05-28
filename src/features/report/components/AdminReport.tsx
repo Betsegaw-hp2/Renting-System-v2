@@ -83,7 +83,6 @@ export const AdminReport = () => {
     list: reports, 
     selected, 
     loading, 
-    error,
     loadList,
     loadOne,
     toDelete,
@@ -110,62 +109,88 @@ export const AdminReport = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    const params = {
-      limit: tableState.pagination.pageSize,
-      offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
-      since: tableState.filters.since || undefined,
-      sort: tableState.sorting ? `${tableState.sorting.id}_${tableState.sorting.desc ? 'desc' : 'asc'}` : undefined,
-    }
-    loadList(params)
-  }, [tableState, loadList])
-
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error",
-        description: error,
-        variant: "destructive",
-      })
-    }
-  }, [error, toast])
+  const handleSort = (columnId: string) => {
+    setTableState(prev => ({
+      ...prev,
+      sorting: prev.sorting?.id === columnId && prev.sorting.desc === false 
+        ? null // Third click removes sort
+        : { id: columnId, desc: prev.sorting?.id === columnId ? !prev.sorting.desc : false },
+      pagination: { ...prev.pagination, pageIndex: 0 }, // Reset to first page on sort
+    }));
+  };
 
   const handleSinceChange = (value: string) => {
     setTableState(prev => ({
       ...prev,
       filters: { ...prev.filters, since: value },
-      pagination: { ...prev.pagination, pageIndex: 0 },
-    }))
-  }
+      pagination: { ...prev.pagination, pageIndex: 0 }, // Reset to first page on filter change
+    }));
+  };
 
-  const handleSort = (columnId: string) => {
+  const handlePageChange = (newPageIndex: number) => {
     setTableState(prev => ({
       ...prev,
-      sorting: prev.sorting?.id === columnId ? 
-        { id: columnId, desc: !prev.sorting.desc } : 
-        { id: columnId, desc: false },
-    }))
-  }
+      pagination: { ...prev.pagination, pageIndex: newPageIndex },
+    }));
+  };
 
-  const handlePageChange = (pageIndex: number) => {
-    setTableState(prev => ({
-      ...prev,
-      pagination: { ...prev.pagination, pageIndex },
-    }))
-  }
+  const handleViewReport = (reportId: string) => {
+    loadOne(reportId);
+    setIsViewDialogOpen(true);
+  };
 
-  const handleViewReport = async (id: string) => {
-    try {
-      await loadOne(id)
-      setIsViewDialogOpen(true)
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load report details",
-        variant: "destructive",
-      })
+  useEffect(() => {
+    const params: {
+      limit: number;
+      offset: number;
+      q?: string;
+      since?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    } = {
+      limit: tableState.pagination.pageSize,
+      offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
+    };
+
+    if (tableState.filters.search) {
+      params.q = tableState.filters.search;
     }
-  }
+    if (tableState.filters.since) {
+      params.since = tableState.filters.since;
+    }
+    if (tableState.sorting) {
+      params.sortBy = tableState.sorting.id;
+      params.sortOrder = tableState.sorting.desc ? 'desc' : 'asc';
+    }
+    
+    loadList(params);
+  }, [tableState, loadList]);
+
+  // Helper function to get current params for loadList
+  const getCommonLoadListParams = () => {
+    const params: {
+      limit: number;
+      offset: number;
+      q?: string;
+      since?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    } = {
+      limit: tableState.pagination.pageSize,
+      offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
+    };
+    if (tableState.filters.search) {
+      params.q = tableState.filters.search;
+    }
+    if (tableState.filters.since) {
+      params.since = tableState.filters.since;
+    }
+    if (tableState.sorting) {
+      params.sortBy = tableState.sorting.id;
+      params.sortOrder = tableState.sorting.desc ? 'desc' : 'asc';
+    }
+    return params;
+  };
 
   const handleStatusAction = async (
     action: (id: string) => Promise<any>,
@@ -173,54 +198,42 @@ export const AdminReport = () => {
     successMessage: string
   ) => {
   try {
-    setIsSubmitting(true)
-    await action(id)
-    toast({ title: "Success", description: successMessage })
-    setIsViewDialogOpen(false)
-    
-    // Refresh the list after successful action
-    await loadList({
-      limit: tableState.pagination.pageSize,
-      offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
-      since: tableState.filters.since || undefined,
-      sort: tableState.sorting ? `${tableState.sorting.desc ? "desc" : "asc"}` : undefined,
-    })
+    setIsSubmitting(true);
+    await action(id);
+    toast({ title: "Success", description: successMessage });
+    setIsViewDialogOpen(false); // Close dialog if open
+    await loadList(getCommonLoadListParams()); // Refresh list
   } catch (error: any) {
     toast({
       title: "Error",
       description: error?.message || "Failed to perform action",
       variant: "destructive"
-    })
+    });
   } finally {
-    setIsSubmitting(false)
+    setIsSubmitting(false);
   }
-}
+};
 
-const handleDelete: (id: string) => Promise<void> = async (id: string) => {
+const handleDeleteConfirmation = async () => {
+  if (!reportToDelete) return;
   try {
-      setIsSubmitting(true)
-      await toDelete(id)
-      setReportToDelete(null)
-      setIsDeleteDialogOpen(false)
-      toast({ title: "Success", description: "Report deleted successfully" })
-      setIsViewDialogOpen(false)
-      // Refresh the list
-      await loadList({
-        limit: tableState.pagination.pageSize,
-        offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
-        since: tableState.filters.since || undefined,
-        sort: tableState.sorting ? `${tableState.sorting.desc ? "desc" : "asc"}` : undefined,
-      })
+      setIsSubmitting(true);
+      await toDelete(reportToDelete); 
+      setReportToDelete(null);
+      setIsDeleteDialogOpen(false);
+      toast({ title: "Success", description: "Report deleted successfully" });
+      setIsViewDialogOpen(false); 
+      await loadList(getCommonLoadListParams()); 
   } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to delete report",
-        variant: "destructive"
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    toast({
+      title: "Error",
+      description: error?.message || "Failed to delete report",
+      variant: "destructive"
+    });
+  } finally {
+    setIsSubmitting(false);
   }
+};
   
   return (
     <div>
@@ -308,10 +321,10 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <TableRow key={i}>
+                  Array(tableState.pagination.pageSize).fill(0).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
                       {Array(7).fill(0).map((_, j) => (
-                        <TableCell key={j}>
+                        <TableCell key={`skeleton-cell-${j}`}>
                           <div className="h-4 animate-pulse rounded bg-muted" />
                         </TableCell>
                       ))}
@@ -338,7 +351,7 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
                       <TableCell>
                         <UserCell userId={report.reported_id} />
                       </TableCell>
-                      <TableCell>{formatDate(report.created_at)}</TableCell>
+                      <TableCell>{formatDate(report?.created_at) }</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -421,8 +434,7 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex + 1)}
                 disabled={
-                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= reports?.length ||
-                  loading
+                  (reports?.length ?? 0) < tableState.pagination.pageSize || loading // Disable if current page has less than pageSize items
                 }
               >
                 Next
@@ -436,8 +448,9 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
       <ReportDialog
         isOpen={isViewDialogOpen}
         onClose={() => setIsViewDialogOpen(false)}
-        selected={selected}
-        loading={loading}
+        selected={selected} 
+        loading={loading} 
+        isActionSubmitting={isSubmitting} 
         onStatusChange={async (status: ReportStatus) => {
           if (!selected) return;
           
@@ -449,17 +462,17 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
               dismissed: toDismiss
             };
 
-            const action = actionMap[status];
-            if (action) {
-              // First update the status
-              await action(selected.id);
-              // Then refresh the list
-              await loadList({
-                limit: tableState.pagination.pageSize,
-                offset: tableState.pagination.pageIndex * tableState.pagination.pageSize,
-                since: tableState.filters.since || undefined,
-                sort: tableState.sorting ? `${tableState.sorting.id}_${tableState.sorting.desc ? 'desc' : 'asc'}` : undefined,
-              });
+            const actionToPerform = actionMap[status];
+            if (actionToPerform) {
+              const updatedReport = await actionToPerform(selected.id);
+              
+              await loadList(getCommonLoadListParams());
+
+              if (updatedReport && updatedReport.id) {
+                await loadOne(updatedReport.id); 
+              } else if (selected && selected.id) { 
+                await loadOne(selected.id);
+              }
             }
           } catch (error) {
             toast({
@@ -471,22 +484,10 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
             setIsSubmitting(false);
           }
         }}
-        onDelete={async () => {
+        onDelete={async () => { 
           if (!selected) return;
-          try {
-            setIsSubmitting(true);
-            setReportToDelete(selected.id);
-            setIsDeleteDialogOpen(true);
-            
-          } catch (error) {
-            toast({
-              title: "Error",
-              description: "Failed to delete report",
-              variant: "destructive"
-            });
-          } finally {
-            setIsSubmitting(false);
-          }
+          setReportToDelete(selected.id);
+          setIsDeleteDialogOpen(true);
         }}
       />
 
@@ -502,7 +503,7 @@ const handleDelete: (id: string) => Promise<void> = async (id: string) => {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => reportToDelete && handleDelete(reportToDelete)}
+              onClick={handleDeleteConfirmation} 
               disabled={isSubmitting}
               className="bg-red-600 hover:bg-red-700"
             >
