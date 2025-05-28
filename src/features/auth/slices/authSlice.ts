@@ -9,7 +9,7 @@ const initialState: AuthState = {
   user: null,
   token: getAuthToken() || null,
   is_authenticated: !!getAuthToken(),
-  is_loading: false,
+  is_loading: !!getAuthToken(), // Set to true if token exists, indicating an initial load/check will occur
   error: null,
 }
 
@@ -188,17 +188,19 @@ const authSlice = createSlice({
     // Fetch current user
     builder.addCase(fetchCurrentUser.pending, (state) => {
       state.is_loading = true
+      state.error = null // Clear previous errors
     })
     builder.addCase(fetchCurrentUser.fulfilled, (state, action: PayloadAction<User>) => {
       state.is_loading = false
       state.user = action.payload
       state.is_authenticated = true
     })
-    builder.addCase(fetchCurrentUser.rejected, (state) => {
+    builder.addCase(fetchCurrentUser.rejected, (state, action) => { // Ensure action is typed if you use action.payload
       state.is_loading = false
       state.user = null
-      state.token = null
+      state.token = null // Also clear token on rejection if auth fails
       state.is_authenticated = false
+      state.error = action.payload as string // Store the error message
     })
   },
 })

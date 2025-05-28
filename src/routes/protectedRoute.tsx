@@ -11,25 +11,32 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }: ProtectedRouteProps) => {
-  const { is_authenticated, user } = useSelector((state: RootState) => state.auth)
+  const { is_authenticated, user, is_loading } = useSelector((state: RootState) => state.auth)
   const location = useLocation()
 
-  // If not authenticated, redirect to login with return URL
+  if (is_loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    )
+  }
+
   if (!is_authenticated) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
-  // If role is required and user doesn't have it, redirect to home
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/home" replace />
+  // User is authenticated, now check roles and permissions if required
+  if (requiredRole) {
+    if (!user || user.role !== requiredRole) {
+      return <Navigate to="/access-denied" state={{ from: location.pathname, requiredRole }} replace />
+    }
   }
 
-  // If specific permission is required, check if user has it
-  if (requiredPermission && user) {
-    const hasPermission = ROLE_PERMISSIONS[user.role][requiredPermission]
-    if (!hasPermission) {
-      // Redirect to home with a message about insufficient permissions
-      return <Navigate to="/home" state={{ permissionDenied: true }} replace />
+  if (requiredPermission && user) { // user must exist to check its role for permissions
+    const userPermissions = ROLE_PERMISSIONS[user.role]
+    if (!userPermissions || !userPermissions[requiredPermission]) {
+      return <Navigate to="/access-denied" state={{ from: location.pathname, requiredPermission }} replace />
     }
   }
 
