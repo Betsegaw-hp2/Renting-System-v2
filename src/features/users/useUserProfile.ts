@@ -5,11 +5,14 @@ import type { User as ApiUser } from '../../types/user.types';
 
 // Module-level cache for user profiles
 const profileCache = new Map<string, UserProfile>();
+
+const realUserCache = new Map<string, ApiUser>();
 // Module-level map for pending requests to avoid duplicate fetches
 const pendingRequests = new Map<string, Promise<ApiUser>>();
 
 export function useUserProfile(userId?: string) {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [realUser, setRealUser] = useState<ApiUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +29,7 @@ export function useUserProfile(userId?: string) {
     if (!userId) {
       if (mountedRef.current) {
         setUser(null);
+        setRealUser(null);
         setLoading(false);
         setError(null);
       }
@@ -46,6 +50,13 @@ export function useUserProfile(userId?: string) {
         }
         return;
       }
+      if (realUserCache.has(userId)) {
+        if (mountedRef.current) {
+          setRealUser(realUserCache.get(userId)!);
+          setLoading(false);
+        }
+        return;
+      }
 
       // Check if a request for this user is already pending
       let requestPromise = pendingRequests.get(userId);
@@ -58,7 +69,7 @@ export function useUserProfile(userId?: string) {
 
       try {
         const apiUserData: ApiUser = await requestPromise;
-
+        
         const userProfileData: UserProfile = {
           id: apiUserData.id,
           username: apiUserData.username,
@@ -68,6 +79,7 @@ export function useUserProfile(userId?: string) {
         };
 
         if (mountedRef.current) {
+          setRealUser(apiUserData); // Store the raw API user data
           setUser(userProfileData);
           profileCache.set(userId, userProfileData); // Cache the successful result
         }
@@ -102,5 +114,5 @@ export function useUserProfile(userId?: string) {
     fetchUser();
   }, [userId]);
 
-  return { user, loading, error };
+  return { user, loading, error, realUser };
 }
