@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/useToast"
-import type { Booking } from "@/types/listing.types"
+import type { Booking, BookingStatus, PaymentStatus } from "@/types/listing.types"
 // import { fakeOwnerApi } from "@/features/owner/api/fakeOwnerApi"
 
 interface BookingRequestsSectionProps {
@@ -35,81 +35,25 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
     }).format(amount)
   }
 
-  const getBookingStatusConfig = (status: string) => {
-    switch (status) {
-      case "pending":
-        return {
-          className: "bg-amber-50 text-amber-700 border-amber-200 font-medium",
-          icon: Clock,
-          label: "Pending",
-        }
-      case "confirmed":
-        return {
-          className: "bg-emerald-50 text-emerald-700 border-emerald-200 font-medium",
-          icon: Check,
-          label: "Confirmed",
-        }
-      case "cancelled":
-        return {
-          className: "bg-red-50 text-red-700 border-red-200 font-medium",
-          icon: X,
-          label: "Cancelled",
-        }
-      case "completed":
-        return {
-          className: "bg-blue-50 text-blue-700 border-blue-200 font-medium",
-          icon: Check,
-          label: "Completed",
-        }
-      default:
-        return {
-          className: "bg-gray-50 text-gray-700 border-gray-200 font-medium",
-          icon: Clock,
-          label: "Unknown",
-        }
-    }
+  const statusMap: Record<BookingStatus, { className: string; icon: React.ElementType; label: string }> = {
+    pending:    { className: "bg-amber-50 text-amber-700 border-amber-200 font-medium", icon: Clock, label: "Pending" },
+    confirmed:  { className: "bg-emerald-50 text-emerald-700 border-emerald-200 font-medium", icon: Check, label: "Confirmed" },
+    cancelled:  { className: "bg-red-50 text-red-700 border-red-200 font-medium", icon: X, label: "Cancelled" },
+    completed:  { className: "bg-blue-50 text-blue-700 border-blue-200 font-medium", icon: Check, label: "Completed" },
+    booked:    { className: "bg-purple-50 text-purple-700 border-purple-200 font-medium", icon: Calendar, label: "Booked" },
   }
+  const getBookingStatusConfig = (status: BookingStatus) =>
+    statusMap[status] || { className: "bg-gray-50 text-gray-700 border-gray-200 font-medium", icon: Clock, label: "Unknown" }
 
-  const getPaymentStatusConfig = (status: string) => {
-    switch (status) {
-      case "completed":
-        return {
-          className: "bg-green-50 text-green-700 border-green-200",
-          icon: CreditCard,
-          label: "Paid",
-        }
-      case "pending":
-        return {
-          className: "bg-yellow-50 text-yellow-700 border-yellow-200",
-          icon: Clock,
-          label: "Payment Pending",
-        }
-      case "in_escrow":
-        return {
-          className: "bg-blue-50 text-blue-700 border-blue-200",
-          icon: CreditCard,
-          label: "In Escrow",
-        }
-      case "disputed":
-        return {
-          className: "bg-red-50 text-red-700 border-red-200",
-          icon: X,
-          label: "Disputed",
-        }
-      case "failed":
-        return {
-          className: "bg-red-50 text-red-700 border-red-200",
-          icon: X,
-          label: "Failed",
-        }
-      default:
-        return {
-          className: "bg-gray-50 text-gray-700 border-gray-200",
-          icon: Clock,
-          label: "Unknown",
-        }
-    }
+  const paymentMap: Record<PaymentStatus, { className: string; icon: React.ElementType; label: string }> = {
+    completed:  { className: "bg-green-50 text-green-700 border-green-200", icon: CreditCard, label: "Paid" },
+    pending:    { className: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock, label: "Payment Pending" },
+    in_escrow:  { className: "bg-blue-50 text-blue-700 border-blue-200", icon: CreditCard, label: "In Escrow" },
+    disputed:   { className: "bg-red-50 text-red-700 border-red-200", icon: X, label: "Disputed" },
+    failed:     { className: "bg-red-50 text-red-700 border-red-200", icon: X, label: "Failed" },
   }
+  const getPaymentStatusConfig = (status: PaymentStatus) =>
+    paymentMap[status] || { className: "bg-gray-50 text-gray-700 border-gray-200", icon: Clock, label: "Unknown" }
 
   const handleBookingAction = async (bookingId: string, action: "confirmed" | "cancelled") => {
     if (onBookingUpdate) {
