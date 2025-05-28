@@ -18,7 +18,9 @@ const mockUsers: User[] = [
     is_member: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    profile_picture: ""
+    profile_picture: "",
+    kyc_verified: false,
+    location: null
   },
   {
     id: "2",
@@ -31,7 +33,9 @@ const mockUsers: User[] = [
     is_member: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    profile_picture: ""
+    profile_picture: "",
+    kyc_verified: false,
+    location: null
   },
   {
     id: "3",
@@ -44,7 +48,9 @@ const mockUsers: User[] = [
     is_member: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    profile_picture: ""
+    profile_picture: "",
+    kyc_verified: false,
+    location: null
   },
 ]
 
@@ -95,6 +101,8 @@ export const mockApi = {
       profile_picture: "",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      kyc_verified: false,
+      location: null
     }
 
     // Add to mock database
@@ -219,5 +227,18 @@ export const mockApi = {
     const exists = mockUsers.some((user) => user.username === username)
 
     return { username, exists }
+  },
+  getUserById: async (userId: string): Promise<User> => {
+    await delay(config.mockApiDelay)
+
+    // Find user by ID
+    const user = mockUsers.find((user) => user.id === userId)
+
+    if (!user) {
+      const error = new Error("User not found")
+      throw error
+    }
+
+    return user
   }
 }

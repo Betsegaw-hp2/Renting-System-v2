@@ -35,17 +35,19 @@ export type ReportStatus = "open" | "under_review" | "resolved" | "dismissed"
 
 // User interfaces
 export interface User {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  username: string
-  role: UserRole
-  profile_picture?: string
-  is_verified: boolean
-  is_member: boolean
-  created_at: string
-  updated_at: string
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  role: UserRole;
+  profile_picture: string | null; 
+  is_verified: boolean;
+  is_member: boolean;
+  kyc_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  location: Location | null;
 }
 
 export interface UserWithToken extends User {
@@ -58,25 +60,25 @@ export interface UserWithLocation extends User {
 
 // Location interfaces
 export interface Location {
-  id: string
-  user_id: string
-  address: string
-  city: string
-  country: string
-  region: string
-  postal_code: string
-  phone: string
-  created_at: string
-  updated_at: string
+  id: string;
+  user_id: string;
+  address: string;
+  city: string;
+  country: string;
+  region: string;
+  postal_code: string;
+  phone: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreateLocation {
-  address: string
-  city: string
-  country: string
-  region: string
-  postal_code: string
-  phone: string
+  address: string;
+  city: string;
+  country: string;
+  region: string;
+  postal_code: string;
+  phone: string;
 }
 
 // Category interfaces

@@ -34,17 +34,19 @@ export const ROLE_PERMISSIONS = {
 }
 
 export interface User {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  username: string
-  role: UserRole
-  profile_picture?: string
-  is_verified: boolean
-  is_member: boolean
-  created_at: string
-  updated_at: string
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  username: string;
+  role: UserRole;
+  profile_picture: string | null; 
+  is_verified: boolean;
+  is_member: boolean;
+  kyc_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  location: Location | null;
 }
 
 export interface UserWithLocation extends User {

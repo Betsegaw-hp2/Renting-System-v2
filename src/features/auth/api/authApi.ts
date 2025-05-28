@@ -132,6 +132,26 @@ export const getCurrentUser = async (): Promise<User> => {
   }
 }
 
+export const getUserById = async (userId: string): Promise<User> => {
+  try {
+    if (config.useMockApi) {
+      return mockApi.getUserById(userId)
+    }
+
+    const response = await apiClient.get<User>(`/users/${userId}`)
+    return response.data
+  } catch (error) {
+    // Format the error before throwing
+    if (error instanceof Error) {
+      throw error
+    } else if (typeof error === "object" && error !== null) {
+      throw new Error(JSON.stringify(error))
+    } else {
+      throw new Error("An unknown error occurred while fetching user data")
+    }
+  }
+}
+
 export const updateEmail = async (userId: string, newEmail: string): Promise<void> => {
   try {
     if (config.useMockApi) {

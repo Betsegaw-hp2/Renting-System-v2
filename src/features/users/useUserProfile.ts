@@ -1,49 +1,101 @@
+import { getUserById } from '@/features/auth/api/authApi';
 import type { UserProfile } from '@/features/report/types/report.types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { User as ApiUser } from '../../types/user.types';
 
-const MOCK_USERS: UserProfile[] = [
-  {
-    id: 'user-1',
-    username: 'john_doe',
-    email: 'john@example.com',
-    createdAt: '2023-01-15T08:00:00Z'
-  },
-  {
-    id: 'user-2',
-    username: 'jane_smith',
-    email: 'jane@example.com',
-    createdAt: '2023-02-20T10:30:00Z'
-  }
-];
+// Module-level cache for user profiles
+const profileCache = new Map<string, UserProfile>();
+// Module-level map for pending requests to avoid duplicate fetches
+const pendingRequests = new Map<string, Promise<ApiUser>>();
 
 export function useUserProfile(userId?: string) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // To ensure we don't set state on an unmounted component
+  const mountedRef = useRef(true);
   useEffect(() => {
-    if (!userId) return;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      if (mountedRef.current) {
+        setUser(null);
+        setLoading(false);
+        setError(null);
+      }
+      return;
+    }
 
     const fetchUser = async () => {
-      setLoading(true);
+      if (mountedRef.current) {
+        setLoading(true);
+        setError(null);
+      }
+
+      // Check cache first
+      if (profileCache.has(userId)) {
+        if (mountedRef.current) {
+          setUser(profileCache.get(userId)!);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Check if a request for this user is already pending
+      let requestPromise = pendingRequests.get(userId);
+
+      if (!requestPromise) {
+        // If no pending request, create one
+        requestPromise = getUserById(userId);
+        pendingRequests.set(userId, requestPromise);
+      }
+
       try {
-        // TODO: Replace with real API call
-        // const response = await apiClient.get(`/users/${userId}`);
-        // const userData = toCamelCase(response.data);
-        
-        // Mock implementation
-        const mockUser = MOCK_USERS.find(u => u.id === userId) || {
-          id: userId,
-          username: `user_${userId.slice(0, 6)}`,
-          email: `${userId.slice(0, 6)}@example.com`,
-          createdAt: new Date().toISOString()
+        const apiUserData: ApiUser = await requestPromise;
+
+        const userProfileData: UserProfile = {
+          id: apiUserData.id,
+          username: apiUserData.username,
+          email: apiUserData.email,
+          createdAt: apiUserData.created_at || new Date().toISOString(),
+          avatarUrl: apiUserData.profile_picture || undefined,
         };
-        
-        setUser(mockUser);
-      } catch (error) {
-        setError('Failed to load user profile');
+
+        if (mountedRef.current) {
+          setUser(userProfileData);
+          profileCache.set(userId, userProfileData); // Cache the successful result
+        }
+      } catch (err: any) {
+        if (mountedRef.current) {
+          let errorMessage = 'Failed to load user profile.';
+          if (err.response) {
+            if (err.response.status === 429) {
+              errorMessage = 'Too many requests for user profiles. Please try again in a moment.';
+            } else if (err.response.data && typeof err.response.data.message === 'string') {
+              errorMessage = err.response.data.message;
+            } else if (typeof err.response.data === 'string') {
+              errorMessage = err.response.data;
+            } else if (err.response.statusText) {
+              errorMessage = `Error ${err.response.status}: ${err.response.statusText}`;
+            }
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          setError(errorMessage);
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+        }
+        // Remove from pending requests map once settled (either success or failure)
+        pendingRequests.delete(userId);
       }
     };
 
