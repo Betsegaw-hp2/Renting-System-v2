@@ -169,24 +169,17 @@ const ManageListingPage: React.FC = () => {
 
   const handleBookingUpdate = async (bookingId: string, status: "confirmed" | "cancelled") => {
     try {
-      // Update booking status
-      setBookings((prev) =>
-        prev.map((booking) =>
-          booking.id === bookingId
-            ? { ...booking, status: status === "confirmed" ? "confirmed" : "cancelled" }
-            : booking,
-        ),
-      )
-
-      // If confirming a booking, update listing status to booked
-      if (status === "confirmed" && listing) {
-        const updatedListing = { ...listing, status: "booked" as const }
-        setListing(updatedListing)
-
-        // Update listing status via API
-        await ownerApi.updateListing(listing.id, { status: "booked" })
+      // Call backend to update booking status
+      if (!listing) throw new Error("Listing not loaded");
+      await ownerApi.updateBookingStatus(bookingId, listing.id); // status param removed
+      // Refetch bookings from backend to get the latest status
+      await fetchListingData();
+      // Optionally, update listing status if confirming
+      if (status === "confirmed") {
+        const updatedListing = { ...listing, status: "booked" as const };
+        setListing(updatedListing);
+        await ownerApi.updateListing(listing.id, { status: "booked" });
       }
-
       toast({
         title: "Success",
         description: `Booking ${status === "confirmed" ? "confirmed" : "cancelled"} successfully`,

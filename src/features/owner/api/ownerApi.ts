@@ -1,4 +1,3 @@
-
 import { getAuthToken } from "@/lib/cookies"
 import apiClient from "../../../api/client"
 import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
@@ -179,21 +178,20 @@ export const ownerApi = {
       console.error("Error fetching owner bookings:", error)
       return []
     }
-  }
+  },
 
 
-  // UPDATE BOOKING STATUS FAKE VERSION
-  // updateBookingStatus: async (bookingId: string, status: "confirmed" | "cancelled"): Promise<void> => {
-  //   try {
-  //     console.log(`Updating booking ${bookingId} status to ${status}`)
-  //     // Simulate API call
-  //     await new Promise((resolve) => setTimeout(resolve, 1000))
-  //     console.log(`Booking ${bookingId} status updated to ${status}`)
-  //   } catch (error) {
-  //     console.error("Error updating booking status:", error)
-  //     throw error
-  //   }
-  // },
+  // Update booking status (real API)
+  updateBookingStatus: async (bookingId: string, listingId: string): Promise<void> => {
+    try {
+      const response = await publicAxiosInstance.patch(`/listings/${listingId}/bookings/${bookingId}/confirm`)
+      console.log("Booking status updated successfully:", response.data);
+      return response.data
+    } catch (error) {
+      console.error("Error updating booking status:", error);
+      throw error;
+    }
+  },
 
 
   // get Listing booking (not implemented yet)
