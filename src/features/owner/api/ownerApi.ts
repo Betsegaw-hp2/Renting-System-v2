@@ -182,7 +182,7 @@ export const ownerApi = {
 
 
   // Update booking status (real API)
-  updateBookingStatus: async (bookingId: string, listingId: string): Promise<void> => {
+  confirmBookingStatus: async (bookingId: string, listingId: string): Promise<void> => {
     try {
       const response = await publicAxiosInstance.patch(`/listings/${listingId}/bookings/${bookingId}/confirm`)
       console.log("Booking status updated successfully:", response.data);
@@ -193,6 +193,18 @@ export const ownerApi = {
     }
   },
 
+  // Cancel booking (real API)
+  cancelBooking: async (bookingId: string): Promise<void> => {
+    try {
+      
+      const response = await publicAxiosInstance.get(`/bookings/${bookingId}/cancel`)
+      console.log("Booking cancelled successfully:", response.data);
+      return response.data
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      throw error;
+    }
+  },
 
   // get Listing booking (not implemented yet)
   // getListingBookings: async (listingId: string): Promise<string[]> => {
