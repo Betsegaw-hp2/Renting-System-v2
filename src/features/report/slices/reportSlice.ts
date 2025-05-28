@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@/features/auth/slices/authSlice';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { reportApi } from '../api/reportApi';
 import type { CreateReportPayload, Report } from '../types/report.types';
@@ -16,7 +17,7 @@ export const createReport = createAsyncThunk<Report, CreateReportPayload>(
     try {
       return await reportApi.create(payload);
     } catch (e: any) {
-      return rejectWithValue(e.message);
+      return rejectWithValue(getErrorMessage(e));
     }
   }
 );
@@ -27,7 +28,7 @@ export const fetchReport = createAsyncThunk<Report, string>(
     try {
       return await reportApi.fetchOne(id);
     } catch (e: any) {
-      return rejectWithValue(e.message);
+      return rejectWithValue(getErrorMessage(e));
     }
   }
 );

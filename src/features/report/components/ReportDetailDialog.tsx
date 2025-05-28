@@ -6,8 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/useToast";
 import { formatDate } from "@/lib/DateUtils";
-import { CheckCircle, Clock, ExternalLinkIcon, FileTextIcon, HomeIcon, InfoIcon, Link, Trash, UsersIcon, XCircle } from "lucide-react";
+import { CheckCircle, Clock, ExternalLinkIcon, FileTextIcon, HomeIcon, InfoIcon, Trash, UsersIcon, XCircle } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { Report, ReportStatus } from "../types/report.types";
 import { getStatusBadge } from "./AdminReport";
 import { UserCompactCard } from "./UserCompactCard";
@@ -105,12 +106,6 @@ export const ReportDialog = ({
                             {formatDate(selected.created_at)}
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-background">
-                          <div className="col-span-1 text-muted-foreground">Last Updated</div>
-                          <div className="col-span-2 font-medium">
-                            {formatDate(selected.updated_at)}
-                          </div>
-                        </div>
                       </CardContent>
                     </Card>
 
@@ -130,7 +125,7 @@ export const ReportDialog = ({
 
                   {/* Context Column */}
                   <div className="space-y-4">
-                    {selected.listing_id && (
+                    {selected?.listing_id && (
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -140,7 +135,7 @@ export const ReportDialog = ({
                         </CardHeader>
                         <CardContent>
                           <Link
-                            href={`/listings/${selected.listing_id}`}
+                            to={`/listings/${selected.listing_id}`}
                             className="flex items-center gap-2 p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors"
                           >
                             <ExternalLinkIcon className="h-5 w-5 text-primary" />

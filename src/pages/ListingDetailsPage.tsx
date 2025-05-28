@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ReportButton } from "@/features/report/components/ReportButton"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
@@ -73,7 +74,6 @@ export default function ListingDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [isBooking, setIsBooking] = useState(false)
@@ -239,9 +239,6 @@ export default function ListingDetailsPage() {
     setIsBookingModalOpen(true)
   }
 
-  const openReportModal = () => {
-    setIsReportModalOpen(true)
-  }
 
   if (isLoading) {
     return (
@@ -440,7 +437,7 @@ export default function ListingDetailsPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-baseline mb-4">
-                    <span className="text-2xl font-bold">${new Intl.NumberFormat("en-US").format(listing.price)}</span>
+                    <span className="text-2xl font-bold">ETB {new Intl.NumberFormat("am-ET").format(listing.price)}</span>
                     <span className="text-gray-600 ml-1">/month</span>
                   </div>
 
@@ -485,10 +482,16 @@ export default function ListingDetailsPage() {
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
                       </Button>
-                       <Button variant="ghost" size="sm" className="flex items-center" onClick={openReportModal}>
-                        <Flag className="h-4 w-4 mr-1" />
-                        Report
-                      </Button>
+                       <ReportButton 
+                          reportedId={listing.owner_id || ""}
+                          listingId={listing.id}
+                          size="sm"
+                          variant="ghost"
+                          className="flex items-center"
+                        >
+                          <Flag className="h-4 w-4 mr-1" />
+                            Report
+                        </ReportButton>
                     </div>
                   </div>
                 </CardContent>
@@ -509,7 +512,7 @@ export default function ListingDetailsPage() {
                         <DollarSign className="h-4 w-4 mr-2 text-blue-600" />
                         Price
                       </span>
-                      <span>${new Intl.NumberFormat("en-US").format(listing.price)}/month</span>
+                      <span>ETB {new Intl.NumberFormat("am-ET").format(listing.price)}/month</span>
                     </div>
 
                     {listing.views_count !== undefined && (
@@ -665,11 +668,11 @@ export default function ListingDetailsPage() {
                         </div>
                         <div className="flex justify-between items-center pt-2 border-t mt-2">
                           <span className="text-gray-600">Rate:</span>
-                          <span className="font-medium">${(listing.price / 30).toFixed(2)}/day</span>
+                          <span className="font-medium">ETB {(listing.price / 30).toFixed(2)}/day</span>
                         </div>
                         <div className="flex justify-between items-center font-bold text-lg">
                           <span>Total Amount:</span>
-                          <span>${calculateTotalAmount().toFixed(2)}</span>
+                          <span>ETB {calculateTotalAmount().toFixed(2)}</span>
                         </div>
                       </>
                     ) : (
@@ -701,30 +704,6 @@ export default function ListingDetailsPage() {
               </DialogFooter>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Report Modal */}
-      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Report Listing</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for reporting this listing.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>
-              Cancel
-            </Button>
-            {/* <Button
-              onClick={handleReport}
-              disabled={isReporting}
-              className="ml-2"
-            >
-              {isReporting ? "Processing..." : "Submit Report"}
-            </Button> */}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

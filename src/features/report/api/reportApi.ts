@@ -1,15 +1,24 @@
 import apiClient from '@/api/client';
-import apiConfig from '@/config/api.config';
 import type { CreateReportPayload, Report } from '../types/report.types';
 
 export const reportApi = {
-  create: (payload: CreateReportPayload): Promise<Report> =>
-    apiClient
-      .post<Report>(`${apiConfig.apiBaseUrl}/reports`, payload)
-      .then(r => r.data),
+  create: async (payload: CreateReportPayload): Promise<Report> => {
+    try {
+      const response = await apiClient.post<Report>(`/reports`, payload);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating report:", error);
+      throw error;
+    }
+  },
 
-  fetchOne: (id: string): Promise<Report> =>
-    apiClient
-      .get<Report>(`${apiConfig.apiBaseUrl}/reports/${id}`)
-      .then(r => r.data),
+  fetchOne: async (id: string): Promise<Report> => {
+    try {
+      const response = await apiClient.get<Report>(`/reports/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching report with id ${id}:`, error); 
+      throw error;
+    }
+  },
 };
