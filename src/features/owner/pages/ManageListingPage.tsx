@@ -16,6 +16,7 @@ import BookingRequestsSection from "@/features/owner/components/BookingRequestSe
 import type { Review } from "@/types/listing.types"
 import type { Booking } from "@/types/listing.types"
 import type { FeaturedListing } from "@/api/publicApi"
+import { Header } from "@/components/layout/Header"
 
 // Mock data for demonstration
 const mockReviews: Review[] = [
@@ -263,6 +264,8 @@ const ManageListingPage: React.FC = () => {
   }
 
   return (
+    <>
+    <Header />
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -346,8 +349,7 @@ const ManageListingPage: React.FC = () => {
                     {Array.from({ length: 5 }, (_, index) => (
                       <Star
                         key={index}
-                        className={`h-4 w-4 ${index < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                      />
+                        className={`h-4 w-4 ${index < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
                     ))}
                   </div>
                   <span className="text-sm text-muted-foreground">{averageRating.toFixed(1)} average rating</span>
@@ -404,8 +406,7 @@ const ManageListingPage: React.FC = () => {
           <BookingRequestsSection
             bookings={bookings}
             isLoading={false}
-            onBookingUpdate={(bookingId, action) => handleBookingUpdate(bookingId, action)}
-          />
+            onBookingUpdate={(bookingId, action) => handleBookingUpdate(bookingId, action)} />
         </div>
       </div>
 
@@ -415,10 +416,9 @@ const ManageListingPage: React.FC = () => {
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           listing={listing}
-          onSuccess={handleEditSuccess}
-        />
+          onSuccess={handleEditSuccess} />
       )}
-    </div>
+    </div></>
   )
 }
 

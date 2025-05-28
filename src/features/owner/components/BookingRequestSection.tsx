@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Calendar, DollarSign, Clock, Check, X, Mail, CreditCard } from "lucide-react"
+import { Calendar, DollarSign, Clock, Check, X, Mail, CreditCard, UserRoundIcon, Book } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/useToast"
 import type { Booking, BookingStatus, PaymentStatus } from "@/types/listing.types"
+import { useUserProfile } from "@/features/users/useUserProfile"
+import { Skeleton } from "@/components/ui/skeleton"
+import BookedUser from "./BookedUser"
 // import { fakeOwnerApi } from "@/features/owner/api/fakeOwnerApi"
 
 interface BookingRequestsSectionProps {
@@ -75,12 +78,7 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
     }
   }
 
-  const getInitials = (firstName?: string, lastName?: string) => {
-    if (firstName && lastName) {
-      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
-    }
-    return "R"
-  }
+
 
   if (isLoading) {
     return (
@@ -142,38 +140,19 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
                   className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow bg-white"
                 >
                   {/* Header with Renter Info and Status */}
-                  <div className="flex-col items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12 ring-2 ring-gray-100">
-                        <AvatarImage
-                          src={booking.renter?.profile_picture || ""}
-                          alt={`${booking.renter?.first_name} ${booking.renter?.last_name}`}
-                        />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                          {getInitials(booking.renter?.first_name, booking.renter?.last_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 text-lg">
-                          {booking.renter?.first_name} {booking.renter?.last_name}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-4 w-4" />
-                          {booking.renter?.email}
-                        </div>
-                      </div>
-                    </div>
+                    <div className="flex-col items-start justify-between mb-4">
+                     <BookedUser userid={booking.renter_id} />
                     <div className="flex gap-2 items-end py-4">
                       <Badge className={bookingStatus.className} variant="outline">
-                        <BookingIcon className="h-3 w-3 mr-1" />
-                        {bookingStatus.label}
+                      <BookingIcon className="h-3 w-3 mr-1" />
+                      {bookingStatus.label}
                       </Badge>
                       <Badge className={paymentStatus.className} variant="outline">
-                        <PaymentIcon className="h-3 w-3 mr-1" />
-                        {paymentStatus.label}
+                      <PaymentIcon className="h-3 w-3 mr-1" />
+                      {paymentStatus.label}
                       </Badge>
                     </div>
-                  </div>
+                    </div>
 
                   <Separator className="my-4" />
 
