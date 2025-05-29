@@ -23,8 +23,9 @@ const BookingDetailPage = lazy(() => import("../pages/BookingDetailPage"))
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
 const AdminUsersPage = lazy(() => import("../features/admin/pages/UsersPage"))
 const AdminUserDetailPage = lazy(() => import("../features/admin/pages/UserDetailPage"))
-const AdminAllKycPage = lazy(() => import("../features/admin/pages/AllKycPage")) // Added
+const AdminAllKycPage = lazy(() => import("../features/admin/pages/AllKycPage"))
 const AdminListingsPage = lazy(() => import("../features/admin/pages/ListingsPage"))
+const AdminListingDetailPage = lazy(() => import("../features/admin/pages/ListingDetailPage"))
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
@@ -328,6 +329,16 @@ const router = createBrowserRouter([
       <AdminRoute>
         <Suspense fallback={<LoadingFallback />}>
           <AdminListingsPage />
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "/admin/listings/:id",
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminListingDetailPage />
         </Suspense>
       </AdminRoute>
     ),
