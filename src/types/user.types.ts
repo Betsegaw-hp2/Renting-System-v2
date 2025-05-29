@@ -8,6 +8,28 @@ export const UserRole = {
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+/*
+database.UserKYC{
+backside	string
+created_at	string
+face	string
+frontside	string
+id	string
+updated_at	string
+user_id	string
+}
+*/
+
+export interface UserKYC {
+  id: string;
+  user_id: string;
+  frontside: string;
+  backside: string;
+  face: string; 
+  created_at: string; 
+  updated_at: string; 
+}
+
 // Role-based permissions
 export const ROLE_PERMISSIONS = {
   [UserRole.TENANT]: {

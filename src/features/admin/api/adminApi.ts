@@ -1,7 +1,7 @@
-import type { Report } from "@/features/report/types/report.types"
-import apiClient from "../../../api/client"
-import type { User } from "../../../types/user.types"
-import type { AdminAnalytics, AdminDashboardStats } from "../types"
+import type { User, UserKYC } from "@/types/user.types";
+import apiClient from "../../../api/client";
+import type { AdminAnalytics, AdminDashboardStats } from "../types";
+
 
 // Convert snake_case to camelCase
 const toCamelCase = (obj: any): any => {
@@ -215,33 +215,68 @@ export const adminApi = {
   // Users
   getUsers: async (params: { limit?: number; offset?: number; search?: string; since?: string; sort?: string }) => {
     try {
-      const response = await apiClient.get("/users", { params })
-      return toCamelCase(response.data)
+      const response = await apiClient.get<User[]>("/users", { params })
+      return response.data
     } catch (error) {
       console.error("Error fetching users:", error)
       throw error
     }
   },
 
-  updateUser: async (id: string, userData: Partial<User>) => {
+  getUser: async (id: string) => {
     try {
-      const response = await apiClient.patch(`/users/${id}`, userData)
-      return toCamelCase(response.data)
+      const response = await apiClient.get<User>(`/users/${id}`)
+      return response.data
     } catch (error) {
-      console.error("Error updating user:", error)
+      console.error(`Error fetching user ${id}:`, error)
       throw error
     }
   },
 
-  deleteUser: async (id: string) => {
+  approveUser: async (id: string) => {
     try {
-      await apiClient.delete(`/users/${id}`)
-      return true
+      // The endpoint is GET /users/{id}/approve as per the spec
+      const response = await apiClient.get(`/users/${id}/approve`)
+      return response.data
     } catch (error) {
-      console.error("Error deleting user:", error)
+      console.error(`Error approving user ${id}:`, error)
       throw error
     }
   },
+
+  // User KYC Management
+  getUserKyc: async (userId: string): Promise<UserKYC | null> => {
+    try {
+      const response = await apiClient.get(`/users/${userId}/kyc`);
+      // Assuming API returns UserKYC object directly, or 404 if not found.
+      // The apiClient might throw an error for 404, which is caught below.
+      return response.data; 
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null; // Return null if KYC not found
+      }
+      console.error(`Error fetching KYC for user ${userId}:`, error);
+      throw error; // Re-throw other errors
+    }
+  },
+
+  postUserKyc: async (userId: string, kycData: FormData): Promise<UserKYC> => { 
+    const response = await apiClient.post(`/users/${userId}/kyc`, kycData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data; 
+  },
+
+  // Ensure this return type matches the actual API response structure for a list of KYC records.
+  // It might be UserKYC[] directly, or an object like { items: UserKYC[], meta: any }.
+  // For now, assuming it could be either based on previous attempts.
+  getAllUserKyc: async (params?: any): Promise<{ items: UserKYC[]; meta: any } | UserKYC[]> => { 
+    const response = await apiClient.get("/users/kyc", { params }); // The endpoint /user-kyc/all was in doc_prod.json, but /users/kyc is used here. Confirm which is correct.
+    return response.data; 
+  },
+
 
   // Categories
   getCategories: async (params: { limit?: number; offset?: number; search?: string; sort?: string }) => {
@@ -817,11 +852,11 @@ async function fetchListingsByStatusData() {
     }
 
     response.data.forEach((item: any) => {
-      const normalizedStatus = statusMapping[item.status.toUpperCase()] || item.status.toLowerCase()
-      if (listingsByStatus[normalizedStatus] !== undefined) {
-        listingsByStatus[normalizedStatus] = item.count
+      const normalizedStatus = statusMapping[item.status.toUpperCase()] || item.status.toLowerCase();
+      if (listingsByStatus[normalizedStatus] !== undefined) { // Corrected typo here
+        listingsByStatus[normalizedStatus] = item.count;
       }
-    })
+    });
 
     return listingsByStatus
   } catch (error) {

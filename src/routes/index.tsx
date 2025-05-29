@@ -22,6 +22,7 @@ const BookingDetailPage = lazy(() => import("../pages/BookingDetailPage"))
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
 const AdminUsersPage = lazy(() => import("../features/admin/pages/UsersPage"))
+const AdminUserDetailPage = lazy(() => import("../features/admin/pages/UserDetailPage"))
 const AdminListingsPage = lazy(() => import("../features/admin/pages/ListingsPage"))
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
@@ -356,6 +357,16 @@ const router = createBrowserRouter([
       <AdminRoute>
         <Suspense fallback={<LoadingFallback />}>
           <AdminSettingsPage />
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+  path: "/admin/users/:userId",
+  element: (
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminUserDetailPage />
         </Suspense>
       </AdminRoute>
     ),
