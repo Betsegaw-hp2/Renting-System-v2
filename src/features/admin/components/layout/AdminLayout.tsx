@@ -1,16 +1,16 @@
 "use client"
 
-import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, LogOut, Settings, Users } from "lucide-react"
-import type React from "react"
-import { useEffect, useState } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { Link, useLocation } from "react-router-dom"
-import { Header } from "../../../../components/layout/Header"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar"
-import { Button } from "../../../../components/ui/button"
-import { cn } from "../../../../lib/utils"
-import type { RootState } from "../../../../store"
-import { logoutUser } from "../../../auth/slices/authSlice"
+import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, LogOut, Settings, ShieldCheck, Users } from "lucide-react"; // Added ShieldCheck
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useLocation } from "react-router-dom";
+import { Header } from "../../../../components/layout/Header";
+import { Avatar, AvatarFallback, AvatarImage } from "../../../../components/ui/avatar";
+import { Button } from "../../../../components/ui/button";
+import { cn } from "../../../../lib/utils";
+import type { RootState } from "../../../../store";
+import { logoutUser } from "../../../auth/slices/authSlice";
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -53,6 +53,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       label: "Users",
       icon: Users,
     },
+    {
+      path: "/admin/kyc-management", // Added
+      label: "KYC Management", // Added
+      icon: ShieldCheck, // Added
+    }, // Added
     {
       path: "/admin/listings",
       label: "Listings",

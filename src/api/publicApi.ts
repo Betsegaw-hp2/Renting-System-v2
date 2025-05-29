@@ -43,7 +43,8 @@ export interface FeaturedListing {
     bedrooms?: number
     bathrooms?: number
     area?: number
-  }
+  },
+  views_count: number
 }
 
 export interface Testimonial {
@@ -173,7 +174,7 @@ export const convertApiListingToFeaturedListing = async (apiListing: ApiListingR
     owner_id: apiListing.owner_id,
     created_at: apiListing.created_at,
     updated_at: apiListing.updated_at,
-
+    views_count: apiListing.views_count,
     // Optional fallback values
     rating: 4.5,
     reviewCount: 0,

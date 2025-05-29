@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/useToast"
 import { formatDate } from "@/lib/DateUtils"
 import { ArrowUpDown, CheckCircle, Clock, Eye, Filter, MoreHorizontal, Search, Trash, XCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useAdminReports } from "../hooks/useAdminReports"
 import type { Report, ReportStatus } from "../types/report.types"
 import { ReportDialog } from "./ReportDetailDialog"
@@ -344,12 +345,16 @@ const handleDeleteConfirmation = async () => {
                       <TableCell>{getStatusBadge(report.status, selected ?? null)}</TableCell>
                       {/* Reporter */}
                       <TableCell>
-                        <UserCell userId={report.reporter_id} />
+                        <Link to={`/admin/users/${report.reporter_id}`} className="flex items-center gap-2">
+                          <UserCell userId={report.reporter_id} />
+                        </Link>
                       </TableCell>
                       
                       {/* Reported User */}
                       <TableCell>
-                        <UserCell userId={report.reported_id} />
+                        <Link to={`/admin/users/${report.reported_id}`} className="flex items-center gap-2">
+                          <UserCell userId={report.reported_id} />
+                        </Link>
                       </TableCell>
                       <TableCell>{formatDate(report?.created_at) }</TableCell>
                       <TableCell>

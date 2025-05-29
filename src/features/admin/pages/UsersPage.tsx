@@ -1,11 +1,12 @@
 "use client"
 
-import { ArrowUpDown, Edit, Filter, MoreHorizontal, Search, Trash, UserCheck, UserPlus, UserX } from "lucide-react"
-import type React from "react"
-import { useCallback, useEffect, useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
-import { Badge } from "../../../components/ui/badge"
-import { Button } from "../../../components/ui/button"
+import { ArrowUpDown, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // Added for navigation
+import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,17 +14,17 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu"
-import { Input } from "../../../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
-import { UserRole } from "../../../types/user.types"
-import { adminApi } from "../api/adminApi"
-import { AdminLayout } from "../components/layout/AdminLayout"
-import type { TableState } from "../types"
+} from "../../../components/ui/dropdown-menu";
+import { Input } from "../../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { UserRole, type User } from "../../../types/user.types";
+import { adminApi } from "../api/adminApi";
+import { AdminLayout } from "../components/layout/AdminLayout";
+import type { TableState } from "../types";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [totalUsers, setTotalUsers] = useState(0)
   const [loading, setLoading] = useState(true)
   const [tableState, setTableState] = useState<TableState>({
@@ -51,12 +52,12 @@ export default function UsersPage() {
         sort: sorting ? `${sorting.id}:${sorting.desc ? "desc" : "asc"}` : undefined,
       }
 
-      const response = await adminApi.getUsers(params)
-
-      // Assuming the API returns { data: [...], total: number }
-      // If your API structure is different, adjust accordingly
-      setUsers(response.data || response)
-      setTotalUsers(response.total || response.length || 0)
+      const users = await adminApi.getUsers(params)
+      const UsersStat = await adminApi.getDashboardStats()
+      const totalUsersCount = UsersStat.totalUsers || 0
+      
+      setUsers(users)
+      setTotalUsers(totalUsersCount)
     } catch (error) {
       console.error("Error fetching users:", error)
     } finally {
@@ -233,7 +234,8 @@ export default function UsersPage() {
                     </Button>
                   </TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Email status</TableHead>
+                  <TableHead>KYC status</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -292,64 +294,61 @@ export default function UsersPage() {
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarImage
-                              src={user.profilePicture || "/placeholder.svg"}
-                              alt={`${user.firstName} ${user.lastName}`}
+                              src={user.profile_picture || "/placeholder.svg"}
+                              alt={`${user.first_name} ${user.last_name}`}
                             />
-                            <AvatarFallback>{getInitials(`${user.firstName} ${user.lastName}`)}</AvatarFallback>
+                            <AvatarFallback>{getInitials(`${user.first_name} ${user.last_name}`)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">
-                              {user.firstName} {user.lastName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">@{user.username}</div>
+                            <Link to={`/admin/users/${user.id}`} className="font-medium hover:underline">
+                              {`${user.first_name} ${user.last_name}`}
+                            </Link>
+                            <div className="text-sm text-muted-foreground">{user.username || user.id}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
-                        {user.isVerified ? (
+                        {user.is_verified ? (
                           <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
                             Verified
                           </Badge>
                         ) : (
-                          <Badge variant="destructive" className="bg-red-100 text-red-800 hover:bg-red-100">
-                            Unverified
-                          </Badge>
+                          <Badge variant="destructive">Not Verified</Badge>
                         )}
                       </TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {user.kyc_verified ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                            Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">Not Verified</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button variant="ghost" className="h-8 w-8 p-0">
                               <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                            <DropdownMenuItem asChild>
+                              <Link to={`/admin/users/${user.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            {user.isVerified ? (
-                              <DropdownMenuItem>
-                                <UserX className="mr-2 h-4 w-4" />
-                                Deactivate
-                              </DropdownMenuItem>
+                            {/* <DropdownMenuItem>Edit User</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {user.kyc_verified ? ( 
+                               <DropdownMenuItem className="text-yellow-600">Suspend User</DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Activate
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                               <DropdownMenuItem className="text-green-600">Approve User</DropdownMenuItem>
+                            )} */}
+                            <DropdownMenuItem className="text-red-600">Deactivate User</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -363,9 +362,7 @@ export default function UsersPage() {
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               {totalUsers > 0 ? (
-                <>
-                  Showing {startItem} to {endItem} of {totalUsers} users
-                </>
+                `Showing ${startItem} - ${endItem} of ${totalUsers} users`
               ) : (
                 "No users found"
               )}
@@ -375,45 +372,15 @@ export default function UsersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex - 1)}
-                disabled={tableState.pagination.pageIndex === 0 || loading}
+                disabled={tableState.pagination.pageIndex === 0}
               >
                 Previous
               </Button>
-              {pageCount > 0 && (
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, pageCount) }).map((_, i) => {
-                    // Show pages around current page
-                    let pageNum = tableState.pagination.pageIndex
-                    if (pageCount <= 5) {
-                      pageNum = i
-                    } else if (tableState.pagination.pageIndex < 2) {
-                      pageNum = i
-                    } else if (tableState.pagination.pageIndex > pageCount - 3) {
-                      pageNum = pageCount - 5 + i
-                    } else {
-                      pageNum = tableState.pagination.pageIndex - 2 + i
-                    }
-
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={tableState.pagination.pageIndex === pageNum ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handlePageChange(pageNum)}
-                        disabled={loading}
-                      >
-                        {pageNum + 1}
-                      </Button>
-                    )
-                  })}
-                </div>
-              )}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex + 1)}
-                disabled={tableState.pagination.pageIndex >= pageCount - 1 || loading}
+                disabled={tableState.pagination.pageIndex >= pageCount - 1}
               >
                 Next
               </Button>

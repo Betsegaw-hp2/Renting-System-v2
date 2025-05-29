@@ -22,7 +22,10 @@ const BookingDetailPage = lazy(() => import("../pages/BookingDetailPage"))
 // Admin pages
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
 const AdminUsersPage = lazy(() => import("../features/admin/pages/UsersPage"))
+const AdminUserDetailPage = lazy(() => import("../features/admin/pages/UserDetailPage"))
+const AdminAllKycPage = lazy(() => import("../features/admin/pages/AllKycPage"))
 const AdminListingsPage = lazy(() => import("../features/admin/pages/ListingsPage"))
+const AdminListingDetailPage = lazy(() => import("../features/admin/pages/ListingDetailPage"))
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
@@ -331,6 +334,16 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "/admin/listings/:id",
+    element: (
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminListingDetailPage />
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
     path: "/admin/categories",
     element: (
       <AdminRoute>
@@ -360,6 +373,26 @@ const router = createBrowserRouter([
       </AdminRoute>
     ),
   },
+  {
+  path: "/admin/users/:userId",
+  element: (
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}>
+          <AdminUserDetailPage />
+        </Suspense>
+      </AdminRoute>
+    ),
+  },
+  {
+    path: "/admin/kyc-management", // Added
+    element: ( // Added
+      <AdminRoute> {/* Added */}
+        <Suspense fallback={<LoadingFallback />}> {/* Added */}
+          <AdminAllKycPage /> {/* Added */}
+        </Suspense> {/* Added */}
+      </AdminRoute> // Added
+    ), // Added
+  }, // Added
 
   // Fallback route
   {
