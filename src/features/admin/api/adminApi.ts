@@ -1,3 +1,4 @@
+import { convertApiListingToFeaturedListing, type ApiListingResponse } from "@/api/publicApi";
 import type { User, UserKYC } from "@/types/user.types";
 import apiClient from "../../../api/client";
 import type { AdminAnalytics, AdminDashboardStats } from "../types";
@@ -594,12 +595,15 @@ export const adminApi = {
     offset?: number
     search?: string
     since?: string
-    sort?: string
+    sort?: string // Updated to match the API spec (e.g., 'createdAt_asc', 'price_desc')
     tags?: string[]
+    city?: string
+    min_price?: number
+    max_price?: number
   }) => {
     try {
-      const response = await apiClient.get("/listings", { params })
-      return toCamelCase(response.data)
+      const response = await apiClient.get<ApiListingResponse[]>("/listings", { params })
+      return Promise.all(response.data.map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching listings:", error)
       throw error

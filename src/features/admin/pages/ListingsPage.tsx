@@ -1,6 +1,12 @@
 "use client"
 
-import { ArrowUpDown, Edit, Eye, Filter, Home, ImageIcon, MoreHorizontal, Search, Tag, Trash } from "lucide-react"
+import type { FeaturedListing } from "@/api/publicApi"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/useToast"
+import { ArrowUpDown, Edit, Eye, Filter, Home, MoreHorizontal, Search, Tag, Trash } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import {
@@ -32,26 +38,40 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu"
-import { Input } from "../../../components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
-import { useToast } from "../../../hooks/useToast"
 import { adminApi } from "../api/adminApi"
 import { AdminLayout } from "../components/layout/AdminLayout"
-import type { TableState } from "../types"
+
+interface TableState {
+  pagination: {
+    pageIndex: number;
+    pageSize: number;
+  };
+  sorting: { id: string; desc: boolean } | null; // Added sorting back to the interface
+  filters: {
+    search: string;
+    since: string;
+    city?: string;
+    min_price?: string; // Store as string for input, convert to number before API call
+    max_price?: string; // Store as string for input, convert to number before API call
+  };
+}
 
 export default function ListingsPage() {
-  const [listings, setListings] = useState<any[]>([])
+  const [listings, setListings] = useState<FeaturedListing[]>([])
+  const [totalListingsCount, setTotalListingsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [tableState, setTableState] = useState<TableState>({
     pagination: {
       pageIndex: 0,
       pageSize: 10,
     },
-    sorting: null,
+    sorting: null, // Added sorting back to the initial state
     filters: {
       search: "",
       since: "",
+      city: "",
+      min_price: "",
+      max_price: "",
     },
   })
   const [selectedListing, setSelectedListing] = useState<any | null>(null)
@@ -60,6 +80,51 @@ export default function ListingsPage() {
   const [listingToDelete, setListingToDelete] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+
+  // Handler for city filter change
+  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTableState((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        city: e.target.value,
+      },
+      pagination: {
+        ...prev.pagination,
+        pageIndex: 0,
+      },
+    }))
+  }
+
+  // Handler for min_price filter change
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTableState((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        min_price: e.target.value,
+      },
+      pagination: {
+        ...prev.pagination,
+        pageIndex: 0,
+      },
+    }))
+  }
+
+  // Handler for max_price filter change
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTableState((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters,
+        max_price: e.target.value,
+      },
+      pagination: {
+        ...prev.pagination,
+        pageIndex: 0,
+      },
+    }))
+  }
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -72,11 +137,18 @@ export default function ListingsPage() {
           offset: pagination.pageIndex * pagination.pageSize,
           search: filters.search || undefined,
           since: filters.since || undefined,
-          sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+          sort: sorting ? `${sorting.id}_${sorting.desc ? "desc" : "asc"}` : undefined,
+          city: filters.city || undefined,
+          min_price: filters.min_price ? parseFloat(filters.min_price) : undefined,
+          max_price: filters.max_price ? parseFloat(filters.max_price) : undefined,
         }
 
         const data = await adminApi.getListings(params)
+        const stats = await adminApi.getDashboardStats()
+
+
         setListings(data)
+        setTotalListingsCount(stats.totalListings || 0)
       } catch (error) {
         console.error("Error fetching listings:", error)
         toast({
@@ -174,7 +246,10 @@ export default function ListingsPage() {
         offset: pagination.pageIndex * pagination.pageSize,
         search: filters.search || undefined,
         since: filters.since || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
+        sort: sorting ? `${sorting.id}_${sorting.desc ? "desc" : "asc"}` : undefined,
+        city: filters.city || undefined,
+        min_price: filters.min_price ? parseFloat(filters.min_price) : undefined,
+        max_price: filters.max_price ? parseFloat(filters.max_price) : undefined,
       }
 
       const data = await adminApi.getListings(params)
@@ -263,6 +338,48 @@ export default function ListingsPage() {
                   <DropdownMenuItem onClick={() => handleSinceChange("7")}>Last 7 days</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSinceChange("30")}>Last 30 days</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleSinceChange("90")}>Last 90 days</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="p-2 space-y-2">
+                    <div>
+                      <Label htmlFor="cityFilter" className="text-sm font-medium">
+                        City
+                      </Label>
+                      <Input
+                        id="cityFilter"
+                        type="text"
+                        placeholder="Enter city"
+                        value={tableState.filters.city}
+                        onChange={handleCityChange}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="minPriceFilter" className="text-sm font-medium">
+                        Min Price
+                      </Label>
+                      <Input
+                        id="minPriceFilter"
+                        type="number"
+                        placeholder="Min price"
+                        value={tableState.filters.min_price}
+                        onChange={handleMinPriceChange}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="maxPriceFilter" className="text-sm font-medium">
+                        Max Price
+                      </Label>
+                      <Input
+                        id="maxPriceFilter"
+                        type="number"
+                        placeholder="Max price"
+                        value={tableState.filters.max_price}
+                        onChange={handleMaxPriceChange}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -358,7 +475,7 @@ export default function ListingsPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                ) : listings && listings.length === 0 ? (
+                ) : listings && totalListingsCount === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
                       No listings found.
@@ -371,7 +488,7 @@ export default function ListingsPage() {
                         <div className="flex items-center gap-3">
                           {listing.media && listing.media.length > 0 ? (
                             <img
-                              src={listing.media[0].mediaUrl || "/placeholder.svg"}
+                              src={listing.media[0].media_url || "/placeholder.svg"}
                               alt={listing.title}
                               className="h-10 w-10 rounded object-cover"
                             />
@@ -386,8 +503,8 @@ export default function ListingsPage() {
                       <TableCell>{listing.category?.name || "Unknown"}</TableCell>
                       <TableCell>${listing.price.toFixed(2)}</TableCell>
                       <TableCell>{getStatusBadge(listing.status)}</TableCell>
-                      <TableCell>{listing.viewsCount}</TableCell>
-                      <TableCell>{new Date(listing.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{listing.views_count}</TableCell>
+                      <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -435,8 +552,8 @@ export default function ListingsPage() {
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
               Showing {tableState.pagination.pageIndex * tableState.pagination.pageSize + 1} to{" "}
-              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, listings && listings.length || 0)}{" "}
-              of {listings && listings.length || 0} listings
+              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, listings && totalListingsCount || 0)}{" "}
+              of {listings && totalListingsCount || 0} listings
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -452,7 +569,7 @@ export default function ListingsPage() {
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex + 1)}
                 disabled={
-                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= (listings && listings.length || 0) ||
+                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= (listings && totalListingsCount || 0) ||
                   loading
                 }
               >
@@ -608,7 +725,6 @@ export default function ListingsPage() {
                     ) : (
                       <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
                         <div className="flex flex-col items-center gap-2 text-center">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
                           <span className="text-sm text-muted-foreground">No media available</span>
                         </div>
                       </div>
