@@ -42,6 +42,7 @@ import type { TableState } from "../types"
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([])
+  const [totalCategories, setTotalCategories] = useState(0)
   const [loading, setLoading] = useState(true)
   const [tableState, setTableState] = useState<TableState>({
     pagination: {
@@ -87,23 +88,50 @@ export default function CategoriesPage() {
       setLoading(true)
       const { pagination, sorting, filters } = tableState
 
-      const params: any = {
+      const params: {
+        limit: number
+        offset: number
+        search?: string
+        sort?: string
+      } = {
         limit: pagination.pageSize,
         offset: pagination.pageIndex * pagination.pageSize,
         search: filters.search || undefined,
-        sort: sorting ? `${sorting.desc ? "desc" : "asc"}` : undefined,
       }
 
-      const data = await adminApi.getCategories(params)
-      setCategories(Array.isArray(data) ? data : [])
+      if (sorting && sorting.id) {
+        params.sort = `${sorting.id}:${sorting.desc ? "desc" : "asc"}`
+      }
+
+      const categoriesData = await adminApi.getCategories(params) // Expected to return Category[]
+
+      if (Array.isArray(categoriesData)) {
+        setCategories(categoriesData)
+      } else {
+        // This case should ideally not be hit if adminApi.getCategories is consistent.
+        console.warn("adminApi.getCategories did not return an array as expected. Received:", categoriesData)
+        setCategories([]) // Fallback to empty array
+        // Optionally, show a toast error here if this is unexpected
+      }
+
+      // Fetch total categories from dashboard stats for pagination display and 'Next' button logic
+      // This assumes totalCategories from stats is the intended source for the overall count.
+      try {
+        const stats = await adminApi.getDashboardStats()
+        setTotalCategories(stats?.totalCategories || 0)
+      } catch (statsError) {
+        console.error("Error fetching dashboard stats for total categories:", statsError)
+        setTotalCategories(0) // Fallback if stats API fails
+      }
     } catch (error) {
-      console.error("Error fetching categories:", error)
+      console.error("Error in fetchCategories:", error) // Changed from "Error fetching categories:"
       toast({
         title: "Error",
         description: "Failed to fetch categories. Please try again.",
         variant: "destructive",
       })
       setCategories([])
+      setTotalCategories(0)
     } finally {
       setLoading(false)
     }
@@ -595,7 +623,7 @@ export default function CategoriesPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                ) : categories.length === 0 ? (
+                ) : totalCategories === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
                       No categories found.
@@ -681,9 +709,9 @@ export default function CategoriesPage() {
 
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {tableState.pagination.pageIndex * tableState.pagination.pageSize + 1} to{" "}
-              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, categories.length || 0)}{" "}
-              of {categories.length || 0} categories
+              Showing {totalCategories > 0 ? tableState.pagination.pageIndex * tableState.pagination.pageSize + 1 : 0} to{" "}
+              {Math.min((tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize, totalCategories || 0)}{" "}
+              of {totalCategories || 0} categories
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -699,7 +727,7 @@ export default function CategoriesPage() {
                 size="sm"
                 onClick={() => handlePageChange(tableState.pagination.pageIndex + 1)}
                 disabled={
-                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= (categories.length || 0) ||
+                  (tableState.pagination.pageIndex + 1) * tableState.pagination.pageSize >= totalCategories ||
                   loading
                 }
               >

@@ -234,7 +234,8 @@ export default function UsersPage() {
                     </Button>
                   </TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Email status</TableHead>
+                  <TableHead>KYC status</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -317,6 +318,15 @@ export default function UsersPage() {
                           <Badge variant="destructive">Not Verified</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {user.kyc_verified ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
+                            Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">Not Verified</Badge>
+                        )}
+                      </TableCell>
                       <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -331,15 +341,14 @@ export default function UsersPage() {
                             <DropdownMenuItem asChild>
                               <Link to={`/admin/users/${user.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Edit User</DropdownMenuItem>
+                            {/* <DropdownMenuItem>Edit User</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {/* Conditional actions based on user.isApproved or similar KYC status if available directly */}
-                            {user.kyc_verified ? ( // Assuming user object has an isApproved field
+                            {user.kyc_verified ? ( 
                                <DropdownMenuItem className="text-yellow-600">Suspend User</DropdownMenuItem>
                             ) : (
                                <DropdownMenuItem className="text-green-600">Approve User</DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="text-red-600">Delete User</DropdownMenuItem>
+                            )} */}
+                            <DropdownMenuItem className="text-red-600">Deactivate User</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

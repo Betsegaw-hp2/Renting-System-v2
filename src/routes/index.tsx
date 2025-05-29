@@ -23,6 +23,7 @@ const BookingDetailPage = lazy(() => import("../pages/BookingDetailPage"))
 const AdminDashboardPage = lazy(() => import("../features/admin/pages/DashboardPage"))
 const AdminUsersPage = lazy(() => import("../features/admin/pages/UsersPage"))
 const AdminUserDetailPage = lazy(() => import("../features/admin/pages/UserDetailPage"))
+const AdminAllKycPage = lazy(() => import("../features/admin/pages/AllKycPage")) // Added
 const AdminListingsPage = lazy(() => import("../features/admin/pages/ListingsPage"))
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
@@ -371,6 +372,16 @@ const router = createBrowserRouter([
       </AdminRoute>
     ),
   },
+  {
+    path: "/admin/kyc-management", // Added
+    element: ( // Added
+      <AdminRoute> {/* Added */}
+        <Suspense fallback={<LoadingFallback />}> {/* Added */}
+          <AdminAllKycPage /> {/* Added */}
+        </Suspense> {/* Added */}
+      </AdminRoute> // Added
+    ), // Added
+  }, // Added
 
   // Fallback route
   {

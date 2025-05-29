@@ -248,8 +248,6 @@ export const adminApi = {
   getUserKyc: async (userId: string): Promise<UserKYC | null> => {
     try {
       const response = await apiClient.get(`/users/${userId}/kyc`);
-      // Assuming API returns UserKYC object directly, or 404 if not found.
-      // The apiClient might throw an error for 404, which is caught below.
       return response.data; 
     } catch (error: any) {
       if (error.response && error.response.status === 404) {
@@ -269,12 +267,14 @@ export const adminApi = {
     return response.data; 
   },
 
-  // Ensure this return type matches the actual API response structure for a list of KYC records.
-  // It might be UserKYC[] directly, or an object like { items: UserKYC[], meta: any }.
-  // For now, assuming it could be either based on previous attempts.
-  getAllUserKyc: async (params?: any): Promise<{ items: UserKYC[]; meta: any } | UserKYC[]> => { 
-    const response = await apiClient.get("/users/kyc", { params }); // The endpoint /user-kyc/all was in doc_prod.json, but /users/kyc is used here. Confirm which is correct.
-    return response.data; 
+  getAllUserKyc: async (params?: { limit?: number; offset?: number }): Promise<{ records: UserKYC[], totalRecords: number }> => { 
+    try {
+      const response = await apiClient.get<UserKYC[]>("/user-kyc/all", { params }); 
+      return { records: response.data || [], totalRecords: (response.data).length || 0 }; 
+    } catch (error) {
+      console.error("Error fetching all user KYC records:", error);
+      return { records: [], totalRecords: 0 };
+    }
   },
 
 

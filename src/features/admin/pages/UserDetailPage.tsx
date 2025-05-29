@@ -85,7 +85,6 @@ export default function UserDetailPage() {
 
   const getInitials = (name: string) => name.split(" ").map((part) => part[0]).join("").toUpperCase()
   
-  // Updated getKycStatusBadge to reflect user.kyc_verified and presence of kycDetails
   const getKycStatusBadge = (kycVerified: boolean | undefined, kycDocs: UserKycType | null) => {
     if (kycVerified) {
       return <Badge className="bg-green-100 text-green-700">Approved</Badge>;
