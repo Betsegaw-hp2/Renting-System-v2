@@ -1,5 +1,5 @@
 import apiClient from "@/api/client";
-import { convertApiListingToFeaturedListing, type ApiListingResponse } from "@/api/publicApi";
+import { convertApiListingToFeaturedListing, type ApiListingResponse, type FeaturedListing } from "@/api/publicApi";
 import type { Report } from "@/types/api.types";
 import type { Booking, Review } from "@/types/listing.types";
 import type { User, UserKYC } from "@/types/user.types";
@@ -466,10 +466,10 @@ export const adminApi = {
     }
   },
 
-  getListing: async (id: string) => {
+  getListing: async (id: string) : Promise<FeaturedListing> => {
     try {
-      const response = await apiClient.get(`/listings/${id}`)
-      return toCamelCase(response.data)
+      const response = await apiClient.get<ApiListingResponse>(`/listings/${id}`)
+      return convertApiListingToFeaturedListing(response.data)
     } catch (error) {
       console.error("Error fetching listing:", error)
       throw error
@@ -490,7 +490,8 @@ export const adminApi = {
   getListingBookings: async (listingId: string): Promise<Booking[]> => {
     try {
       const response = await apiClient.get<Booking[]>(`/listings/${listingId}/bookings`)
-      return toCamelCase(response.data)
+      console.log("Fetched bookings:", response.data)
+      return response.data
     } catch (error) {
       console.error(`Error fetching bookings for listing ${listingId}:`, error)
       // Fallback to empty array or throw error

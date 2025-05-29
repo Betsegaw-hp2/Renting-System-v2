@@ -1,74 +1,26 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+"use client"
+
+import type { ApiListingResponse, FeaturedListing } from "@/api/publicApi"; // Import FeaturedListing and ApiListingResponse
+import { convertApiListingToFeaturedListing } from "@/api/publicApi"; // Import converter
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Added Table components
+import { adminApi } from "@/features/admin/api/adminApi";
 import { AdminLayout } from "@/features/admin/components/layout/AdminLayout";
 import { useToast } from "@/hooks/useToast";
-import type { Booking, Review } from "@/types/listing.types";
-import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle, DollarSign, Edit3, Eye, MapPin, Trash2, XCircle } from "lucide-react";
+import type { Booking, BookingStatus } from "@/types/listing.types"; // Added Booking and BookingStatus
+import { AlertTriangle, ArrowLeft, CalendarDays, CheckCircle, ChevronRight, DollarSign, ExternalLink, Eye, FileText, MapPin, PackageCheck, PackageX, RefreshCw, Trash2, UserCircle, XCircle } from "lucide-react"; // Added more icons for booking status
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { adminApi } from "../api/adminApi";
-
-// Define interfaces for nested objects
-interface MediaItem {
-  id: string;
-  media_url: string; // Matches current usage
-  type: string;
-}
-
-interface TagItem {
-  id: string;
-  name: string;
-}
-
-interface OwnerInfo {
-  id: string;
-  name: string;
-  email?: string;
-  avatarUrl?: string;
-}
-
-interface LocationInfo {
-  id: string;
-  city: string;
-  country: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-}
-
-interface CategoryInfo {
-  id: string;
-  name: string;
-}
-
-// Main interface for the detailed listing view
-interface AdminDetailedListing {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  views_count?: number;
-  category: CategoryInfo | null;
-  location: LocationInfo | null;
-  owner: OwnerInfo | null;
-  media: MediaItem[];
-  tags: TagItem[]; // Changed from string[]
-  // Other potential fields from a detailed admin endpoint
-}
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [listing, setListing] = useState<AdminDetailedListing | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [listing, setListing] = useState<FeaturedListing | null>(null); // Use FeaturedListing
+  const [bookings, setBookings] = useState<Booking[]>([]); // Added state for bookings
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,36 +31,26 @@ export default function ListingDetailPage() {
       return;
     }
 
-    const fetchListingDetails = async () => {
+    const fetchDetails = async () => {
       try {
         setLoading(true);
-        // Assume adminApi.getListing returns data compatible with AdminDetailedListing
-        const listingData = await adminApi.getListing(id) as AdminDetailedListing;
-        setListing(listingData);
-
-        // Fetch related data like bookings and reviews
-        try {
-          const bookingsData = await adminApi.getListingBookings(id); // GET /listings/{id}/bookings
-          setBookings(bookingsData);
-        } catch (e) {
-          console.warn("Failed to fetch bookings for listing:", id, e);
-          toast({ title: "Warning", description: "Could not fetch booking details.", variant: "default" });
+        const rawListingData = await adminApi.getListing(id); 
+        if (!rawListingData) {
+            throw new Error("Listing data not found from API.");
         }
+        const featuredListingData = await convertApiListingToFeaturedListing(rawListingData as unknown as ApiListingResponse);
+        setListing(featuredListingData);
 
-        try {
-          const reviewsData = await adminApi.getListingReviews(id); // GET /listings/{listingId}/reviews
-          setReviews(reviewsData);
-        } catch (e) {
-          console.warn("Failed to fetch reviews for listing:", id, e);
-          toast({ title: "Warning", description: "Could not fetch review details.", variant: "default" });
-        }
+        // Fetch bookings
+        const listingBookings = await adminApi.getListingBookings(id);
+        setBookings(listingBookings || []);
 
       } catch (err) {
-        console.error("Error fetching listing details:", err);
-        setError("Failed to load listing details.");
+        console.error("Error fetching listing details or bookings:", err);
+        setError("Failed to load listing details or bookings.");
         toast({
           title: "Error",
-          description: "Could not fetch listing details. Please try again.",
+          description: "Could not fetch listing details or bookings. Please try again.",
           variant: "destructive",
         });
       } finally {
@@ -116,34 +58,48 @@ export default function ListingDetailPage() {
       }
     };
 
-    fetchListingDetails();
+    fetchDetails();
   }, [id, toast]);
 
   const handleDeleteListing = async () => {
     if (!listing) return;
     // TODO: Implement delete functionality with confirmation dialog
-    toast({ title: "Info", description: "Delete functionality to be implemented." });
+    // This would likely call adminApi.deleteListing(listing.id)
+    // and then navigate away or refresh data.
+    toast({ title: "Info", description: `Delete action for ${listing.title} (ID: ${listing.id}) to be implemented.` });
   };
 
-  const handleEditListing = () => {
-    if (!listing) return;
-    // TODO: Navigate to an edit page or open an edit modal
-    toast({ title: "Info", description: "Edit functionality to be implemented." });
-  };
   
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => { // status can be undefined
     switch (status?.toLowerCase()) {
       case "available":
         return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300"><CheckCircle className="mr-1 h-3 w-3" />Available</Badge>;
-      case "booked":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300"><CalendarDays className="mr-1 h-3 w-3" />Booked</Badge>;
+      case "booked": // This status is for the listing itself, not a specific booking
+        return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300"><CalendarDays className="mr-1 h-3 w-3" />Booked (Overall)</Badge>;
       case "inactive":
-      case "unavailable":
+      case "unavailable": // Added unavailable as a synonym for inactive based on some conventions
         return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300"><XCircle className="mr-1 h-3 w-3" />Inactive</Badge>;
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300"><AlertTriangle className="mr-1 h-3 w-3" />Pending</Badge>;
+      case "pending": // This status is for the listing itself (e.g. pending approval)
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300"><AlertTriangle className="mr-1 h-3 w-3" />Pending Approval</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary">{status || "Unknown"}</Badge>; // Handle undefined status
+    }
+  };
+
+  const getBookingStatusBadge = (status: BookingStatus | undefined) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300"><RefreshCw className="mr-1 h-3 w-3" />Pending</Badge>;
+      case "confirmed":
+        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300"><CheckCircle className="mr-1 h-3 w-3" />Confirmed</Badge>;
+      case "booked": // This is a booking status, distinct from listing's "booked" status
+         return <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300"><CalendarDays className="mr-1 h-3 w-3" />Booked</Badge>;
+      case "completed":
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300"><PackageCheck className="mr-1 h-3 w-3" />Completed</Badge>;
+      case "cancelled":
+        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300"><PackageX className="mr-1 h-3 w-3" />Cancelled</Badge>;
+      default:
+        return <Badge variant="secondary">{status || "Unknown"}</Badge>;
     }
   };
 
@@ -181,7 +137,12 @@ export default function ListingDetailPage() {
           <CardHeader>
             <div className="flex flex-col md:flex-row justify-between md:items-start">
                 <div>
-                    <CardTitle className="text-3xl font-bold mb-2">{listing.title}</CardTitle>
+                    <CardTitle className="text-3xl font-bold mb-2 flex items-center">
+                        <Link to={`/listings/${listing.id}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center">
+                            {listing.title}
+                            <ExternalLink className="ml-2 h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                        </Link>
+                    </CardTitle>
                     <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
                         <span>ID: {listing.id}</span>
                         <span>|</span>
@@ -200,8 +161,12 @@ export default function ListingDetailPage() {
               <div className="md:col-span-2">
                 {listing.media && listing.media?.length > 0 ? (
                   <div className="rounded-lg overflow-hidden border">
-                    {/* TODO: Implement a proper image carousel for multiple images */}
-                    <img src={listing.media[0]?.media_url} alt={listing.title} className="w-full h-auto object-cover max-h-[500px]" />
+                    <img 
+                        src={listing.media[0]?.media_url} 
+                        alt={listing.title} 
+                        className="w-full h-auto object-cover max-h-[500px]" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = "https://picsum.photos/seed/placeholder/600/400"; }}
+                    />
                   </div>
                 ) : (
                   <div className="rounded-lg border bg-muted flex items-center justify-center h-[300px] md:h-[500px]">
@@ -218,15 +183,26 @@ export default function ListingDetailPage() {
                   <CardHeader>
                     <CardTitle className="text-lg">Owner Details</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage src={listing.owner?.avatarUrl} alt={listing.owner?.name} />
-                      <AvatarFallback>{listing.owner?.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{listing.owner?.name || "N/A"}</p>
-                      <p className="text-sm text-muted-foreground">{listing.owner?.email || "No email"}</p>
-                    </div>
+                  <CardContent>
+                    {listing.owner_id ? (
+                        <Link 
+                            to={`/admin/users/${listing.owner_id}`} 
+                            className="flex items-center justify-between space-x-3 hover:bg-accent p-3 rounded-lg transition-colors border border-transparent hover:border-primary/20"
+                        >
+                            <div className="flex items-center space-x-3">
+                                <Avatar>
+                                    <AvatarFallback>{listing.owner_id.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold">View Owner (ID: {listing.owner_id})</p>
+                                    <p className="text-sm text-muted-foreground">Click to see user details</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </Link>
+                    ) : (
+                        <p className="text-muted-foreground">Owner ID not available.</p>
+                    )}
                   </CardContent>
                 </Card>
                 <Card>
@@ -234,9 +210,9 @@ export default function ListingDetailPage() {
                     <CardTitle className="text-lg">Listing Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
-                    <div className="flex items-center"><DollarSign className="h-4 w-4 mr-2 text-primary" /> Price: ${listing.price?.toLocaleString()} / night</div>
-                    <div className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> Location: {listing.location?.city}, {listing.location?.country}</div>
-                    {listing.location?.address && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> Address: {listing.location.address}</div>}
+                    <div className="flex items-center"><DollarSign className="h-4 w-4 mr-2 text-primary" /> Price: ETB {listing.price?.toLocaleString()} / night</div>
+                    <div className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> Location: {listing.city}, {listing.country}</div>
+                    {listing.address && <div className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-primary" /> Address: {listing.address}</div>}
                     <div className="flex items-center"><Eye className="h-4 w-4 mr-2 text-primary" /> Views: {listing.views_count || 0}</div>
                     <div className="flex items-center"><CalendarDays className="h-4 w-4 mr-2 text-primary" /> Last Updated: {new Date(listing.updated_at).toLocaleDateString()}</div>
                   </CardContent>
@@ -246,8 +222,8 @@ export default function ListingDetailPage() {
                         <CardTitle className="text-lg">Admin Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col space-y-2">
-                        <Button onClick={handleEditListing} variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Edit Listing</Button>
-                        {/* TODO: Add other actions like Approve/Reject/Suspend if applicable */}
+                        {/* <Button onClick={handleEditListing} variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Edit Listing</Button> */}
+                        {/* TODO: Add other actions like Approve/Reject/Suspend if applicable, based on listing.status */}
                         <Button onClick={handleDeleteListing} variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete Listing</Button>
                     </CardContent>
                 </Card>
@@ -256,68 +232,60 @@ export default function ListingDetailPage() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="bookings" className="mt-8">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-4">
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="media">Media Management</TabsTrigger>
-            <TabsTrigger value="tags">Tags</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
-          </TabsList>
-          <TabsContent value="bookings">
-            <Card>
-              <CardHeader><CardTitle>Bookings</CardTitle></CardHeader>
-              <CardContent>
-                {/* TODO: Display bookings table or list */}
-                <p>Bookings information will be displayed here. (GET /listings/{id}/bookings)</p>
-                {bookings?.length === 0 && <p className="text-muted-foreground">No bookings found for this listing.</p>}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="media">
-            <Card>
-              <CardHeader><CardTitle>Media Management</CardTitle></CardHeader>
-              <CardContent>
-                {/* TODO: Display media, allow upload/delete (GET/POST /listings/{id}/media) */}
-                <p>Media management section. (GET /listings/{id}/media, POST /listings/{id}/media)</p>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                    {listing.media?.map(m => (
-                        <div key={m.id} className="relative group border rounded-md overflow-hidden">
-                            <img src={m.media_url} alt="Listing media" className="w-full h-32 object-cover" />
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="destructive" size="sm" onClick={() => alert("Delete media: " + m.id)}> <Trash2 className="h-4 w-4"/> </Button>
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-                 <Button className="mt-4">Upload Media</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="tags">
-            <Card>
-              <CardHeader><CardTitle>Tags</CardTitle></CardHeader>
-              <CardContent>
-                {/* TODO: Display tags, allow add/remove (GET /listings/{id}/tags, POST /listings/{id}/tags, DELETE /listings/{listingId}/tag/{tagId}) */}
-                <p>Tags associated with this listing. (GET /listings/{id}/tags, POST /listings/{id}/tags)</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                    {listing.tags?.map(tag => <Badge key={tag.id} variant="secondary">{tag.name}</Badge>)}
-                    {listing.tags?.length === 0 && <p className="text-muted-foreground">No tags found.</p>}
-                </div>
-                {/* Add UI for adding/removing tags */}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="reviews">
-            <Card>
-              <CardHeader><CardTitle>Reviews</CardTitle></CardHeader>
-              <CardContent>
-                {/* TODO: Display reviews, allow admin actions (GET /listings/{listingId}/reviews, PATCH /listings/{listingId}/reviews/{reviewId}, etc.) */}
-                <p>Reviews for this listing. (GET /listings/{listing.id}/reviews)</p>
-                {reviews?.length === 0 && <p className="text-muted-foreground">No reviews yet for this listing.</p>}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Booking History Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Booking History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {bookings?.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Booking ID</TableHead>
+                    <TableHead>Renter</TableHead>
+                    <TableHead>Start Date</TableHead>
+                    <TableHead>End Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Booked On</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bookings?.length > 0 && bookings.map((booking) => (
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-medium">
+                          {booking.id.substring(0,8)}...
+                      </TableCell>
+                      <TableCell>
+                        {booking.renter_id ? (
+                           <Link to={`/admin/users/${booking.renter_id}`} className="hover:underline flex items-center">
+                             <UserCircle className="mr-1.5 h-4 w-4 text-muted-foreground" /> {booking.renter_id.substring(0,8)}...
+                           </Link>
+                        ) : (
+                            "N/A"
+                        )}
+                      </TableCell>
+                      <TableCell>{new Date(booking.start_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(booking.end_date).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">ETB {booking.total_amount?.toLocaleString()}</TableCell>
+                      <TableCell>{getBookingStatusBadge(booking.status)}</TableCell>
+                      <TableCell>{new Date(booking.created_at).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                <FileText className="h-12 w-12 mb-4" />
+                <p className="text-lg">No bookings found for this listing.</p>
+                <p className="text-sm">Once renters book this listing, their booking history will appear here.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        {/* End Booking History Section */}
+
       </div>
     </AdminLayout>
   );
