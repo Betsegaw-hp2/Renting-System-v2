@@ -375,47 +375,16 @@ export const adminApi = {
     }
   },
   
-  // TODO: FIX
   updateCategoryImage: async (id: string, formData: FormData) => {
     try {
-      // First try the standard endpoint
-      try {
-        const response = await apiClient.post(`/categories/${id}/image`, formData, {
+        const response = await apiClient.post(`/category/${id}/media`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         })
         return toCamelCase(response.data)
-      } catch (error) {
-        // If that fails, try the alternative endpoint format
-        console.warn("Primary image endpoint failed, trying alternative endpoint", error)
-        try {
-          const response = await apiClient.post(`/category/${id}/media`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
-          return toCamelCase(response.data)
-        } catch (secondError) {
-          // If both fail, try a PATCH request to the main category endpoint
-          console.warn("Alternative endpoint failed, trying PATCH to main endpoint", secondError)
-          const response = await apiClient.patch(`/categories/${id}`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
-          return toCamelCase(response.data)
-        }
-      }
     } catch (error) {
       console.error("Error updating category image:", error)
-
-      // Return a mock successful response for development
-      return {
-        id,
-        imageUrl: "/placeholder.svg?height=100&width=100",
-        updatedAt: new Date().toISOString(),
-      }
     }
   },
 
