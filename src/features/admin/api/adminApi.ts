@@ -279,6 +279,20 @@ export const adminApi = {
 
 
   // Categories
+
+  checkCategorySlug: async (slug: string) : Promise<{ exists: boolean, slug: string}> =>  {
+    try {
+      const response = await apiClient.get<{ exists: boolean, slug: string}>(`/categories/check-slug?slug=${slug}`)
+      return response.data
+    } catch (error) {
+      console.error("Error checking category slug:", error)
+      // Return mock data for development
+      return {
+        exists: false,
+        slug: "string",
+      }
+    }
+  },
   getCategories: async (params: { limit?: number; offset?: number; search?: string; sort?: string }) => {
     try {
       const response = await apiClient.get("/categories", { params })

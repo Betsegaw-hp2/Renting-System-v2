@@ -103,7 +103,7 @@ export default function CategoriesPage() {
         params.sort = `${sorting.id}:${sorting.desc ? "desc" : "asc"}`
       }
 
-      const categoriesData = await adminApi.getCategories(params) // Expected to return Category[]
+      const categoriesData = await adminApi.getCategories(params)
 
       if (Array.isArray(categoriesData)) {
         setCategories(categoriesData)
