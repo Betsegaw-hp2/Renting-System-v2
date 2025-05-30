@@ -1,14 +1,13 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
-import { useSelector } from "react-redux"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { useToast } from "@/hooks/useToast"
-import { userApi } from "@/features/auth/api/userApi"
-import CameraCapture from "@/components/camera/CameraCapture"
-import { Check, Loader2, X, User, CreditCard } from "lucide-react"
+import CameraCapture from "@/components/camera/CameraCapture";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { userApi } from "@/features/auth/api/userApi";
+import { useToast } from "@/hooks/useToast";
+import { Check, CreditCard, Loader2, User, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react"; // Added useEffect, useCallback
+import { useSelector } from "react-redux";
 
 const CaptureState = {
   IDLE: 0,
@@ -39,77 +38,118 @@ const KycVerificationForm: React.FC = () => {
   const [faceImage, setFaceImage] = useState<File | null>(null)
   const [frontsideImage, setFrontsideImage] = useState<File | null>(null)
   const [backsideImage, setBacksideImage] = useState<File | null>(null)
+
+  // State for image preview URLs
+  const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null)
+  const [frontPreviewUrl, setFrontPreviewUrl] = useState<string | null>(null)
+  const [backPreviewUrl, setBackPreviewUrl] = useState<string | null>(null)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [kycResponse, setKycResponse] = useState<KycResponse | null>(null)
 
+  // Effect to cleanup object URLs
+  useEffect(() => {
+    // This cleanup function will run if the component unmounts or if the dependencies change.
+    // It ensures that any active object URLs are revoked.
+    const urlsToClean = [facePreviewUrl, frontPreviewUrl, backPreviewUrl];
+    return () => {
+      urlsToClean.forEach(url => {
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl]);
+
   // Start capturing face image
-  const startCapturingFace = () => {
+  const startCapturingFace = useCallback(() => {
     setCaptureState(CaptureState.CAPTURING_FACE)
-  }
+  }, [])
 
   // Start capturing frontside image
-  const startCapturingFront = () => {
+  const startCapturingFront = useCallback(() => {
     setCaptureState(CaptureState.CAPTURING_FRONT)
-  }
+  }, [])
 
   // Start capturing backside image
-  const startCapturingBack = () => {
+  const startCapturingBack = useCallback(() => {
     setCaptureState(CaptureState.CAPTURING_BACK)
-  }
+  }, [])
 
   // Handle face image capture
-  const handleFaceCapture = (image: File) => {
+  const handleFaceCapture = useCallback((image: File) => {
+    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
     setFaceImage(image)
+    setFacePreviewUrl(URL.createObjectURL(image))
     setCaptureState(CaptureState.IDLE)
     toast({
       title: "Selfie captured",
       description: "Your selfie has been captured successfully.",
     })
-  }
+  }, [facePreviewUrl, toast])
 
   // Handle frontside image capture
-  const handleFrontsideCapture = (image: File) => {
+  const handleFrontsideCapture = useCallback((image: File) => {
+    if (frontPreviewUrl) URL.revokeObjectURL(frontPreviewUrl)
     setFrontsideImage(image)
+    setFrontPreviewUrl(URL.createObjectURL(image))
     setCaptureState(CaptureState.IDLE)
     toast({
       title: "Front image captured",
       description: "Front side of your ID has been captured successfully.",
     })
-  }
+  }, [frontPreviewUrl, toast])
 
   // Handle backside image capture
-  const handleBacksideCapture = (image: File) => {
+  const handleBacksideCapture = useCallback((image: File) => {
+    if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
     setBacksideImage(image)
+    setBackPreviewUrl(URL.createObjectURL(image))
     setCaptureState(CaptureState.IDLE)
     toast({
       title: "Back image captured",
       description: "Back side of your ID has been captured successfully.",
     })
-  }
+  }, [backPreviewUrl, toast])
 
   // Cancel capture
-  const handleCancelCapture = () => {
+  const handleCancelCapture = useCallback(() => {
     setCaptureState(CaptureState.IDLE)
-  }
+  }, [])
 
   // Reset a specific image
-  const resetImage = (type: "face" | "front" | "back") => {
+  const resetImage = useCallback((type: "face" | "front" | "back") => {
     if (type === "face") {
+      if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
       setFaceImage(null)
+      setFacePreviewUrl(null)
     } else if (type === "front") {
+      if (frontPreviewUrl) URL.revokeObjectURL(frontPreviewUrl)
       setFrontsideImage(null)
+      setFrontPreviewUrl(null)
     } else {
+      if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
       setBacksideImage(null)
+      setBackPreviewUrl(null)
     }
-  }
+  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl])
 
   // Review images before submission
-  const reviewImages = () => {
+  const reviewImages = useCallback(() => {
+    // Ensure all images are present before going to review
+    if (!faceImage || !frontsideImage || !backsideImage) {
+      setErrorMessage("Your selfie and both front and back images of your ID are required before review.");
+      // Optionally, you could prevent transitioning to REVIEW state or show a toast
+      // For now, let's assume the button to call reviewImages is disabled if images are missing.
+      // If not, this check is important.
+    } else {
+      setErrorMessage(null); // Clear any previous error message
+    }
     setCaptureState(CaptureState.REVIEW)
-  }
+  }, [faceImage, frontsideImage, backsideImage])
 
   // Submit KYC documents
-  const submitKyc = async () => {
+  const submitKyc = useCallback(async () => {
     if (!faceImage || !frontsideImage || !backsideImage || !user?.id) {
       setErrorMessage("Your selfie and both front and back images of your ID are required.")
       return
@@ -119,6 +159,7 @@ const KycVerificationForm: React.FC = () => {
     setErrorMessage(null)
 
     try {
+      // Assuming userApi.uploadKycDocuments is a stable function reference
       const response = await userApi.uploadKycDocuments(user.id, faceImage, frontsideImage, backsideImage)
       setKycResponse(response)
       setCaptureState(CaptureState.SUCCESS)
@@ -135,17 +176,26 @@ const KycVerificationForm: React.FC = () => {
         variant: "destructive",
       })
     }
-  }
+  }, [faceImage, frontsideImage, backsideImage, user?.id, toast, setKycResponse, setCaptureState, setErrorMessage])
 
   // Reset the form
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
+    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
     setFaceImage(null)
+    setFacePreviewUrl(null)
+
+    if (frontPreviewUrl) URL.revokeObjectURL(frontPreviewUrl)
     setFrontsideImage(null)
+    setFrontPreviewUrl(null)
+
+    if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
     setBacksideImage(null)
+    setBackPreviewUrl(null)
+
     setCaptureState(CaptureState.IDLE)
     setErrorMessage(null)
     setKycResponse(null)
-  }
+  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl])
 
   // Render based on current state
   const renderContent = () => {
@@ -192,11 +242,11 @@ const KycVerificationForm: React.FC = () => {
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {faceImage && (
+              {faceImage && facePreviewUrl && (
                 <div className="relative">
                   <div className="aspect-[4/3] rounded-md overflow-hidden border">
                     <img
-                      src={URL.createObjectURL(faceImage) || "/placeholder.svg"}
+                      src={facePreviewUrl || "/placeholder.svg"}
                       alt="Selfie"
                       className="w-full h-full object-cover"
                     />
@@ -205,11 +255,11 @@ const KycVerificationForm: React.FC = () => {
                 </div>
               )}
 
-              {frontsideImage && (
+              {frontsideImage && frontPreviewUrl && (
                 <div className="relative">
                   <div className="aspect-[4/3] rounded-md overflow-hidden border">
                     <img
-                      src={URL.createObjectURL(frontsideImage) || "/placeholder.svg"}
+                      src={frontPreviewUrl || "/placeholder.svg"}
                       alt="Front side of ID"
                       className="w-full h-full object-cover"
                     />
@@ -218,11 +268,11 @@ const KycVerificationForm: React.FC = () => {
                 </div>
               )}
 
-              {backsideImage && (
+              {backsideImage && backPreviewUrl && (
                 <div className="relative">
                   <div className="aspect-[4/3] rounded-md overflow-hidden border">
                     <img
-                      src={URL.createObjectURL(backsideImage) || "/placeholder.svg"}
+                      src={backPreviewUrl || "/placeholder.svg"}
                       alt="Back side of ID"
                       className="w-full h-full object-cover"
                     />
@@ -314,11 +364,11 @@ const KycVerificationForm: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Selfie Card */}
               <Card className="p-6 flex flex-col items-center justify-center">
-                {faceImage ? (
+                {faceImage && facePreviewUrl ? (
                   <div className="w-full">
                     <div className="aspect-[4/3] rounded-md overflow-hidden border mb-4">
                       <img
-                        src={URL.createObjectURL(faceImage) || "/placeholder.svg"}
+                        src={facePreviewUrl || "/placeholder.svg"}
                         alt="Selfie"
                         className="w-full h-full object-cover"
                       />
@@ -344,11 +394,11 @@ const KycVerificationForm: React.FC = () => {
 
               {/* ID Front Card */}
               <Card className="p-6 flex flex-col items-center justify-center">
-                {frontsideImage ? (
+                {frontsideImage && frontPreviewUrl ? (
                   <div className="w-full">
                     <div className="aspect-[4/3] rounded-md overflow-hidden border mb-4">
                       <img
-                        src={URL.createObjectURL(frontsideImage) || "/placeholder.svg"}
+                        src={frontPreviewUrl || "/placeholder.svg"}
                         alt="Front side of ID"
                         className="w-full h-full object-cover"
                       />
@@ -356,9 +406,6 @@ const KycVerificationForm: React.FC = () => {
                     <div className="flex justify-between">
                       <Button variant="outline" size="sm" onClick={() => resetImage("front")}>
                         Reset
-                      </Button>
-                      <Button size="sm" onClick={startCapturingFront}>
-                        Retake
                       </Button>
                     </div>
                   </div>
@@ -376,11 +423,11 @@ const KycVerificationForm: React.FC = () => {
 
               {/* ID Back Card */}
               <Card className="p-6 flex flex-col items-center justify-center">
-                {backsideImage ? (
+                {backsideImage && backPreviewUrl ? (
                   <div className="w-full">
                     <div className="aspect-[4/3] rounded-md overflow-hidden border mb-4">
                       <img
-                        src={URL.createObjectURL(backsideImage) || "/placeholder.svg"}
+                        src={backPreviewUrl || "/placeholder.svg"}
                         alt="Back side of ID"
                         className="w-full h-full object-cover"
                       />
@@ -388,9 +435,6 @@ const KycVerificationForm: React.FC = () => {
                     <div className="flex justify-between">
                       <Button variant="outline" size="sm" onClick={() => resetImage("back")}>
                         Reset
-                      </Button>
-                      <Button size="sm" onClick={startCapturingBack}>
-                        Retake
                       </Button>
                     </div>
                   </div>

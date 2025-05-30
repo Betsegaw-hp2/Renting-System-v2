@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ReportButton } from "@/features/report/components/ReportButton"
+import { reviewsApi } from "@/features/reviews/api/reviewApi"
+import { ReviewsList } from "@/features/reviews/components/ReviewsList"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
@@ -24,11 +26,10 @@ import {
   Heart,
   Home,
   MapPin,
-  MessageCircle, // Ensure MessageCircle is imported
-  PlusCircle, // Add PlusCircle
+  MessageCircle, // Add PlusCircle
   Share2,
   Star,
-  Tag,
+  Tag
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
@@ -38,9 +39,6 @@ import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { ReviewForm } from "@/features/reviews/components/ReviewForm"
-import { ReviewsList } from "@/features/reviews/components/ReviewsList"
-import { reviewsApi } from "@/features/reviews/api/reviewApi"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -124,7 +122,7 @@ export default function ListingDetailsPage() {
           console.log("Found listing:", foundListing)
           // Get reviews count from API
           const reviews = await reviewsApi.getListingReviews(id)
-          const reviewCount = reviews.length
+          const reviewCount = reviews?.length
           
           setListing({
             ...foundListing,
@@ -133,7 +131,7 @@ export default function ListingDetailsPage() {
           setReviewsCount(reviewCount)
 
           // Set the selected image to the first media item or placeholder
-          if (foundListing.media && foundListing.media.length > 0) {
+          if (foundListing.media && foundListing.media?.length > 0) {
             setSelectedImage(foundListing.media[0].media_url)
           } else {
             setSelectedImage("https://picsum.photos/200/300")
@@ -290,6 +288,7 @@ export default function ListingDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
+        <Header />
         <main className="flex-1 py-8">
           <div className="container mx-auto px-4">
             <div className="animate-pulse">
@@ -414,7 +413,7 @@ export default function ListingDetailsPage() {
                 </div>
               ))}
 
-              {images.length > 4 && (
+              {images?.length > 4 && (
                 <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
                   <img
                     src={images[4] || "/placeholder.svg"}

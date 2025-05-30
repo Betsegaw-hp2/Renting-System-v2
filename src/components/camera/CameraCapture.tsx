@@ -1,9 +1,9 @@
 "use client"
 
-import type React from "react"
-import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Camera, FlipHorizontal, X } from "lucide-react"
+import type React from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface CameraCaptureProps {
   onCapture: (image: File) => void
@@ -61,6 +61,18 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
 
   // Initialize camera on component mount
   useEffect(() => {
+    async function listDevices() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      devices.forEach(device => {
+        console.log(`${device.kind}: ${device.label} id = ${device.deviceId}`);
+      });
+    } catch (err) {
+      console.error("Error listing devices:", err);
+    }
+  }
+    listDevices()
+
     initCamera()
 
     // Cleanup function to stop camera stream when component unmounts

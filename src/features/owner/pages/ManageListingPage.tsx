@@ -1,22 +1,21 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Edit, Settings, Calendar, DollarSign, BarChart3, Star, MessageCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/useToast"
-import { ownerApi } from "@/features/owner/api/ownerApi"
-import { EditPropertyDialog } from "@/features/owner/components/EditPropertyDialog"
-import ReviewsSection from "@/features/owner/components/ReviewSection"
-import BookingRequestsSection from "@/features/owner/components/BookingRequestSection"
-import type { Review } from "@/types/listing.types"
-import type { Booking } from "@/types/listing.types"
 import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ownerApi } from "@/features/owner/api/ownerApi"
+import BookingRequestsSection from "@/features/owner/components/BookingRequestSection"
+import { EditPropertyDialog } from "@/features/owner/components/EditPropertyDialog"
+import ReviewsSection from "@/features/owner/components/ReviewSection"
+import { useToast } from "@/hooks/useToast"
+import type { Booking, Review } from "@/types/listing.types"
+import { ArrowLeft, BarChart3, Calendar, DollarSign, Edit, MessageCircle, Settings, Star } from "lucide-react"
+import type React from "react"
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 
 // Mock data for demonstration
 // const mockReviews: Review[] = [
@@ -204,9 +203,9 @@ const ManageListingPage: React.FC = () => {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-ET", {
       style: "currency",
-      currency: "USD",
+      currency: "ETB",
     }).format(amount)
   }
 
@@ -224,10 +223,10 @@ const ManageListingPage: React.FC = () => {
   }
 
   const averageRating =
-    reviews?.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0
+    reviews?.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews?.length : 0
 
-  const pendingBookings = bookings.filter((booking) => booking.status === "pending").length
-  const totalRevenue = bookings
+  const pendingBookings = (bookings ?? []).filter((booking) => booking.status === "pending").length
+  const totalRevenue = (bookings ?? [])
     .filter((booking) => booking.status === "completed")
     .reduce((sum, booking) => sum + booking.total_amount, 0)
 
@@ -344,9 +343,9 @@ const ManageListingPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Reviews ({reviews.length})
+                Reviews ({reviews?.length})
               </CardTitle>
-              {reviews.length > 0 && (
+              {reviews?.length > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }, (_, index) => (
@@ -382,7 +381,7 @@ const ManageListingPage: React.FC = () => {
                   <div className="text-xs text-blue-600 font-medium">Total Views</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-                  <div className="text-2xl font-bold text-green-600">{bookings.length}</div>
+                  <div className="text-2xl font-bold text-green-600">{bookings?.length}</div>
                   <div className="text-xs text-green-600 font-medium">Total Bookings</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">

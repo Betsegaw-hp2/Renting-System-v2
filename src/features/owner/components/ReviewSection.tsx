@@ -1,16 +1,16 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
-import { Star, MessageCircle, Reply, Send, ChevronDown, ChevronUp } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/useToast"
 import type { Review } from "@/types/listing.types"
+import { ChevronDown, ChevronUp, MessageCircle, Reply, Send, Star } from "lucide-react"
+import type React from "react"
+import { useState } from "react"
 
 interface ReviewsSectionProps {
   reviews: Review[]
@@ -88,7 +88,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, isLoading }) =
   }
 
   const averageRating =
-    reviews.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0
+    reviews?.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0
 
   if (isLoading) {
     return (
@@ -124,9 +124,9 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, isLoading }) =
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <MessageCircle className="h-5 w-5 text-blue-600" />
-          Reviews ({reviews.length})
+          Reviews ({reviews?.length})
         </CardTitle>
-        {reviews.length > 0 && (
+        {reviews?.length > 0 && (
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1">{renderStars(Math.round(averageRating))}</div>
             <span className="text-lg font-semibold text-gray-900">{averageRating.toFixed(1)}</span>
@@ -135,7 +135,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, isLoading }) =
         )}
       </CardHeader>
       <CardContent>
-        {reviews.length === 0 ? (
+        {reviews?.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <MessageCircle className="h-8 w-8 text-gray-400" />
@@ -145,9 +145,9 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, isLoading }) =
           </div>
         ) : (
           <div className="space-y-6">
-            {reviews.map((review, index) => {
+            {(reviews ?? []).map((review, index) => {
               const isExpanded = expandedReviews[review.id]
-              const shouldTruncate = review.description.length > 200
+              const shouldTruncate = review.description?.length > 200
               const displayText =
                 shouldTruncate && !isExpanded ? review.description.slice(0, 200) + "..." : review.description
 
@@ -279,7 +279,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, isLoading }) =
                     </div>
                   </div>
 
-                  {index < reviews.length - 1 && <Separator className="mt-6" />}
+                  {index < reviews?.length - 1 && <Separator className="mt-6" />}
                 </div>
               )
             })}

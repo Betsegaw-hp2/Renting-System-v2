@@ -9,23 +9,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { updateEmail } from "@/features/auth/api/authApi"
 import { userApi, type UpdatePasswordPayload, type UpdateUserInfoPayload } from "@/features/auth/api/userApi"
+import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
 import { useToast } from "@/hooks/useToast"
+import type { AppDispatch } from "@/store"
+import type { User } from "@/types/user.types"
 import { AlertTriangle, Calendar, Download, Loader2, MapPin, Star, Upload } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { updateUserProfile } from "@/features/auth/slices/authSlice"
-import type { AppDispatch } from "@/store"
-import { updateEmail } from "@/features/auth/api/authApi"
 
 const TenantProfilePage = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const user = useSelector((state: any) => state.auth.user)
+  const user: User = useSelector((state: any) => state.auth.user)
 
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
@@ -308,9 +309,14 @@ const TenantProfilePage = () => {
                   {user?.first_name} {user?.last_name}
                 </h2>
                 <p className="text-muted-foreground">{user?.email}</p>
-                {user?.is_verified && (
+                {user?.kyc_verified && (
                   <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
                     KYC Verified
+                  </Badge>
+                )}
+                {user?.is_verified && (
+                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
+                    Email Verified
                   </Badge>
                 )}
               </div>
@@ -529,13 +535,13 @@ const TenantProfilePage = () => {
                 <CardHeader>
                   <CardTitle>KYC Documents</CardTitle>
                   <CardDescription>
-                    {user?.is_verified
+                    {user?.kyc_verified
                       ? "Your identity has been verified successfully."
                       : "Verify your identity by uploading your ID documents."}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {user?.is_verified ? (
+                  {user?.kyc_verified ? (
                     <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
                       <div className="bg-green-100 rounded-full p-2 mr-4">
                         <svg
