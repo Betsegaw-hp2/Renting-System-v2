@@ -1,8 +1,7 @@
-import { getAuthToken } from "@/lib/cookies"
 import type { ListingStatus } from "@/types/listing.types"
-import axios from "axios"
 import { format } from "date-fns"
 import config from "../config/api.config"
+import apiClient from "./client"
 import { mockPublicApi } from "./mockPublicApi"
 
 // Types for public API responses
@@ -126,14 +125,7 @@ export interface Booking {
 
 
 
-// Create axios instance for public API endpoints
-export const publicAxiosInstance = axios.create({
-  baseURL: config.apiBaseUrl,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${getAuthToken()}`,
-  },
-})
+export const publicAxiosInstance = apiClient
 
 // Helper function to convert API response to our app's format
 export const convertApiListingToFeaturedListing = async (apiListing: ApiListingResponse): Promise<FeaturedListing> => {

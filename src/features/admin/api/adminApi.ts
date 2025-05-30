@@ -489,7 +489,8 @@ export const adminApi = {
 
   deleteListing: async (id: string) => {
     try {
-      await apiClient.delete(`/listings/${id}`)
+      const response = await apiClient.delete(`/listings/${id}`)
+      console.log(`Listing ${id} deleted successfully`, response.data)
       return true // Or some other meaningful response
     } catch (error) {
       console.error(`Error deleting listing ${id}:`, error)

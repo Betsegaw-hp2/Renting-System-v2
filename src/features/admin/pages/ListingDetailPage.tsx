@@ -2,6 +2,17 @@
 
 import type { ApiListingResponse, FeaturedListing } from "@/api/publicApi"; // Import FeaturedListing and ApiListingResponse
 import { convertApiListingToFeaturedListing } from "@/api/publicApi"; // Import converter
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +34,8 @@ export default function ListingDetailPage() {
   const [bookings, setBookings] = useState<Booking[]>([]); // Added state for bookings
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -61,12 +74,29 @@ export default function ListingDetailPage() {
     fetchDetails();
   }, [id, toast]);
 
-  const handleDeleteListing = async () => {
+  const confirmDeleteListing = async () => {
     if (!listing) return;
-    // TODO: Implement delete functionality with confirmation dialog
-    // This would likely call adminApi.deleteListing(listing.id)
-    // and then navigate away or refresh data.
-    toast({ title: "Info", description: `Delete action for ${listing.title} (ID: ${listing.id}) to be implemented.` });
+
+    setIsSubmitting(true);
+    try {
+      await adminApi.deleteListing(listing.id);
+      toast({
+        title: "Success",
+        description: `Listing "${listing.title}" has been deleted.`,
+      });
+      navigate("/admin/listings"); // Navigate back to the listings page
+    } catch (err) {
+      console.error("Error deleting listing:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete listing. Please try again.",
+        variant: "destructive",
+      });
+      setError("Failed to delete listing."); // Optionally set an error state on the page too
+    } finally {
+      setIsSubmitting(false);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   
@@ -222,9 +252,30 @@ export default function ListingDetailPage() {
                         <CardTitle className="text-lg">Admin Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col space-y-2">
-                        {/* <Button onClick={handleEditListing} variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Edit Listing</Button> */}
+                        {/* <Button onClick={handleEditListing} variant=\\"outline\\"><Edit3 className=\\"mr-2 h-4 w-4\\" /> Edit Listing</Button> */}
                         {/* TODO: Add other actions like Approve/Reject/Suspend if applicable, based on listing.status */}
-                        <Button onClick={handleDeleteListing} variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete Listing</Button>
+                        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                          <AlertDialogTrigger asChild>
+                              <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete Listing</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the listing
+                                <span className="font-semibold"> "{listing?.title}"</span>.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isSubmitting}>
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction onClick={confirmDeleteListing} disabled={isSubmitting} className="bg-red-600 hover:bg-red-700">
+                                {isSubmitting ? "Deleting..." : "Delete"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </CardContent>
                 </Card>
               </div>
