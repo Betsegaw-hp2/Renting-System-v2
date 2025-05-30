@@ -272,10 +272,10 @@ const KycVerificationForm: React.FC = () => {
       })
     } catch (error: any) {
       setCaptureState(CaptureState.ERROR)
-      setErrorMessage(error.message || "Failed to submit KYC documents. Please try again.")
+      setErrorMessage(error.response?.data?.message || error.message || "Failed to submit KYC documents. Please try again.")
       toast({
         title: "KYC submission failed",
-        description: error.message || "Failed to submit KYC documents. Please try again.",
+        description: error.response?.data?.message || error.message || "Failed to submit KYC documents. Please try again.",
         variant: "destructive",
       })
     }

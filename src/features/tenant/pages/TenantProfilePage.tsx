@@ -80,7 +80,7 @@ const TenantProfilePage = () => {
       } catch (error: any) {
         toast({
           title: "Error fetching profile data",
-          description: error.message || "Failed to load your profile or KYC information",
+          description: error.response?.data?.message || error.message || "Failed to load your profile or KYC information",
           variant: "destructive",
         })
       } finally {
@@ -202,7 +202,7 @@ const TenantProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update your profile information",
+        description: error.response?.data?.message || error.message || "Failed to update your profile information",
         variant: "destructive",
       })
     } finally {
@@ -237,7 +237,7 @@ const TenantProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update your password",
+        description: error.response?.data?.message || error.message || "Failed to update your password",
         variant: "destructive",
       })
     } finally {
@@ -266,7 +266,7 @@ const TenantProfilePage = () => {
         description: "Your email has been updated successfully. Please check your inbox to verify the new email address.",
       })
     } catch (error: any) {
-      setEmailError(error.message || "Failed to update email")
+      setEmailError(error.response?.data?.message || error.message || "Failed to update email")
     } finally {
       setIsUpdatingEmail(false)
     }
