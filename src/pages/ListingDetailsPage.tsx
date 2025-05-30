@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ReportButton } from "@/features/report/components/ReportButton"
+import { reviewsApi } from "@/features/reviews/api/reviewApi"
+import { ReviewsList } from "@/features/reviews/components/ReviewsList"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
@@ -24,23 +26,19 @@ import {
   Heart,
   Home,
   MapPin,
-  MessageCircle, // Ensure MessageCircle is imported
-  PlusCircle, // Add PlusCircle
+  MessageCircle, // Add PlusCircle
   Share2,
   Star,
-  Tag,
+  Tag
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { publicApi, type Booking } from "../api/publicApi"
+import { publicApi, type Booking, type FeaturedListing } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { ReviewForm } from "@/features/reviews/components/ReviewForm"
-import { ReviewsList } from "@/features/reviews/components/ReviewsList"
-import { reviewsApi } from "@/features/reviews/api/reviewApi"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -86,7 +84,7 @@ interface BookingResponse {
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [listing, setListing] = useState<Listing | null>(null)
+  const [listing, setListing] = useState<FeaturedListing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -130,38 +128,24 @@ export default function ListingDetailsPage() {
         let reviewCount = 0
         try {
           const reviews = await reviewsApi.getListingReviews(id)
-          reviewCount = reviews?.length || 0
-        } catch (reviewError) {
-          console.error("Error fetching reviews:", reviewError)
-          // Don't set error state here, just use 0 as review count
-        }
-        
-        setListing({
-          ...foundListing,
-          reviewCount: reviewCount,
-          // Ensure these fields have default values if null
-          media: foundListing.media || [],
-          tags: foundListing.tags || [],
-          features: foundListing.features || {
-            guests: 0,
-            bedrooms: 0,
-            bathrooms: 0,
-            area: 0
-          },
-          rating: foundListing.rating || 0,
-          views_count: foundListing.views_count || 0
-        })
-        setReviewsCount(reviewCount)
+          const reviewCount = reviews?.length
+          
+          setListing({
+            ...foundListing,
+            reviewCount: reviewCount
+          })
+          setReviewsCount(reviewCount)
 
-        // Set the selected image to the first media item or placeholder
-        if (foundListing.media && foundListing.media.length > 0) {
-          setSelectedImage(foundListing.media[0].media_url)
-        } else {
-          setSelectedImage("/placeholder.svg")
+          // Set the selected image to the first media item or placeholder
+          if (foundListing.media && foundListing.media?.length > 0) {
+            setSelectedImage(foundListing.media[0].media_url)
+          } else {
+            setSelectedImage("https://picsum.photos/200/300")
+          }
+        } catch (err) {
+          console.error("Error fetching listing:", err)
+          setError("Failed to load listing details. Please try again later.")
         }
-      } catch (err) {
-        console.error("Error fetching listing:", err)
-        setError("Failed to load listing details. Please try again later.")
       } finally {
         setIsLoading(false)
       }
@@ -310,6 +294,7 @@ export default function ListingDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
+        <Header />
         <main className="flex-1 py-8">
           <div className="container mx-auto px-4">
             <div className="animate-pulse">
@@ -417,7 +402,7 @@ export default function ListingDetailsPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
-              {getImages().slice(0, 4).map((image, index) => (
+              {images.slice(0, 2).map((image, index) => (
                 <div
                   key={index}
                   className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${selectedImage === image ? "ring-2 ring-blue-500" : ""}`}
@@ -434,18 +419,18 @@ export default function ListingDetailsPage() {
                 </div>
               ))}
 
-              {getImages().length > 4 && (
+              {images?.length > 3 && (
                 <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
                   <img
-                    src={getImages()[4] || "/placeholder.svg"}
-                    alt={`${listing?.title || "Listing"} - image 5`}
+                    src={images[3] || "/placeholder.svg"}
+                    alt={`${listing.title} - image 5`}
                     className="w-full h-full object-cover opacity-70"
                     onError={(e) => {
                       e.currentTarget.src = "/placeholder.svg"
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium">
-                    +{getImages().length - 4} more
+                    +{images.length - 2} more
                   </div>
                 </div>
               )}
@@ -536,8 +521,8 @@ export default function ListingDetailsPage() {
                     <div className="flex items-center text-gray-700 mb-2">
                       <CalendarIcon className="h-4 w-4 mr-2 text-blue-600" />
                       <div>
-                        <div>From: {formatDate(listing.availability_start)}</div>
-                        <div>To: {formatDate(listing.availability_end)}</div>
+                        <div>From: {formatDate(listing.availability?.startDate)}</div>
+                        <div>To: {formatDate(listing.availability?.endDate)}</div>
                       </div>
                     </div>
                   </div>

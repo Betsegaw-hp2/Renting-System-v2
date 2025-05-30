@@ -1,10 +1,20 @@
 "use client"
 
-import { mockHomeApi } from "@/api/mockHomeApi"
 import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
 import { ListingCard } from "@/components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,8 +25,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AddPropertyDialog } from "@/features/owner/components/AddPropertyDialog"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
+import { useToast } from "@/hooks/useToast"
 import type { RootState } from "@/store"
-import { type UserListingStats, type Booking, ListingStatus } from "@/types/listing.types"
+import { type Booking, ListingStatus, type UserListingStats } from "@/types/listing.types"
 import {
   AlertTriangle,
   Building2,
@@ -26,7 +37,6 @@ import {
   Eye,
   Grid3X3,
   HomeIcon,
-  Link,
   List,
   MapPin,
   MoreVertical,
@@ -35,7 +45,7 @@ import {
   Star,
   Trash,
   TrendingUp,
-  Users,
+  Users
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
@@ -63,6 +73,7 @@ const setStoredViewMode = (mode: ViewMode) => {
 export default function OwnerHomePage() {
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
+  const { toast } = useToast()
 
   // State for owner-specific data
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
@@ -73,6 +84,7 @@ export default function OwnerHomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode())
+  const [listingToDelete, setListingToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -120,11 +132,37 @@ export default function OwnerHomePage() {
       try {
         const ownedListings = await ownerApi.getOwnerProperties(user.id)
         setOwnerListings(ownedListings)
-        const stats = await mockHomeApi.getUserListingStats(user.id)
-        setUserStats(stats)
+        // const stats = await mockHomeApi.getUserListingStats(user.id) // Assuming mockHomeApi might be replaced or updated
+        // setUserStats(stats)
+        toast({ title: "Success", description: "Property list refreshed." })
       } catch (error) {
         console.error("Error refreshing listings:", error)
+        toast({ variant: "destructive", title: "Error", description: "Failed to refresh properties." })
       }
+    }
+  }
+
+  const handleDeleteListing = async () => {
+    if (!listingToDelete) return
+
+    setIsLoading(true)
+    try {
+      await ownerApi.deleteListing(listingToDelete)
+      setOwnerListings((prev) => prev.filter((l) => l.id !== listingToDelete))
+      toast({
+        title: "Listing Deleted",
+        description: "The listing has been successfully deleted.",
+      })
+    } catch (error) {
+      console.error("Error deleting listing:", error)
+      toast({
+        variant: "destructive",
+        title: "Error Deleting Listing",
+        description: "Failed to delete the listing. Please try again.",
+      })
+    } finally {
+      setIsLoading(false)
+      setListingToDelete(null) // Reset state and close dialog
     }
   }
 
@@ -139,77 +177,86 @@ export default function OwnerHomePage() {
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {(ownerListings ?? []).map((listing) => (
-
-        <Card key={listing.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <div className="relative h-[300px] w-full overflow-hidden">
-            <img
-              src={listing.media[0]?.media_url || "/placeholder.svg?height=200&width=300"}
-              alt={listing.title}
-              className="w-full h-full object-cover"
-            />
-            <Badge
-              className={`absolute top-3 right-3 ${listing.status === "available"
-                ? "bg-green-500 hover:bg-green-600"
-                : listing.status === "booked"
-                  ? "bg-blue-500 hover:bg-blue-600"
-                  : "bg-gray-500 hover:bg-gray-600"
+        <AlertDialog key={`grid-alert-${listing.id}`}>
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            <div className="relative h-[300px] w-full overflow-hidden">
+              <img
+                src={listing.media[0]?.media_url || "/placeholder.svg?height=200&width=300"}
+                alt={listing.title}
+                className="w-full h-full object-cover"
+              />
+              <Badge
+                className={`absolute top-3 right-3 ${
+                  listing.status === "available"
+                    ? "bg-green-500 hover:bg-green-600"
+                    : listing.status === "booked"
+                    ? "bg-blue-500 hover:bg-blue-600"
+                    : "bg-gray-500 hover:bg-gray-600"
                 }`}
-            >
-              {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
-            </Badge>
-          </div>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-bold text-lg line-clamp-1">{listing.title}</h3>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={async () => {
-                      if (window.confirm("Are you sure you want to delete this listing?")) {
-                        try {
-                        setIsLoading(true)
-                        await ownerApi.deleteListing(listing.id)
-                        setOwnerListings((prev) => prev.filter((l) => l.id !== listing.id))
-                        } catch (error) {
-                        alert("Failed to delete listing.")
-                        } finally {
-                        setIsLoading(false)
-                        }
-                      }
-                      }}
-                    >
-                      <Trash className="h-4 w-4 mr-2 text-red-600" />
-                      <div className="text-red-600">
-                      Delete Listing
-                      </div>
+              >
+                {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
+              </Badge>
+            </div>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-bold text-lg line-clamp-1">{listing.title}</h3>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
                     </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="flex items-center text-gray-600 mb-2">
-              <MapPin className="h-4 w-4 mr-1" />
-              <span className="text-sm">
-                {listing.city}, {listing.country}
-              </span>
-            </div>
-            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{listing.description}</p>
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-lg text-blue-600">${listing.price}/month</span>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
-                Manage
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem
+                        onSelect={(e) => e.preventDefault()}
+                        onClick={() => setListingToDelete(listing.id)}
+                        className="text-red-600 hover:!text-red-600 hover:!bg-red-50 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Trash className="h-4 w-4 mr-2" />
+                        Delete Listing
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="flex items-center text-gray-600 mb-2">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span className="text-sm">
+                  {listing.city}, {listing.country}
+                </span>
+              </div>
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{listing.description}</p>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-lg text-blue-600">${listing.price}/month</span>
+                <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
+                  Manage
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the listing "{listing.title}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setListingToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteListing}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ))}
     </div>
   )
@@ -217,105 +264,114 @@ export default function OwnerHomePage() {
   const renderListView = () => (
     <div className="space-y-4">
       {(ownerListings ?? []).map((listing) => (
-        <Card key={listing.id} className="overflow-hidden hover:shadow-md transition-shadow duration-300">
-          <CardContent className="p-0">
-            <div className="flex">
-              <div className="w-48 h-32 flex-shrink-0">
-                <img
-                  src={listing.media[0]?.media_url || "/placeholder.svg?height=128&width=192"}
-                  alt={listing.title}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="flex-1 p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-lg">{listing.title}</h3>
-                      <Badge
-                        className={`${listing.status === ListingStatus.AVAILABLE
-                          ? "bg-green-500 hover:bg-green-600"
-                          : listing.status === "booked"
-                            ? "bg-blue-500 hover:bg-blue-600"
-                            : "bg-gray-500 hover:bg-gray-600"
+        <AlertDialog key={`list-alert-${listing.id}`}>
+          <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <CardContent className="p-0">
+              <div className="flex">
+                <div className="w-48 h-32 flex-shrink-0">
+                  <img
+                    src={listing.media[0]?.media_url || "/placeholder.svg?height=128&width=192"}
+                    alt={listing.title}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+                <div className="flex-1 p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-lg">{listing.title}</h3>
+                        <Badge
+                          className={`${
+                            listing.status === ListingStatus.AVAILABLE
+                              ? "bg-green-500 hover:bg-green-600"
+                              : listing.status === "booked"
+                              ? "bg-blue-500 hover:bg-blue-600"
+                              : "bg-gray-500 hover:bg-gray-600"
                           }`}
-                      >
-                        {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-sm">
-                        {listing.city}, {listing.country}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 text-sm line-clamp-2">{listing.description}</p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                     <DropdownMenuItem
-                      onClick={async () => {
-                      if (window.confirm("Are you sure you want to delete this listing?")) {
-                        try {
-                        setIsLoading(true)
-                        await ownerApi.deleteListing(listing.id)
-                        setOwnerListings((prev) => prev.filter((l) => l.id !== listing.id))
-                        } catch (error) {
-                        alert("Failed to delete listing.")
-                        } finally {
-                        setIsLoading(false)
-                        }
-                      }
-                      }}
-                    >
-                      <Trash className="h-4 w-4 mr-2 text-red-600" />
-                      <div className="text-red-600">
-                      Delete Listing
+                        >
+                          {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
+                        </Badge>
                       </div>
-                    </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      <span>Revenue: $0</span>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span className="text-sm">
+                          {listing.city}, {listing.country}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2">{listing.description}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>Bookings: 0</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <TrendingUp className="h-4 w-4" />
-                      <span>Views: 0</span>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/listings/${listing.id}`)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            onClick={() => setListingToDelete(listing.id)}
+                            className="text-red-600 hover:!text-red-600 hover:!bg-red-50 focus:text-red-600 focus:bg-red-50"
+                          >
+                            <Trash className="h-4 w-4 mr-2" />
+                            Delete Listing
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/listings/${listing.id}`)}>
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
-                      <Edit className="h-4 w-4 mr-1" />
-                      Manage
-                    </Button>
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4" />
+                        <span>Revenue: $0</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span>Bookings: 0</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span>Views: 0</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/listings/${listing.id}`)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/owner/listings/${listing.id}/manage`)}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Manage
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the listing "{listing.title}".
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setListingToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteListing}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       ))}
     </div>
   )

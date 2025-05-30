@@ -14,7 +14,6 @@ import {
   Menu,
   PieChart,
   Search,
-  Settings,
   Tag,
   User,
   Users,
@@ -347,34 +346,14 @@ export function Header({
                     </Link>
                   </DropdownMenuItem>
 
-                  {permissions.isAdmin && (
+                  {/* {permissions.isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin/settings" className="flex items-center gap-2">
                         <Settings className="h-4 w-4" />
                         <span>Settings</span>
                       </Link>
                     </DropdownMenuItem>
-                  )}
-
-                  {/* Allow owners and admins to switch to tenant account if they have one */}
-                  {(permissions.isOwner || permissions.isAdmin) && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/switch-to-tenant" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>Switch to Tenant Account</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Allow tenants to create an owner account */}
-                  {permissions.isTenant && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/become-owner" className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <span>Become a Property Owner</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
+                  )} */}
 
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

@@ -1,9 +1,9 @@
 "use client"
 
-import type React from "react"
-import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Camera, FlipHorizontal, X } from "lucide-react"
+import type React from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface CameraCaptureProps {
   onCapture: (image: File) => void
@@ -22,8 +22,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
   // Initialize camera
   const initCamera = useCallback(async () => {
     try {
+      // If a stream already exists, stop its tracks before getting a new one.
+      // This is important when switching cameras or re-initializing.
       if (stream) {
-        // Stop previous stream
         stream.getTracks().forEach((track) => track.stop())
       }
 
@@ -52,22 +53,49 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
       console.error("Error accessing camera:", err)
       setError("Could not access camera. Please ensure you've granted camera permissions.")
     }
-  }, [stream, isFrontCamera])
+  }, [isFrontCamera]) // Removed 'stream' from dependencies
 
   // Handle video loaded metadata
   const handleVideoMetadata = () => {
+    // This can still be useful for initial dimension checks if needed,
+    // but isCameraReady will now be set by onPlaying.
+    console.log("Video metadata loaded")
+  }
+
+  // Handle video playing event
+  const handleVideoPlaying = () => {
+    console.log("Video is playing")
     setIsCameraReady(true)
   }
 
   // Initialize camera on component mount
   useEffect(() => {
+    async function listDevices() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        devices.forEach((device) => {
+          console.log(`${device.kind}: ${device.label} id = ${device.deviceId}`)
+        })
+      } catch (err) {
+        console.error("Error listing devices:", err)
+      }
+    }
+    listDevices()
+
     initCamera()
 
     // Cleanup function to stop camera stream when component unmounts
+    // or when initCamera changes (e.g., due to isFrontCamera changing)
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
-      }
+      // Access the stream directly from the state for cleanup
+      // This ensures we're cleaning up the most current stream
+      // if the component unmounts while a stream is active.
+      setStream((currentStream) => {
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop())
+        }
+        return null // Set stream to null after stopping
+      })
     }
   }, [initCamera])
 
@@ -158,7 +186,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
           autoPlay
           playsInline
           muted
-          onLoadedMetadata={handleVideoMetadata}
+          onLoadedMetadata={handleVideoMetadata} // Keep for potential metadata use
+          onPlaying={handleVideoPlaying} // Use onPlaying to set isCameraReady
           className={`w-full h-full object-cover ${captureType === "face" && isFrontCamera ? "transform scale-x-[-1]" : ""}`}
         />
 

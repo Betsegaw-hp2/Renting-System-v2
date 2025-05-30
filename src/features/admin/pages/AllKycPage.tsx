@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { adminApi } from "@/features/admin/api/adminApi";
 import { AdminLayout } from "@/features/admin/components/layout/AdminLayout";
@@ -9,8 +10,6 @@ import type { User, UserKYC } from "@/types/user.types";
 import { AlertCircle, Loader2 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-const ITEMS_PER_PAGE = 10;
 
 interface ExtendedUserKYC extends UserKYC {
   user?: User;
@@ -22,41 +21,45 @@ const AllKycPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
-  const fetchKycRecords = useCallback(async (page: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const offset = (page - 1) * ITEMS_PER_PAGE;
-      const response = await adminApi.getAllUserKyc({ limit: ITEMS_PER_PAGE, offset });
+  const fetchKycRecords = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const offset = (page - 1) * pageSize;
+        const response = await adminApi.getAllUserKyc({ limit: pageSize, offset });
 
-      const recordsWithUserDetails = await Promise.all(
-        response.records.map(async (kycRecord) => {
-          try {
-            const user = await adminApi.getUser(kycRecord.user_id);
-            return { ...kycRecord, user };
-          } catch (userError) {
-            console.error(`Failed to fetch user ${kycRecord.user_id}`, userError);
-            return { ...kycRecord, user: undefined };
-          }
-        })
-      );
+        const recordsWithUserDetails = await Promise.all(
+          response.records.map(async (kycRecord) => {
+            try {
+              const user = await adminApi.getUser(kycRecord.user_id);
+              return { ...kycRecord, user };
+            } catch (userError) {
+              console.error(`Failed to fetch user ${kycRecord.user_id}`, userError);
+              return { ...kycRecord, user: undefined };
+            }
+          })
+        );
 
-      setKycRecords(recordsWithUserDetails);
-      setTotalRecords(response.totalRecords);
-    } catch (err) {
-      console.error("Error fetching KYC records:", err);
-      setError("Failed to fetch KYC records. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        setKycRecords(recordsWithUserDetails);
+        setTotalRecords(response.totalRecords);
+      } catch (err) {
+        console.error("Error fetching KYC records:", err);
+        setError("Failed to fetch KYC records. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [pageSize]
+  );
 
   useEffect(() => {
     fetchKycRecords(currentPage);
   }, [currentPage, fetchKycRecords]);
 
-  const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalRecords / pageSize);
 
   const handlePreviousPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -64,6 +67,11 @@ const AllKycPage: React.FC = () => {
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
   };
 
   if (isLoading && kycRecords.length === 0) {
@@ -87,6 +95,9 @@ const AllKycPage: React.FC = () => {
       </AdminLayout>
     );
   }
+
+  const endItem = Math.min(currentPage * pageSize, totalRecords);
+  const startItem = Math.max(1, (currentPage - 1) * pageSize + 1);
 
   return (
     <AdminLayout>
@@ -150,8 +161,30 @@ const AllKycPage: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
-                {totalPages > 1 && (
-                  <div className="flex justify-end items-center space-x-2 mt-4">
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    {totalRecords > 0 ? (
+                      `Showing ${startItem} - ${endItem} of ${totalRecords} records`
+                    ) : (
+                      "No records found"
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Rows per page:</span>
+                    <Select
+                      value={pageSize.toString()}
+                      onValueChange={(value) => handlePageSizeChange(Number.parseInt(value))}
+                    >
+                      <SelectTrigger className="w-[80px]">
+                        <SelectValue placeholder={pageSize.toString()} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="outline"
                       size="sm"
@@ -172,7 +205,7 @@ const AllKycPage: React.FC = () => {
                       Next
                     </Button>
                   </div>
-                )}
+                </div>
               </>
             )}
           </CardContent>

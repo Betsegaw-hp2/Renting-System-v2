@@ -1,13 +1,13 @@
 "use client"
 
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react"
-import { Link } from "react-router-dom"
-import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
-import { Button } from "../../../components/ui/button"
-import { Checkbox } from "../../../components/ui/checkbox"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
-import { useLogin } from "../hooks/useLogin"
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react"; // Removed User and Briefcase icons
+import { Link } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert";
+import { Button } from "../../../components/ui/button";
+import { Checkbox } from "../../../components/ui/checkbox";
+import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
+import { useLogin } from "../hooks/useLogin";
 
 const API_BASE = import.meta.env.VITE_API_PROD_BASE_URL
 
@@ -28,7 +28,8 @@ export function LoginForm() {
   } = useLogin()
 
   const oauthLogin = (provider: string) => {
-    window.location.href = `${API_BASE}/oauth/${provider}`
+    // Role here doesn't matter for login, but they keywords matter for user role parameter
+    window.location.href = `${API_BASE}/oauth/${provider}?role=owner` 
   }
 
   return (
@@ -142,11 +143,13 @@ export function LoginForm() {
         </div>
 
         {/* OAuth Buttons */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        {/* Adjusted to grid-cols-1 for a single button, or if more providers are added later, they will stack vertically */}
+        <div className="mt-6 grid grid-cols-1 gap-3">
           <Button
             variant="outline"
             type="button"
             onClick={() => oauthLogin("google")}
+            disabled={isLoading} // Removed !selectedRole from disabled condition
             className="flex items-center justify-center gap-2"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -169,17 +172,18 @@ export function LoginForm() {
               </svg>
             Google
           </Button>
-          <Button
+          {/* <Button
             variant="outline"
             type="button"
             onClick={() => oauthLogin("facebook")}
+            disabled={!selectedRole || isLoading} // Disable if no role selected or loading
             className="flex items-center justify-center gap-2"
           >
             <svg className="h-4 w-4" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M9.19795 21.5H13.198V13.4901H16.8021L17.198 9.50977H13.198V7.5C13.198 6.94772 13.6457 6.5 14.198 6.5H17.198V2.5H14.198C11.4365 2.5 9.19795 4.73858 9.19795 7.5V9.50977H7.19795L6.80206 13.4901H9.19795V21.5Z" />
               </svg>
             Facebook
-          </Button>
+          </Button> */}
         </div>
       </div>
 

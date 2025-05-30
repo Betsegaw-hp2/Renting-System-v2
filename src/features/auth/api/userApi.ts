@@ -1,8 +1,8 @@
+import type { User } from "@/types/user.types"
 import apiClient from "../../../api/client"
 
 // Types for API requests
 export interface UpdateUserInfoPayload {
-  email?: string
   username?: string
   first_name?: string
   last_name?: string
@@ -15,9 +15,9 @@ export interface UpdatePasswordPayload {
 // API functions for user profile management
 export const userApi = {
   // Update user personal information
-  updateUserInfo: async (userId: string, data: UpdateUserInfoPayload) => {
+  updateUserInfo: async (userId: string, data: UpdateUserInfoPayload) : Promise<User> => {
     try {
-      const response = await apiClient.patch(`/users/${userId}`, data)
+      const response = await apiClient.patch<User>(`/users/${userId}`, data)
       return response.data
     } catch (error) {
       throw error
@@ -35,12 +35,26 @@ export const userApi = {
   },
 
   // Get current user profile
-  getCurrentUser: async () => {
+  getCurrentUser: async (): Promise<User> => {
     try {
       const response = await apiClient.get("/users/me")
       return response.data
     } catch (error) {
       throw error
+    }
+  },
+
+  // Get user KYC information
+  getUserKyc: async (userId: string) => {
+    try {
+      const response = await apiClient.get(`/users/${userId}/kyc`)
+      return response.data
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null // Return null if KYC not found
+      }
+      console.error(`Error fetching KYC for user ${userId}:`, error)
+      throw error // Re-throw other errors
     }
   },
 

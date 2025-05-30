@@ -4,6 +4,16 @@ import { ArrowUpDown, Filter, MoreHorizontal, Search, UserPlus } from "lucide-re
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom"; // Added for navigation
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "../../../components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
@@ -27,6 +37,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [totalUsers, setTotalUsers] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [tableState, setTableState] = useState<TableState>({
     pagination: {
       pageIndex: 0,
@@ -68,6 +80,27 @@ export default function UsersPage() {
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers])
+
+  const handleDeleteUser = async (userId: string) => {
+    setUserToDelete(userId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (userToDelete) {
+      try {
+        await adminApi.deleteUser(userToDelete)
+        setUsers((prev) => prev.filter((user) => user.id !== userToDelete))
+        setTotalUsers((prev) => prev - 1)
+      } catch (error) {
+        console.error("Error deleting user:", error)
+        alert("Failed to delete user. Please try again later.")
+      } finally {
+        setIsDeleteDialogOpen(false)
+        setUserToDelete(null)
+      }
+    }
+  }
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTableState((prev) => ({
@@ -348,7 +381,9 @@ export default function UsersPage() {
                             ) : (
                                <DropdownMenuItem className="text-green-600">Approve User</DropdownMenuItem>
                             )} */}
-                            <DropdownMenuItem className="text-red-600">Deactivate User</DropdownMenuItem>
+                            {/* delete user button */}
+                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user.id)}>Delete User</DropdownMenuItem>
+                            {/* <DropdownMenuItem className="text-red-600">Deactivate User</DropdownMenuItem> */}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -388,6 +423,20 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   )
 }
