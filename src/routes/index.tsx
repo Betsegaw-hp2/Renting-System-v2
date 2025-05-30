@@ -363,15 +363,25 @@ const router = createBrowserRouter([
       </AdminRoute>
     ),
   },
+  // {
+  //   path: "/admin/settings",
+  //   element: (
+  //     <AdminRoute>
+  //       <Suspense fallback={<LoadingFallback />}>
+  //         <AdminSettingsPage />
+  //       </Suspense>
+  //     </AdminRoute>
+  //   ),
+  // },
   {
-    path: "/admin/settings",
+    path: "/admin/profile",
     element: (
       <AdminRoute>
         <Suspense fallback={<LoadingFallback />}>
-          <AdminSettingsPage />
+          <AdminUserDetailPage />
         </Suspense>
       </AdminRoute>
-    ),
+    )
   },
   {
   path: "/admin/users/:userId",

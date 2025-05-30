@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, LogOut, Settings, ShieldCheck, Users } from "lucide-react"; // Added ShieldCheck
+import { BarChart3, ChevronLeft, ChevronRight, Flag, FolderTree, Home, LogOut, ShieldCheck, Users } from "lucide-react"; // Added ShieldCheck
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -73,11 +73,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       label: "Reports",
       icon: Flag,
     },
-    {
-      path: "/admin/settings",
-      label: "Settings",
-      icon: Settings,
-    },
+    // {
+    //   path: "/admin/settings",
+    //   label: "Settings",
+    //   icon: Settings,
+    // },
   ]
 
   const getInitials = (name: string) => {
@@ -165,7 +165,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="border-t border-primary-foreground/10 p-4 mt-auto">
           <div className="flex items-center">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.profile_picture || "/placeholder.svg"} alt={userName} />
+              <AvatarImage src={user?.profile_picture || "https://via.placeholder.com/150"} alt={userName} />
               <AvatarFallback>{userInitials}</AvatarFallback>
             </Avatar>
             {sidebarOpen && (
