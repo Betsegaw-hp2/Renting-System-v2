@@ -5,15 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { userApi } from "@/features/auth/api/userApi";
 import { useToast } from "@/hooks/useToast";
-import { Check, CreditCard, Loader2, User, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react"; // Added useEffect, useCallback
+import { Check, FileImage, Loader2, User, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react"; // Added useRef
 import { useSelector } from "react-redux";
 
 const CaptureState = {
   IDLE: 0,
   CAPTURING_FACE: 1,
-  CAPTURING_FRONT: 2,
-  CAPTURING_BACK: 3,
   REVIEW: 4,
   SUBMITTING: 5,
   SUCCESS: 6,
@@ -39,13 +37,16 @@ const KycVerificationForm: React.FC = () => {
   const [frontsideImage, setFrontsideImage] = useState<File | null>(null)
   const [backsideImage, setBacksideImage] = useState<File | null>(null)
 
-  // State for image preview URLs
   const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null)
   const [frontPreviewUrl, setFrontPreviewUrl] = useState<string | null>(null)
   const [backPreviewUrl, setBackPreviewUrl] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [kycResponse, setKycResponse] = useState<KycResponse | null>(null)
+
+  // Refs for native camera input elements
+  const frontIdInputRef = useRef<HTMLInputElement>(null);
+  const backIdInputRef = useRef<HTMLInputElement>(null);
 
   // Effect to cleanup object URLs
   useEffect(() => {
@@ -66,15 +67,15 @@ const KycVerificationForm: React.FC = () => {
     setCaptureState(CaptureState.CAPTURING_FACE)
   }, [])
 
-  // Start capturing frontside image
+  // Modified to trigger native camera input
   const startCapturingFront = useCallback(() => {
-    setCaptureState(CaptureState.CAPTURING_FRONT)
-  }, [])
+    frontIdInputRef.current?.click();
+  }, []);
 
-  // Start capturing backside image
+  // Modified to trigger native camera input
   const startCapturingBack = useCallback(() => {
-    setCaptureState(CaptureState.CAPTURING_BACK)
-  }, [])
+    backIdInputRef.current?.click();
+  }, []);
 
   // Handle face image capture
   const handleFaceCapture = useCallback((image: File) => {
@@ -88,36 +89,51 @@ const KycVerificationForm: React.FC = () => {
     })
   }, [facePreviewUrl, toast])
 
-  // Handle frontside image capture
   const handleFrontsideCapture = useCallback((image: File) => {
     if (frontPreviewUrl) URL.revokeObjectURL(frontPreviewUrl)
     setFrontsideImage(image)
     setFrontPreviewUrl(URL.createObjectURL(image))
-    setCaptureState(CaptureState.IDLE)
+    setCaptureState(CaptureState.IDLE) // Ensure state returns to IDLE
     toast({
       title: "Front image captured",
       description: "Front side of your ID has been captured successfully.",
     })
   }, [frontPreviewUrl, toast])
 
-  // Handle backside image capture
   const handleBacksideCapture = useCallback((image: File) => {
     if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
     setBacksideImage(image)
     setBackPreviewUrl(URL.createObjectURL(image))
-    setCaptureState(CaptureState.IDLE)
+    setCaptureState(CaptureState.IDLE) // Ensure state returns to IDLE
     toast({
       title: "Back image captured",
       description: "Back side of your ID has been captured successfully.",
     })
   }, [backPreviewUrl, toast])
 
-  // Cancel capture
+  // Handler for native file inputs (ID front/back)
+  const handleIdFileSelected = useCallback((
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: 'front' | 'back'
+  ) => {
+    if (event.target.files && event.target.files[0]) {
+      const imageFile = event.target.files[0];
+      if (type === 'front') {
+        handleFrontsideCapture(imageFile);
+      } else {
+        handleBacksideCapture(imageFile);
+      }
+    }
+    if (event.target) {
+      event.target.value = ""; // Reset input to allow re-capture of same file name
+    }
+  }, [handleFrontsideCapture, handleBacksideCapture]);
+
+
   const handleCancelCapture = useCallback(() => {
     setCaptureState(CaptureState.IDLE)
   }, [])
 
-  // Reset a specific image
   const resetImage = useCallback((type: "face" | "front" | "back") => {
     if (type === "face") {
       if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
@@ -134,32 +150,23 @@ const KycVerificationForm: React.FC = () => {
     }
   }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl])
 
-  // Review images before submission
   const reviewImages = useCallback(() => {
-    // Ensure all images are present before going to review
     if (!faceImage || !frontsideImage || !backsideImage) {
       setErrorMessage("Your selfie and both front and back images of your ID are required before review.");
-      // Optionally, you could prevent transitioning to REVIEW state or show a toast
-      // For now, let's assume the button to call reviewImages is disabled if images are missing.
-      // If not, this check is important.
     } else {
-      setErrorMessage(null); // Clear any previous error message
+      setErrorMessage(null);
     }
     setCaptureState(CaptureState.REVIEW)
   }, [faceImage, frontsideImage, backsideImage])
 
-  // Submit KYC documents
   const submitKyc = useCallback(async () => {
     if (!faceImage || !frontsideImage || !backsideImage || !user?.id) {
       setErrorMessage("Your selfie and both front and back images of your ID are required.")
       return
     }
-
     setCaptureState(CaptureState.SUBMITTING)
     setErrorMessage(null)
-
     try {
-      // Assuming userApi.uploadKycDocuments is a stable function reference
       const response = await userApi.uploadKycDocuments(user.id, faceImage, frontsideImage, backsideImage)
       setKycResponse(response)
       setCaptureState(CaptureState.SUCCESS)
@@ -176,22 +183,18 @@ const KycVerificationForm: React.FC = () => {
         variant: "destructive",
       })
     }
-  }, [faceImage, frontsideImage, backsideImage, user?.id, toast, setKycResponse, setCaptureState, setErrorMessage])
+  }, [faceImage, frontsideImage, backsideImage, user?.id, toast]) // Removed setKycResponse, setCaptureState, setErrorMessage from deps as they are stable
 
-  // Reset the form
   const resetForm = useCallback(() => {
     if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
     setFaceImage(null)
     setFacePreviewUrl(null)
-
     if (frontPreviewUrl) URL.revokeObjectURL(frontPreviewUrl)
     setFrontsideImage(null)
     setFrontPreviewUrl(null)
-
     if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
     setBacksideImage(null)
     setBackPreviewUrl(null)
-
     setCaptureState(CaptureState.IDLE)
     setErrorMessage(null)
     setKycResponse(null)
@@ -208,28 +211,6 @@ const KycVerificationForm: React.FC = () => {
               Position your face within the circle and take a clear photo.
             </p>
             <CameraCapture onCapture={handleFaceCapture} onCancel={handleCancelCapture} captureType="face" />
-          </div>
-        )
-
-      case CaptureState.CAPTURING_FRONT:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-center">Capture Front Side of ID</h3>
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              Position the front of your ID card within the frame and take a clear photo.
-            </p>
-            <CameraCapture onCapture={handleFrontsideCapture} onCancel={handleCancelCapture} captureType="id-front" />
-          </div>
-        )
-
-      case CaptureState.CAPTURING_BACK:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-center">Capture Back Side of ID</h3>
-            <p className="text-sm text-muted-foreground text-center mb-4">
-              Position the back of your ID card within the frame and take a clear photo.
-            </p>
-            <CameraCapture onCapture={handleBacksideCapture} onCancel={handleCancelCapture} captureType="id-back" />
           </div>
         )
 
@@ -354,6 +335,24 @@ const KycVerificationForm: React.FC = () => {
       default: // IDLE state
         return (
           <div className="space-y-6">
+            {/* Hidden file inputs for native camera access */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment" // For back camera, typically used for IDs
+              ref={frontIdInputRef}
+              style={{ display: 'none' }}
+              onChange={(e) => handleIdFileSelected(e, 'front')}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment" // For back camera
+              ref={backIdInputRef}
+              style={{ display: 'none' }}
+              onChange={(e) => handleIdFileSelected(e, 'back')}
+            />
+
             <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
               <h3 className="font-medium text-amber-800">Verification Required</h3>
               <p className="text-sm text-amber-700 mt-1">
@@ -411,12 +410,10 @@ const KycVerificationForm: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <CreditCard className="h-10 w-10 text-gray-400 mb-4" />
-                    <p className="text-sm font-medium mb-2">ID Card (Front)</p>
-                    <p className="text-xs text-gray-500 mb-4 text-center">
-                      Capture a clear image of the front of your ID card
-                    </p>
-                    <Button onClick={startCapturingFront}>Capture Front</Button>
+                    <FileImage className="h-10 w-10 text-gray-400 mb-4" />
+                    <p className="text-sm font-medium mb-2">ID Front</p>
+                    <p className="text-xs text-gray-500 mb-4 text-center">Capture the front of your ID</p>
+                    <Button onClick={startCapturingFront}>Capture Front ID</Button>
                   </>
                 )}
               </Card>
@@ -440,12 +437,10 @@ const KycVerificationForm: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <CreditCard className="h-10 w-10 text-gray-400 mb-4" />
-                    <p className="text-sm font-medium mb-2">ID Card (Back)</p>
-                    <p className="text-xs text-gray-500 mb-4 text-center">
-                      Capture a clear image of the back of your ID card
-                    </p>
-                    <Button onClick={startCapturingBack}>Capture Back</Button>
+                    <FileImage className="h-10 w-10 text-gray-400 mb-4" />
+                    <p className="text-sm font-medium mb-2">ID Back</p>
+                    <p className="text-xs text-gray-500 mb-4 text-center">Capture the back of your ID</p>
+                    <Button onClick={startCapturingBack}>Capture Back ID</Button>
                   </>
                 )}
               </Card>
