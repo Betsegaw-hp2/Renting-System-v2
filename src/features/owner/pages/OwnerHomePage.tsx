@@ -33,6 +33,7 @@ import {
   Plus,
   Search,
   Star,
+  Trash,
   TrendingUp,
   Users,
 } from "lucide-react"
@@ -171,6 +172,26 @@ export default function OwnerHomePage() {
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                      if (window.confirm("Are you sure you want to delete this listing?")) {
+                        try {
+                        setIsLoading(true)
+                        await ownerApi.deleteListing(listing.id)
+                        setOwnerListings((prev) => prev.filter((l) => l.id !== listing.id))
+                        } catch (error) {
+                        alert("Failed to delete listing.")
+                        } finally {
+                        setIsLoading(false)
+                        }
+                      }
+                      }}
+                    >
+                      <Trash className="h-4 w-4 mr-2 text-red-600" />
+                      <div className="text-red-600">
+                      Delete Listing
+                      </div>
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -242,10 +263,26 @@ export default function OwnerHomePage() {
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/owner/listings/${listing.id}/edit`)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Listing
-                      </DropdownMenuItem>
+                     <DropdownMenuItem
+                      onClick={async () => {
+                      if (window.confirm("Are you sure you want to delete this listing?")) {
+                        try {
+                        setIsLoading(true)
+                        await ownerApi.deleteListing(listing.id)
+                        setOwnerListings((prev) => prev.filter((l) => l.id !== listing.id))
+                        } catch (error) {
+                        alert("Failed to delete listing.")
+                        } finally {
+                        setIsLoading(false)
+                        }
+                      }
+                      }}
+                    >
+                      <Trash className="h-4 w-4 mr-2 text-red-600" />
+                      <div className="text-red-600">
+                      Delete Listing
+                      </div>
+                    </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

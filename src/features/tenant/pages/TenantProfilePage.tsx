@@ -15,12 +15,16 @@ import { useToast } from "@/hooks/useToast"
 import { AlertTriangle, Calendar, Download, Loader2, MapPin, Star, Upload } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
+import { updateUserProfile } from "@/features/auth/slices/authSlice"
+import type { AppDispatch } from "@/store"
+import { updateEmail } from "@/features/auth/api/authApi"
 
 const TenantProfilePage = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>()
   const user = useSelector((state: any) => state.auth.user)
 
   // Personal info form state
@@ -37,14 +41,21 @@ const TenantProfilePage = () => {
     confirmPassword: "",
   })
 
+  // Email form state
+  const [emailForm, setEmailForm] = useState({
+    email: "",
+  })
+
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
 
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -103,6 +114,13 @@ const TenantProfilePage = () => {
         return newErrors
       })
     }
+  }
+
+  // Handle email form changes
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    setEmailForm({ email: value })
+    setEmailError(null)
   }
 
   // Validate personal info form
@@ -166,8 +184,11 @@ const TenantProfilePage = () => {
         username: personalInfo.username,
       }
 
-      await userApi.updateUserInfo(user.id, payload)
+      const updatedUser = await userApi.updateUserInfo(user.id, payload)
       console.log("Profile updated successfully")
+      
+      // Update Redux store with new user data
+      dispatch(updateUserProfile(updatedUser))
       
       toast({
         title: "Profile updated",
@@ -216,6 +237,39 @@ const TenantProfilePage = () => {
       })
     } finally {
       setIsUpdatingPassword(false)
+    }
+  }
+
+  // Handle email form submission
+  const handleUpdateEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError(null)
+
+    if (!emailForm.email.trim()) {
+      setEmailError("Email is required")
+      return
+    }
+
+    if (!/\S+@\S+\.\S+/.test(emailForm.email)) {
+      setEmailError("Email is invalid")
+      return
+    }
+
+    setIsUpdatingEmail(true)
+    try {
+      await updateEmail(user.id, emailForm.email)
+      
+      // Update Redux store with new email
+      dispatch(updateUserProfile({ ...user, email: emailForm.email }))
+      
+      toast({
+        title: "Email updated",
+        description: "Your email has been updated successfully. Please check your inbox to verify the new email address.",
+      })
+    } catch (error: any) {
+      setEmailError(error.message || "Failed to update email")
+    } finally {
+      setIsUpdatingEmail(false)
     }
   }
 
@@ -367,19 +421,6 @@ const TenantProfilePage = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={personalInfo.email}
-                        onChange={handlePersonalInfoChange}
-                        className={personalInfoErrors.email ? "border-red-500" : ""}
-                      />
-                      {personalInfoErrors.email && <p className="text-sm text-red-500">{personalInfoErrors.email}</p>}
-                    </div>
-
-                    <div className="space-y-2">
                       <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
@@ -402,6 +443,36 @@ const TenantProfilePage = () => {
                     <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
                       {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Save Changes
+                    </Button>
+                  </CardFooter>
+                </form>
+              </Card>
+
+              {/* Email Update Card */}
+              <Card className="mt-8">
+                <CardHeader>
+                  <CardTitle>Email Address</CardTitle>
+                  <CardDescription>Update your email address</CardDescription>
+                </CardHeader>
+                <form onSubmit={handleUpdateEmail}>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">New Email Address</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={emailForm.email}
+                        onChange={handleEmailChange}
+                        className={emailError ? "border-red-500" : ""}
+                      />
+                      {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" disabled={isUpdatingEmail} className="ml-auto">
+                      {isUpdatingEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Update Email
                     </Button>
                   </CardFooter>
                 </form>

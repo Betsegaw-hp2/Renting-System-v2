@@ -15,7 +15,21 @@ import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
 import { ListingStatus } from "@/types/listing.types"
 import { addDays, differenceInDays, format, formatISO } from "date-fns"
-import { ArrowLeft, CalendarIcon, CheckCircle, DollarSign, Flag, Heart, Home, MapPin, Share2, Star, Tag } from "lucide-react"
+import {
+  ArrowLeft,
+  CalendarIcon,
+  CheckCircle,
+  DollarSign,
+  Flag,
+  Heart,
+  Home,
+  MapPin,
+  MessageCircle, // Ensure MessageCircle is imported
+  PlusCircle, // Add PlusCircle
+  Share2,
+  Star,
+  Tag,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { publicApi, type Booking } from "../api/publicApi"
@@ -23,7 +37,10 @@ import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { ReviewForm } from "@/features/reviews/components/ReviewForm"
+import { ReviewsList } from "@/features/reviews/components/ReviewsList"
+import { reviewsApi } from "@/features/reviews/api/reviewApi"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -63,9 +80,8 @@ interface Listing {
 
 interface BookingResponse {
   booking: Booking
-  listing: Listing  // You can define `Listing` similarly or as `any` if not needed
+  listing: Listing // You can define `Listing` similarly or as `any` if not needed
 }
-
 
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -83,6 +99,9 @@ export default function ListingDetailsPage() {
   const [showIllustration, setShowIllustration] = useState(false)
   const { toast } = useToast()
   const { isTenant, isAdmin } = usePermissions()
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewsRefreshTrigger, setReviewsRefreshTrigger] = useState(0)
+  const [reviewsCount, setReviewsCount] = useState<number>(0)
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -99,12 +118,19 @@ export default function ListingDetailsPage() {
       try {
         // Fetch all listings and find the one with matching ID
         const foundListing = await publicApi.getListingById(id)
-        console.log("Fetched found lisitng:", foundListing)
-
+        console.log("Fetched found listing:", foundListing)
 
         if (foundListing) {
           console.log("Found listing:", foundListing)
-          setListing(foundListing)
+          // Get reviews count from API
+          const reviews = await reviewsApi.getListingReviews(id)
+          const reviewCount = reviews.length
+          
+          setListing({
+            ...foundListing,
+            reviewCount: reviewCount
+          })
+          setReviewsCount(reviewCount)
 
           // Set the selected image to the first media item or placeholder
           if (foundListing.media && foundListing.media.length > 0) {
@@ -224,7 +250,6 @@ export default function ListingDetailsPage() {
     }
   }
 
-
   // Open booking modal with default dates
   const openBookingModal = () => {
     // Set default dates if not already set
@@ -240,6 +265,27 @@ export default function ListingDetailsPage() {
     setIsBookingModalOpen(true)
   }
 
+  const handleReviewSubmitted = async () => {
+    setShowReviewForm(false)
+    setReviewsRefreshTrigger((prev) => prev + 1)
+    
+    // Fetch updated reviews count
+    try {
+      const reviews = await reviewsApi.getListingReviews(id!)
+      const newReviewCount = reviews.length
+      setReviewsCount(newReviewCount)
+      
+      // Update the listing state with new review count
+      if (listing) {
+        setListing({
+          ...listing,
+          reviewCount: newReviewCount
+        })
+      }
+    } catch (error) {
+      console.error("Error updating review count:", error)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -430,6 +476,26 @@ export default function ListingDetailsPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Reviews Section */}
+              <div className="space-y-8">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl font-bold flex items-center">
+                      <MessageCircle className="h-6 w-6 mr-3 text-blue-600" />
+                      Reviews & Ratings
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-6">
+                    {/* Reviews List */}
+                    <ReviewsList
+                      listingId={listing.id}
+                      ownerId={listing.owner_id}
+                      refreshTrigger={reviewsRefreshTrigger}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Right column - Booking and info */}
@@ -438,7 +504,9 @@ export default function ListingDetailsPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-baseline mb-4">
-                    <span className="text-2xl font-bold">ETB {new Intl.NumberFormat("am-ET").format(listing.price)}</span>
+                    <span className="text-2xl font-bold">
+                      ETB {new Intl.NumberFormat("am-ET").format(listing.price)}
+                    </span>
                     <span className="text-gray-600 ml-1">/month</span>
                   </div>
 
@@ -462,7 +530,7 @@ export default function ListingDetailsPage() {
                           <Button className="w-full" onClick={openBookingModal}>
                             Book Now
                           </Button>
-                        ): (
+                        ) : (
                           <Button variant="outline" className="w-full" disabled>
                             Booking Unavailable
                           </Button>
@@ -489,16 +557,16 @@ export default function ListingDetailsPage() {
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
                       </Button>
-                       <ReportButton 
-                          reportedId={listing.owner_id || ""}
-                          listingId={listing.id}
-                          size="sm"
-                          variant="ghost"
-                          className="flex items-center"
-                        >
-                          <Flag className="h-4 w-4 mr-1" />
-                            Report
-                        </ReportButton>
+                      <ReportButton
+                        reportedId={listing.owner_id || ""}
+                        listingId={listing.id}
+                        size="sm"
+                        variant="ghost"
+                        className="flex items-center"
+                      >
+                        <Flag className="h-4 w-4 mr-1" />
+                        Report
+                      </ReportButton>
                     </div>
                   </div>
                 </CardContent>

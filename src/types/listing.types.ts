@@ -134,6 +134,7 @@ export interface Booking {
 export interface Review {
   id: string
   listing_id: string
+  reviewer?: User
   reviewer_id: string
   reviewed_id: string
   rating: number

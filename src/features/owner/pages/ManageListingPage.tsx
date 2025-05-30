@@ -19,41 +19,41 @@ import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
 
 // Mock data for demonstration
-const mockReviews: Review[] = [
-  {
-    id: "1",
-    listing_id: "listing-1",
-    reviewer_id: "user-1",
-    reviewed_id: "owner-1",
-    rating: 5,
-    description:
-      "Amazing property! Clean, well-maintained, and exactly as described. The owner was very responsive and helpful throughout our stay.",
-    created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    listing_id: "listing-1",
-    reviewer_id: "user-2",
-    reviewed_id: "owner-1",
-    rating: 4,
-    description:
-      "Great location and comfortable space. Minor issues with WiFi but overall a pleasant experience. Would recommend!",
-    created_at: "2024-01-10T14:20:00Z",
-    updated_at: "2024-01-10T14:20:00Z",
-  },
-  {
-    id: "3",
-    listing_id: "listing-1",
-    reviewer_id: "user-3",
-    reviewed_id: "owner-1",
-    rating: 5,
-    description:
-      "Perfect for our family vacation. The property had everything we needed and more. Excellent communication from the owner.",
-    created_at: "2024-01-05T09:15:00Z",
-    updated_at: "2024-01-05T09:15:00Z",
-  },
-]
+// const mockReviews: Review[] = [
+//   {
+//     id: "1",
+//     listing_id: "listing-1",
+//     reviewer_id: "user-1",
+//     reviewed_id: "owner-1",
+//     rating: 5,
+//     description:
+//       "Amazing property! Clean, well-maintained, and exactly as described. The owner was very responsive and helpful throughout our stay.",
+//     created_at: "2024-01-15T10:30:00Z",
+//     updated_at: "2024-01-15T10:30:00Z",
+//   },
+//   {
+//     id: "2",
+//     listing_id: "listing-1",
+//     reviewer_id: "user-2",
+//     reviewed_id: "owner-1",
+//     rating: 4,
+//     description:
+//       "Great location and comfortable space. Minor issues with WiFi but overall a pleasant experience. Would recommend!",
+//     created_at: "2024-01-10T14:20:00Z",
+//     updated_at: "2024-01-10T14:20:00Z",
+//   },
+//   {
+//     id: "3",
+//     listing_id: "listing-1",
+//     reviewer_id: "user-3",
+//     reviewed_id: "owner-1",
+//     rating: 5,
+//     description:
+//       "Perfect for our family vacation. The property had everything we needed and more. Excellent communication from the owner.",
+//     created_at: "2024-01-05T09:15:00Z",
+//     updated_at: "2024-01-05T09:15:00Z",
+//   },
+// ]
 
 // const mockBookings: Booking[] = [
 //   {
@@ -125,7 +125,7 @@ const ManageListingPage: React.FC = () => {
   const { toast } = useToast()
 
   const [listing, setListing] = useState<FeaturedListing | null>(null)
-  const [reviews, setReviews] = useState<Review[]>(mockReviews)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -147,6 +147,9 @@ const ManageListingPage: React.FC = () => {
       const bookings = await ownerApi.getListingBookings(id)
       setBookings(bookings)
       
+      const reviewlisting = await ownerApi.getListingReviews(id)
+      setReviews(reviewlisting)
+
     } catch (error) {
       console.error("Error fetching listing data:", error)
       toast({
@@ -221,7 +224,7 @@ const ManageListingPage: React.FC = () => {
   }
 
   const averageRating =
-    reviews.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0
+    reviews?.length > 0 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length : 0
 
   const pendingBookings = bookings.filter((booking) => booking.status === "pending").length
   const totalRevenue = bookings

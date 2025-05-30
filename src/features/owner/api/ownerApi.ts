@@ -3,6 +3,8 @@ import apiClient from "../../../api/client"
 import { convertApiListingToFeaturedListing, publicAxiosInstance, type ApiListingResponse, type FeaturedListing } from "../../../api/publicApi"
 // import type { export Booking } from "./fakeOwnerApi"
 import type { Booking } from "@/types/listing.types"
+import { get } from "lodash"
+import type { Review } from "@/types/listing.types"
 
 
 export interface CreateListingPayload {
@@ -148,15 +150,6 @@ export const ownerApi = {
     }
   },
   
-  // Get owner bookings
-  // getOwnerBookings: async (ownerId: string) => {
-  //   try {
-  //     const response = await apiClient.get(`/owners/${ownerId}/bookings`)
-  //     return response.data
-  //   } catch (error) {
-  //     throw error
-  //   }
-  // },
 
   //GET Booking history of a Listing /listings/{id}/bookings which can also be filtered by status
   getListingBookings: async (listingId: string): Promise<Booking[]> => {
@@ -205,6 +198,29 @@ export const ownerApi = {
       throw error;
     }
   },
+
+
+  //  REVIEW API ENDPOINTS
+  getListingReviews: async (listingId: string): Promise<Review[]> => {
+    try {
+      const response = await publicAxiosInstance.get<Review[]>(`/listings/${listingId}/reviews`)
+      return response.data
+    } catch (error) {
+      console.error("Error fetching listing reviews:", error)
+      throw error
+    }
+  },
+
+  deleteListing: async (listingId: string): Promise<void> => {
+    try {
+      const response = await publicAxiosInstance.delete(`/listings/${listingId}`)
+      console.log("Listing deleted successfully:", response.data)
+      return response.data
+    } catch (error) {
+      console.error("Error deleting review:", error)
+      throw error
+    }
+  }
 
   // get Listing booking (not implemented yet)
   // getListingBookings: async (listingId: string): Promise<string[]> => {
