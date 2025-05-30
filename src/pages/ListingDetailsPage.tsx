@@ -33,7 +33,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { publicApi, type Booking } from "../api/publicApi"
+import { publicApi, type Booking, type FeaturedListing } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { Badge } from "../components/ui/badge"
@@ -84,7 +84,7 @@ interface BookingResponse {
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [listing, setListing] = useState<Listing | null>(null)
+  const [listing, setListing] = useState<FeaturedListing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -396,7 +396,7 @@ export default function ListingDetailsPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
-              {images.slice(0, 4).map((image, index) => (
+              {images.slice(0, 2).map((image, index) => (
                 <div
                   key={index}
                   className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${selectedImage === image ? "ring-2 ring-blue-500" : ""}`}
@@ -413,10 +413,10 @@ export default function ListingDetailsPage() {
                 </div>
               ))}
 
-              {images?.length > 4 && (
+              {images?.length > 3 && (
                 <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
                   <img
-                    src={images[4] || "/placeholder.svg"}
+                    src={images[3] || "/placeholder.svg"}
                     alt={`${listing.title} - image 5`}
                     className="w-full h-full object-cover opacity-70"
                     onError={(e) => {
@@ -424,7 +424,7 @@ export default function ListingDetailsPage() {
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium">
-                    +{images.length - 4} more
+                    +{images.length - 2} more
                   </div>
                 </div>
               )}
@@ -515,8 +515,8 @@ export default function ListingDetailsPage() {
                     <div className="flex items-center text-gray-700 mb-2">
                       <CalendarIcon className="h-4 w-4 mr-2 text-blue-600" />
                       <div>
-                        <div>From: {formatDate(listing.availability_start)}</div>
-                        <div>To: {formatDate(listing.availability_end)}</div>
+                        <div>From: {formatDate(listing.availability?.startDate)}</div>
+                        <div>To: {formatDate(listing.availability?.endDate)}</div>
                       </div>
                     </div>
                   </div>

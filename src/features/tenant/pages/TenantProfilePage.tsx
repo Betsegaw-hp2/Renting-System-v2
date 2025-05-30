@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { updateEmail } from "@/features/auth/api/authApi"
 import { userApi, type UpdatePasswordPayload, type UpdateUserInfoPayload } from "@/features/auth/api/userApi"
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
@@ -187,7 +186,6 @@ const TenantProfilePage = () => {
       const payload: UpdateUserInfoPayload = {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
-        email: personalInfo.email,
         username: personalInfo.username,
       }
 
@@ -457,10 +455,6 @@ const TenantProfilePage = () => {
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea id="bio" placeholder="Tell us a little about yourself" className="resize-none" />
-                    </div>
                   </CardContent>
                   <CardFooter>
                     <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
@@ -477,7 +471,7 @@ const TenantProfilePage = () => {
                   <CardTitle>Email Address</CardTitle>
                   <CardDescription>Update your email address</CardDescription>
                 </CardHeader>
-                 <form onSubmit={handleUpdateEmail}>
+                 <form onSubmit={() => console.log("Update Email! not implemented")}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">New Email Address</Label>
