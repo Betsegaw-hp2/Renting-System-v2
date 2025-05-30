@@ -90,6 +90,17 @@ export const adminApi = {
     }
   },
 
+  deleteUser: async (id: string): Promise<void> => {
+    try {
+      const response = await apiClient.delete(`/users/${id}`)
+      console.log(`User ${id} deleted successfully`, response.data)
+      return
+    } catch (error) {
+      console.error(`Error deleting user ${id}:`, error)
+      throw error
+    }
+  },
+
   approveUser: async (id: string) => {
     try {
       // The endpoint is GET /users/{id}/approve as per the spec

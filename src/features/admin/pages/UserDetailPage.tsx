@@ -1,5 +1,6 @@
 "use client"
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, CheckCircle, Clock, Mail, ShieldCheck, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom"; // Assuming react-router-dom for useParams and Link
@@ -98,7 +99,42 @@ export default function UserDetailPage() {
   if (loadingUser || loadingKyc) {
     return (
       <AdminLayout>
-        <div className="p-6">Loading user details...</div>
+        <div className="p-4 md:p-6 space-y-6">
+          {/* Back Button Skeleton */}
+          <Skeleton className="h-9 w-32 rounded-md" />
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* User Profile Card Skeleton */}
+            <Card className="md:col-span-1">
+              <CardHeader className="items-center">
+          <Skeleton className="h-24 w-24 rounded-full mb-4" />
+          <Skeleton className="h-6 w-3/4 rounded mb-2" />
+          <Skeleton className="h-4 w-1/2 rounded mb-4" />
+              </CardHeader>
+              <CardContent className="space-y-3 mt-4">
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-3/4 rounded" />
+          <Skeleton className="h-4 w-5/6 rounded" />
+              </CardContent>
+            </Card>
+
+            {/* KYC Card Skeleton */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+          <Skeleton className="h-6 w-1/3 rounded mb-2" />
+          <Skeleton className="h-4 w-1/2 rounded mb-6" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+          <Skeleton className="h-4 w-1/4 rounded" />
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-full rounded" />
+          <Skeleton className="h-4 w-3/4 rounded" />
+          <Skeleton className="mt-6 h-10 w-1/3 rounded" />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </AdminLayout>
     )
   }
@@ -106,7 +142,20 @@ export default function UserDetailPage() {
   if (!user) {
     return (
       <AdminLayout>
-        <div className="p-6">User not found.</div>
+        <div className="p-6 flex flex-col items-center justify-center h-full">
+          <UserCircle className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Oops! User Not Found</h2>
+          <p className="text-muted-foreground text-center">
+            We couldn't find the user you're looking for. <br />
+            Perhaps they've wandered off or the ID is incorrect.
+          </p>
+          <Button variant="outline" size="sm" asChild className="mt-6">
+            <Link to="/admin/users">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Users List
+            </Link>
+          </Button>
+        </div>
       </AdminLayout>
     )
   }
