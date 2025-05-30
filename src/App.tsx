@@ -10,8 +10,6 @@ import { fetchCurrentUser } from "./features/auth/slices/authSlice"
 import { NotificationsProvider } from "./features/notifications/components/NotificationProvider"
 import Routes from "./routes"
 import { store, type AppDispatch, type RootState } from "./store"
-import { ToastContainer } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>()
@@ -31,7 +29,6 @@ function AppContent() {
             <Toaster />
           </NotificationsProvider>
         </UserProvider>
-        <ToastContainer position="top-right" autoClose={3000} />
     </ThemeProvider>
   )
 }
