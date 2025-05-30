@@ -344,9 +344,9 @@ const ManageListingPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-5 w-5" />
-                Reviews ({reviews.length})
+                Reviews ({reviews?.length ?? 0})
               </CardTitle>
-              {reviews.length > 0 && (
+              {reviews && reviews.length > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }, (_, index) => (
@@ -360,7 +360,7 @@ const ManageListingPage: React.FC = () => {
               )}
             </CardHeader>
             <CardContent>
-              <ReviewsSection reviews={reviews} isLoading={false} />
+              <ReviewsSection reviews={reviews ?? []} isLoading={false} />
             </CardContent>
           </Card>
         </div>

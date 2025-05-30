@@ -28,6 +28,12 @@ export interface SearchFilters {
     endDate?: Date
   }
   useMockApi: boolean
+  minPrice?: number
+  maxPrice?: number
+  city?: string
+  tags?: string[]
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 // Predefined date ranges
@@ -42,6 +48,30 @@ const DATE_RANGES = [
   { label: "Next 90 days", value: "next90days" },
 ]
 
+// Predefined sorting options
+const SORT_OPTIONS = [
+  { label: "Price: Low to High", value: "price_asc" },
+  { label: "Price: High to Low", value: "price_desc" },
+  { label: "Newest First", value: "created_at_desc" },
+  { label: "Oldest First", value: "created_at_asc" },
+  { label: "Rating: High to Low", value: "rating_desc" },
+  { label: "Rating: Low to High", value: "rating_asc" },
+]
+
+// Predefined tags
+const AVAILABLE_TAGS = [
+  "Pet Friendly",
+  "Furnished",
+  "Parking",
+  "Gym",
+  "Pool",
+  "Air Conditioning",
+  "Balcony",
+  "Garden",
+  "Security",
+  "Elevator",
+]
+
 export function SearchFilters({ onSearch, className, showAdvanced = false, initialValues }: SearchFiltersProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
@@ -51,6 +81,13 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
   const [useMockApi, setUseMockApi] = useState(true)
   const [showFilters, setShowFilters] = useState(showAdvanced)
   const [error, setError] = useState<string | null>(null)
+  
+  // New state variables for additional filters
+  const [minPrice, setMinPrice] = useState<string>("")
+  const [maxPrice, setMaxPrice] = useState<string>("")
+  const [city, setCity] = useState<string>("")
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<string>("")
 
   useEffect(() => {
     async function fetchCategories() {
@@ -80,6 +117,11 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
           : "any"
       )
       setUseMockApi(initialValues.useMockApi !== undefined ? initialValues.useMockApi : true)
+      setMinPrice(initialValues.minPrice?.toString() || "")
+      setMaxPrice(initialValues.maxPrice?.toString() || "")
+      setCity(initialValues.city || "")
+      setSelectedTags(initialValues.tags || [])
+      setSortBy(initialValues.sortBy || "")
     } else {
       // Only load from localStorage if NOT on the landing page
       if (pathname !== "/") {
@@ -91,6 +133,11 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
             setCategory(parsedFilters.category || "")
             setDateRangeValue(parsedFilters.dateRange?.value || "any")
             setUseMockApi(parsedFilters.useMockApi !== undefined ? parsedFilters.useMockApi : true)
+            setMinPrice(parsedFilters.minPrice?.toString() || "")
+            setMaxPrice(parsedFilters.maxPrice?.toString() || "")
+            setCity(parsedFilters.city || "")
+            setSelectedTags(parsedFilters.tags || [])
+            setSortBy(parsedFilters.sortBy || "")
           } catch (error) {
             console.error("Error parsing saved filters:", error)
           }
@@ -101,6 +148,11 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         setCategory("")
         setDateRangeValue("any")
         setUseMockApi(true)
+        setMinPrice("")
+        setMaxPrice("")
+        setCity("")
+        setSelectedTags([])
+        setSortBy("")
       }
     }
   }, [initialValues])
@@ -164,22 +216,38 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
     }
   }
 
-  // Update the handleSearch function to always use real API
+  // Handle tag selection
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    )
+  }
+
+  // Update the handleSearch function
   const handleSearch = () => {
-    // Clear any previous errors
     setError(null)
-
-    // Create filters object
     const dateRange = getDateRangeFromValue(dateRangeValue)
-
+    const [sortField, sortOrder] = sortBy.split('_') as [string, 'asc' | 'desc']
+    const minPriceValue = minPrice ? parseFloat(minPrice) : undefined
+    const maxPriceValue = maxPrice ? parseFloat(maxPrice) : undefined
+    if (minPriceValue && maxPriceValue && minPriceValue > maxPriceValue) {
+      setError("Minimum price cannot be greater than maximum price")
+      return
+    }
     const filters: SearchFilters = {
       query: searchQuery,
       category: category,
       dateRange: dateRange,
-      useMockApi: false, // Always use real API
+      useMockApi: false,
+      minPrice: minPriceValue,
+      maxPrice: maxPriceValue,
+      city: city || undefined,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      sortBy: sortField,
+      sortOrder: sortOrder,
     }
-
-    // Save filters to localStorage
     localStorage.setItem(
       "searchFilters",
       JSON.stringify({
@@ -187,8 +255,6 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         dateRange: { ...dateRange, value: dateRangeValue },
       }),
     )
-
-    // If onSearch prop is provided, call it with the filters
     if (onSearch) {
       try {
         onSearch(filters)
@@ -197,22 +263,40 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         console.error("Search error:", error)
       }
     }
-
-    // Otherwise, navigate to search results page with query parameters
     const queryParams = new URLSearchParams()
-    if (searchQuery) queryParams.append("query", searchQuery)
+    if (searchQuery) queryParams.append("search", searchQuery)
     if (category) queryParams.append("category", category)
-    if (dateRangeValue !== "any") queryParams.append("dateRange", dateRangeValue)
-    queryParams.append("mock", "false") // Always use real API
-
+    if (dateRangeValue !== "any") queryParams.append("since", dateRangeValue)
+    if (minPriceValue !== undefined) queryParams.append("min_price", minPriceValue.toString())
+    if (maxPriceValue !== undefined) queryParams.append("max_price", maxPriceValue.toString())
+    if (city) queryParams.append("city", city)
+    if (selectedTags.length > 0) {
+      selectedTags.forEach(tag => queryParams.append("tags", tag))
+    }
+    if (sortBy && sortField) {
+      const sortParam = `${sortField},${sortOrder}`
+      queryParams.append("sort", sortParam)
+    }
+    queryParams.append("mock", "false")
     navigate(`/browse?${queryParams.toString()}`)
-
-    // Reset form fields immediately after search (before navigating)
-    setSearchQuery("")
-    setCategory("")
-    setDateRangeValue("any")
   }
 
+  // Add price validation on input change
+  const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setMinPrice(value)
+      setError(null)
+    }
+  }
+
+  const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setMaxPrice(value)
+      setError(null)
+    }
+  }
 
   return (
     <div className={cn("container mx-auto rounded-xl border bg-white p-6 shadow-md z-20 relative", className)}>
@@ -270,7 +354,7 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
 
         {/* Additional Filters - Collapsible */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
             {/* Category Dropdown */}
             <div>
               <Label htmlFor="category" className="text-sm font-medium mb-1 block">
@@ -291,6 +375,51 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
               </Select>
             </div>
 
+            {/* City Input */}
+            <div>
+              <Label htmlFor="city" className="text-sm font-medium mb-1 block">
+                City
+              </Label>
+              <Input
+                id="city"
+                placeholder="Enter city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+
+            {/* Price Range */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="minPrice" className="text-sm font-medium mb-1 block">
+                  Min Price
+                </Label>
+                <Input
+                  id="minPrice"
+                  type="number"
+                  placeholder="Min"
+                  value={minPrice}
+                  onChange={handleMinPriceChange}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxPrice" className="text-sm font-medium mb-1 block">
+                  Max Price
+                </Label>
+                <Input
+                  id="maxPrice"
+                  type="number"
+                  placeholder="Max"
+                  value={maxPrice}
+                  onChange={handleMaxPriceChange}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
             {/* Date Range Dropdown */}
             <div>
               <Label htmlFor="date-range" className="text-sm font-medium mb-1 block">
@@ -308,6 +437,43 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Sort By Dropdown */}
+            <div>
+              <Label htmlFor="sort-by" className="text-sm font-medium mb-1 block">
+                Sort By
+              </Label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger id="sort-by">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tags */}
+            <div className="md:col-span-2 lg:col-span-3">
+              <Label className="text-sm font-medium mb-2 block">Tags</Label>
+              <div className="flex flex-wrap gap-2">
+                {AVAILABLE_TAGS.map((tag) => (
+                  <Button
+                    key={tag}
+                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleTagToggle(tag)}
+                    className="text-sm"
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         )}

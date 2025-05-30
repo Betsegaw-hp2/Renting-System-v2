@@ -120,26 +120,44 @@ export default function ListingDetailsPage() {
         const foundListing = await publicApi.getListingById(id)
         console.log("Fetched found listing:", foundListing)
 
-        if (foundListing) {
-          console.log("Found listing:", foundListing)
-          // Get reviews count from API
-          const reviews = await reviewsApi.getListingReviews(id)
-          const reviewCount = reviews.length
-          
-          setListing({
-            ...foundListing,
-            reviewCount: reviewCount
-          })
-          setReviewsCount(reviewCount)
-
-          // Set the selected image to the first media item or placeholder
-          if (foundListing.media && foundListing.media.length > 0) {
-            setSelectedImage(foundListing.media[0].media_url)
-          } else {
-            setSelectedImage("https://picsum.photos/200/300")
-          }
-        } else {
+        if (!foundListing) {
           setError("Listing not found")
+          setIsLoading(false)
+          return
+        }
+
+        // Get reviews count from API
+        let reviewCount = 0
+        try {
+          const reviews = await reviewsApi.getListingReviews(id)
+          reviewCount = reviews?.length || 0
+        } catch (reviewError) {
+          console.error("Error fetching reviews:", reviewError)
+          // Don't set error state here, just use 0 as review count
+        }
+        
+        setListing({
+          ...foundListing,
+          reviewCount: reviewCount,
+          // Ensure these fields have default values if null
+          media: foundListing.media || [],
+          tags: foundListing.tags || [],
+          features: foundListing.features || {
+            guests: 0,
+            bedrooms: 0,
+            bathrooms: 0,
+            area: 0
+          },
+          rating: foundListing.rating || 0,
+          views_count: foundListing.views_count || 0
+        })
+        setReviewsCount(reviewCount)
+
+        // Set the selected image to the first media item or placeholder
+        if (foundListing.media && foundListing.media.length > 0) {
+          setSelectedImage(foundListing.media[0].media_url)
+        } else {
+          setSelectedImage("/placeholder.svg")
         }
       } catch (err) {
         console.error("Error fetching listing:", err)
@@ -152,11 +170,13 @@ export default function ListingDetailsPage() {
     fetchListing()
   }, [id])
 
-  // Format dates
-  const formatDate = (dateString?: string) => {
+  // Format dates with null check
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "Not specified"
     try {
-      return new Date(dateString).toLocaleDateString("en-US", {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return "Invalid date"
+      return date.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -166,25 +186,26 @@ export default function ListingDetailsPage() {
     }
   }
 
-  // Get location string
+  // Get location string with null checks
   const getLocationString = () => {
-    if (listing?.city && listing?.region) {
-      return `${listing.city}, ${listing.region}${listing.country ? `, ${listing.country}` : ""}`
-    }
-    return "Location not specified"
+    const parts = []
+    if (listing?.city) parts.push(listing.city)
+    if (listing?.region) parts.push(listing.region)
+    if (listing?.country) parts.push(listing.country)
+    return parts.length > 0 ? parts.join(", ") : "Location not specified"
   }
 
-  // Get images array
+  // Get images array with null check
   const getImages = () => {
-    if (listing?.media && listing.media.length > 0) {
-      return listing.media.map((item) => item.media_url)
+    if (listing?.media && Array.isArray(listing.media) && listing.media.length > 0) {
+      return listing.media.map((item) => item.media_url || "/placeholder.svg")
     }
-    return ["https://picsum.photos/200/300"]
+    return ["/placeholder.svg"]
   }
 
-  // Calculate total amount based on selected dates
+  // Calculate total amount with null checks
   const calculateTotalAmount = () => {
-    if (!startDate || !endDate || !listing) return 0
+    if (!startDate || !endDate || !listing?.price) return 0
 
     const days = differenceInDays(endDate, startDate)
     if (days <= 0) return 0
@@ -199,7 +220,7 @@ export default function ListingDetailsPage() {
     return Math.round(baseAmount * 100) / 100
   }
 
-  // Handle booking submission
+  // Handle booking submission with null checks
   const handleBooking = async () => {
     if (!startDate || !endDate || !listing || !id) {
       setBookingError("Please select valid dates")
@@ -225,7 +246,6 @@ export default function ListingDetailsPage() {
       const bookingResponse = await tenantApi.createBooking(id, payload)
       console.log("Booking Response:", bookingResponse)
 
-      // Check if bookingResponse.booking and bookingResponse.booking.id exist
       if (bookingResponse?.booking?.id) {
         setBookingId(bookingResponse.booking.id)
         setShowIllustration(true)
@@ -381,51 +401,51 @@ export default function ListingDetailsPage() {
             </div>
           </div>
 
-          {/* Image gallery */}
+          {/* Image gallery with null checks */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="md:col-span-2">
               <div className="rounded-lg overflow-hidden bg-white border h-[400px]">
                 <img
-                  src={selectedImage || images[0]}
-                  alt={listing.title}
+                  src={selectedImage || "/placeholder.svg"}
+                  alt={listing?.title || "Listing image"}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = "/placeholder.svg?height=600&width=800"
+                    e.currentTarget.src = "/placeholder.svg"
                   }}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-1 gap-4">
-              {images.slice(0, 4).map((image, index) => (
+              {getImages().slice(0, 4).map((image, index) => (
                 <div
                   key={index}
                   className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${selectedImage === image ? "ring-2 ring-blue-500" : ""}`}
                   onClick={() => setSelectedImage(image)}
                 >
                   <img
-                    src={image || "/placeholder.svg"}
-                    alt={`${listing.title} - image ${index + 1}`}
+                    src={image}
+                    alt={`${listing?.title || "Listing"} - image ${index + 1}`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                      e.currentTarget.src = "/placeholder.svg"
                     }}
                   />
                 </div>
               ))}
 
-              {images.length > 4 && (
+              {getImages().length > 4 && (
                 <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
                   <img
-                    src={images[4] || "/placeholder.svg"}
-                    alt={`${listing.title} - image 5`}
+                    src={getImages()[4] || "/placeholder.svg"}
+                    alt={`${listing?.title || "Listing"} - image 5`}
                     className="w-full h-full object-cover opacity-70"
                     onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                      e.currentTarget.src = "/placeholder.svg"
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium">
-                    +{images.length - 4} more
+                    +{getImages().length - 4} more
                   </div>
                 </div>
               )}
