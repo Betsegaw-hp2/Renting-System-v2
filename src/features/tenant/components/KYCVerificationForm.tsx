@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { userApi } from "@/features/auth/api/userApi";
 import { useToast } from "@/hooks/useToast";
-import { Check, FileImage, Loader2, User, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react"; // Added useRef
+import { AlertCircle, Check, FileImage, Info, Loader2, User, X } from "lucide-react"; // Added Info, AlertCircle
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
+import type { UserKYC } from "../../../types/user.types"; // Import UserKYC
 
 const CaptureState = {
   IDLE: 0,
@@ -19,7 +20,7 @@ const CaptureState = {
 } as const;
 type CaptureState = (typeof CaptureState)[keyof typeof CaptureState];
 
-interface KycResponse {
+interface KycResponse { // This is for the uploadKycDocuments response
   backside: string
   created_at: string
   face: string
@@ -42,7 +43,12 @@ const KycVerificationForm: React.FC = () => {
   const [backPreviewUrl, setBackPreviewUrl] = useState<string | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [kycResponse, setKycResponse] = useState<KycResponse | null>(null)
+  const [kycResponse, setKycResponse] = useState<KycResponse | null>(null) // For submission response
+
+  // New states for fetching and displaying existing KYC
+  const [fetchedKycData, setFetchedKycData] = useState<UserKYC | null>(null);
+  const [isFetchingKyc, setIsFetchingKyc] = useState(true);
+  const [displayMode, setDisplayMode] = useState<'loading' | 'verified' | 'pending_review' | 'show_form' | 'fetch_error'>('loading');
 
   const frontIdInputRef = useRef<HTMLInputElement>(null);
   const backIdInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +70,45 @@ const KycVerificationForm: React.FC = () => {
   useEffect(() => {
     backPreviewUrlRef.current = backPreviewUrl;
   }, [backPreviewUrl]);
+
+  // Effect to fetch existing KYC status and data
+  useEffect(() => {
+    if (user?.id) {
+      setIsFetchingKyc(true);
+      setDisplayMode('loading');
+      setErrorMessage(null);
+
+      if (user.kyc_verified) {
+        setDisplayMode('verified');
+        setIsFetchingKyc(false);
+        // Optionally fetch and set KYC data if needed for verified view
+        // userApi.getUserKyc(user.id).then(setFetchedKycData).catch(console.error);
+      } else {
+        userApi.getUserKyc(user.id)
+          .then(data => {
+            setFetchedKycData(data);
+            if (data) {
+              setDisplayMode('pending_review');
+            } else {
+              setDisplayMode('show_form'); // No KYC on file, show form
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching KYC info:", error);
+            setErrorMessage("Failed to fetch your KYC information. Please try again later.");
+            setDisplayMode('fetch_error');
+          })
+          .finally(() => {
+            setIsFetchingKyc(false);
+          });
+      }
+    } else {
+      // User not available or not logged in
+      setErrorMessage("User information not available. Please log in.");
+      setDisplayMode('fetch_error');
+      setIsFetchingKyc(false);
+    }
+  }, [user?.id, user?.kyc_verified]); // Removed toast from deps as it's not directly used here
 
   // Effect to cleanup object URLs on component unmount
   useEffect(() => {
@@ -125,12 +170,35 @@ const KycVerificationForm: React.FC = () => {
     if (backPreviewUrl) URL.revokeObjectURL(backPreviewUrl)
     setBacksideImage(image)
     setBackPreviewUrl(URL.createObjectURL(image))
-    setCaptureState(CaptureState.IDLE) // Ensure state returns to IDLE
+    setCaptureState(CaptureState.IDLE) 
     toast({
       title: "Back image captured",
       description: "Back side of your ID has been captured successfully.",
     })
   }, [backPreviewUrl, toast])
+
+  const handleResubmitKyc = useCallback(() => {
+    if (facePreviewUrlRef.current) URL.revokeObjectURL(facePreviewUrlRef.current);
+    if (frontPreviewUrlRef.current) URL.revokeObjectURL(frontPreviewUrlRef.current);
+    if (backPreviewUrlRef.current) URL.revokeObjectURL(backPreviewUrlRef.current);
+
+    setFaceImage(null);
+    setFrontsideImage(null);
+    setBacksideImage(null);
+    setFacePreviewUrl(null);
+    setFrontPreviewUrl(null);
+    setBackPreviewUrl(null);
+    
+    facePreviewUrlRef.current = null;
+    frontPreviewUrlRef.current = null;
+    backPreviewUrlRef.current = null;
+
+    setKycResponse(null); 
+    setErrorMessage(null);
+    setCaptureState(CaptureState.IDLE);
+    setDisplayMode('show_form');
+  }, []);
+
 
   // Handler for native file inputs (ID front/back)
   const handleIdFileSelected = useCallback((
@@ -226,7 +294,24 @@ const KycVerificationForm: React.FC = () => {
     setCaptureState(CaptureState.IDLE)
     setErrorMessage(null)
     setKycResponse(null)
-  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl])
+    // After successful submission or error, re-evaluate KYC status
+    if (user?.id) {
+      setIsFetchingKyc(true);
+      userApi.getUserKyc(user.id)
+        .then(data => {
+          setFetchedKycData(data);
+          if (user.kyc_verified) {
+            setDisplayMode('verified');
+          } else if (data) {
+            setDisplayMode('pending_review');
+          } else {
+            setDisplayMode('show_form');
+          }
+        })
+        .catch(() => setDisplayMode('fetch_error'))
+        .finally(() => setIsFetchingKyc(false));
+    }
+  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl, user?.id, user?.kyc_verified])
 
   // Render based on current state
   const renderContent = () => {
@@ -471,6 +556,111 @@ const KycVerificationForm: React.FC = () => {
     }
   }
 
+  // Main conditional rendering based on displayMode
+  if (displayMode === 'loading') {
+    return (
+      <Card className="w-full max-w-2xl mx-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-[300px]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading KYC Status...</p>
+      </Card>
+    );
+  }
+
+  if (displayMode === 'fetch_error') {
+    return (
+      <Card className="w-full max-w-2xl mx-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-[300px] bg-red-50 border-red-200">
+        <AlertCircle className="h-12 w-12 text-red-600 mb-4" /> {/* Changed from X to AlertCircle for fetch error */}
+        <h3 className="text-lg font-medium text-red-700">Error Fetching KYC</h3>
+        <p className="text-red-600 text-center mt-2">
+          {errorMessage || "An error occurred while fetching your KYC information."}
+        </p>
+        <Button variant="outline" onClick={() => { // Re-trigger fetch logic
+          if (user?.id) {
+            setIsFetchingKyc(true);
+            setDisplayMode('loading');
+            if (user.kyc_verified) {
+              setDisplayMode('verified');
+              setIsFetchingKyc(false);
+            } else {
+              userApi.getUserKyc(user.id)
+                .then(data => {
+                  setFetchedKycData(data);
+                  if (data) {
+                    setDisplayMode('pending_review');
+                  } else {
+                    setDisplayMode('show_form');
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error fetching KYC info:", error);
+                  setErrorMessage("Failed to fetch your KYC information. Please try again later.");
+                  setDisplayMode('fetch_error');
+                })
+                .finally(() => {
+                  setIsFetchingKyc(false);
+                });
+            }
+          }
+        }} className="mt-4">Try Again</Button>
+      </Card>
+    );
+  }
+
+  if (displayMode === 'verified') {
+    return (
+      <Card className="w-full max-w-2xl mx-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-[300px] bg-green-50 border-green-200">
+        <Check className="h-12 w-12 text-green-600 mb-4" />
+        <h3 className="text-lg font-medium text-green-700">KYC Verified</h3>
+        <p className="text-muted-foreground text-center mt-2">
+          Your identity has been successfully verified. No further action is needed.
+        </p>
+      </Card>
+    );
+  }
+
+  if (displayMode === 'pending_review') {
+    return (
+      <Card className="w-full max-w-2xl mx-auto p-6 md:p-8">
+        <div className="flex flex-col items-center text-center">
+          <Info className="h-12 w-12 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-medium text-yellow-700">KYC Pending Review</h3>
+          <p className="text-muted-foreground mt-2 mb-4">
+            Your submitted documents are currently under review. We will notify you once the process is complete.
+          </p>
+        </div>
+        {fetchedKycData && (
+          <div className="my-6">
+            <h4 className="text-md font-medium mb-3 text-center">Submitted Images:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[{ src: fetchedKycData.face, alt: "Selfie", label: "Selfie" },
+                { src: fetchedKycData.frontside, alt: "Front side of ID", label: "Front Side" },
+                { src: fetchedKycData.backside, alt: "Back side of ID", label: "Back Side" },
+              ].map((img, index) => (
+                <div key={index} className="relative">
+                  <div className="aspect-[4/3] rounded-md overflow-hidden border bg-gray-100">
+                    <img
+                      src={img.src || "/placeholder.svg"}
+                      alt={img.alt}
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                    />
+                  </div>
+                  <p className="text-sm font-medium mt-2 text-center">{img.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex justify-center mt-6">
+          <Button onClick={handleResubmitKyc} variant="outline">
+            Resubmit KYC Documents
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // displayMode === 'show_form'
   return (
     <Card className="w-full max-w-2xl mx-auto p-6 md:p-8">
       {/* Hidden file inputs are rendered here to persist them in the DOM */}
@@ -481,7 +671,7 @@ const KycVerificationForm: React.FC = () => {
         ref={frontIdInputRef}
         style={{ display: 'none' }}
         onChange={(e) => handleIdFileSelected(e, 'front')}
-        key="front-id-input" // Added key for stability, though ref should suffice
+        key="front-id-input" 
       />
       <input
         type="file"
@@ -490,9 +680,9 @@ const KycVerificationForm: React.FC = () => {
         ref={backIdInputRef}
         style={{ display: 'none' }}
         onChange={(e) => handleIdFileSelected(e, 'back')}
-        key="back-id-input" // Added key for stability
+        key="back-id-input" 
       />
-      {renderContent()}
+      {renderContent()} {/* This will render the form based on captureState */}
     </Card>
   );
 };
