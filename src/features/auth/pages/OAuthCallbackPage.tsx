@@ -22,7 +22,8 @@ export function OAuthCallbackPage() {
       try {
         const queryParams = new URLSearchParams(search)
         const directToken = queryParams.get("token")
-
+        
+        console.log("OAuthCallbackPage: provider =", provider, "search =", search, "directToken =", directToken)
         if (directToken) {
           // Case 1: Token is directly in the URL query parameters
           setAuthToken(directToken, true)
@@ -49,7 +50,7 @@ export function OAuthCallbackPage() {
           }
         }
       } catch (err: any) {
-        console.error("OAuth callback failed", err)
+        console.error("OAuth callback failed: ", err)
         const errorMessage =  err.response?.data.message || err.message || "An unknown error occurred during OAuth callback."
         navigate("/login", { replace: true, state: { error: errorMessage } })
       }

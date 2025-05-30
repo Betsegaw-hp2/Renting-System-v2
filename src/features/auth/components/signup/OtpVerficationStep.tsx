@@ -37,7 +37,7 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
     setError(null)
     try {
       const newToken = await verifyEmail({ user_id: userId, otp_code: otp })
-      setAuthToken(newToken, false)
+      // setAuthToken(newToken, false)
       onVerified()
     } catch (e: any) {
       setError(e.message ?? "Invalid code")

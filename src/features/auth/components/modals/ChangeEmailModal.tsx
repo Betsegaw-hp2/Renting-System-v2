@@ -26,7 +26,7 @@ export function ChangeEmailModal({
       await updateEmail(userId, newEmail.trim())
       onEmailUpdated(newEmail.trim())
     } catch (e: any) {
-      setError(e.message ?? "Failed to update email")
+      setError((e.response?.data?.message || e.message) ?? "Failed to update email")
     } finally {
       setLoading(false)
     }
