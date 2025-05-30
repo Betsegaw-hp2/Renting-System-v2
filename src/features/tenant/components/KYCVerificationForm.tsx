@@ -44,23 +44,44 @@ const KycVerificationForm: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [kycResponse, setKycResponse] = useState<KycResponse | null>(null)
 
-  // Refs for native camera input elements
   const frontIdInputRef = useRef<HTMLInputElement>(null);
   const backIdInputRef = useRef<HTMLInputElement>(null);
 
-  // Effect to cleanup object URLs
+  // Refs to store the latest preview URLs for unmount cleanup
+  const facePreviewUrlRef = useRef<string | null>(null);
+  const frontPreviewUrlRef = useRef<string | null>(null);
+  const backPreviewUrlRef = useRef<string | null>(null);
+
+  // Update refs whenever the preview URLs change
   useEffect(() => {
-    // This cleanup function will run if the component unmounts or if the dependencies change.
-    // It ensures that any active object URLs are revoked.
-    const urlsToClean = [facePreviewUrl, frontPreviewUrl, backPreviewUrl];
+    facePreviewUrlRef.current = facePreviewUrl;
+  }, [facePreviewUrl]);
+
+  useEffect(() => {
+    frontPreviewUrlRef.current = frontPreviewUrl;
+  }, [frontPreviewUrl]);
+
+  useEffect(() => {
+    backPreviewUrlRef.current = backPreviewUrl;
+  }, [backPreviewUrl]);
+
+  // Effect to cleanup object URLs on component unmount
+  useEffect(() => {
     return () => {
-      urlsToClean.forEach(url => {
-        if (url) {
-          URL.revokeObjectURL(url);
-        }
-      });
+      if (facePreviewUrlRef.current) {
+        URL.revokeObjectURL(facePreviewUrlRef.current);
+        console.log('Revoked facePreviewUrl on unmount:', facePreviewUrlRef.current);
+      }
+      if (frontPreviewUrlRef.current) {
+        URL.revokeObjectURL(frontPreviewUrlRef.current);
+        console.log('Revoked frontPreviewUrl on unmount:', frontPreviewUrlRef.current);
+      }
+      if (backPreviewUrlRef.current) {
+        URL.revokeObjectURL(backPreviewUrlRef.current);
+        console.log('Revoked backPreviewUrl on unmount:', backPreviewUrlRef.current);
+      }
     };
-  }, [facePreviewUrl, frontPreviewUrl, backPreviewUrl]);
+  }, []); // Empty dependency array ensures this cleanup runs only on unmount.
 
   // Start capturing face image
   const startCapturingFace = useCallback(() => {
@@ -156,16 +177,23 @@ const KycVerificationForm: React.FC = () => {
     } else {
       setErrorMessage(null);
     }
+    console.log("Transitioning to REVIEW state. Current previews:", { facePreviewUrl: facePreviewUrlRef.current, frontPreviewUrl: frontPreviewUrlRef.current, backPreviewUrl: backPreviewUrlRef.current });
     setCaptureState(CaptureState.REVIEW)
-  }, [faceImage, frontsideImage, backsideImage])
+  }, [faceImage, frontsideImage, backsideImage]);
 
   const submitKyc = useCallback(async () => {
     if (!faceImage || !frontsideImage || !backsideImage || !user?.id) {
-      setErrorMessage("Your selfie and both front and back images of your ID are required.")
-      return
+      setErrorMessage("All three images are required for KYC submission.");
+      return;
     }
     setCaptureState(CaptureState.SUBMITTING)
     setErrorMessage(null)
+
+    console.log("Submitting KYC documents...");
+    console.log("Face Image details:", { name: faceImage.name, size: faceImage.size, type: faceImage.type });
+    console.log("Front ID Image details:", { name: frontsideImage.name, size: frontsideImage.size, type: frontsideImage.type });
+    console.log("Back ID Image details:", { name: backsideImage.name, size: backsideImage.size, type: backsideImage.type });
+
     try {
       const response = await userApi.uploadKycDocuments(user.id, faceImage, frontsideImage, backsideImage)
       setKycResponse(response)
@@ -215,6 +243,8 @@ const KycVerificationForm: React.FC = () => {
         )
 
       case CaptureState.REVIEW:
+        console.log("Rendering REVIEW state. Previews:", { facePreviewUrl, frontPreviewUrl, backPreviewUrl });
+        console.log("Image files:", { faceImage, frontsideImage, backsideImage });
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-center">Review Your Images</h3>
@@ -335,24 +365,7 @@ const KycVerificationForm: React.FC = () => {
       default: // IDLE state
         return (
           <div className="space-y-6">
-            {/* Hidden file inputs for native camera access */}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment" // For back camera, typically used for IDs
-              ref={frontIdInputRef}
-              style={{ display: 'none' }}
-              onChange={(e) => handleIdFileSelected(e, 'front')}
-            />
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment" // For back camera
-              ref={backIdInputRef}
-              style={{ display: 'none' }}
-              onChange={(e) => handleIdFileSelected(e, 'back')}
-            />
-
+            {/* Hidden file inputs are now rendered outside this switch, at the component root */}
             <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
               <h3 className="font-medium text-amber-800">Verification Required</h3>
               <p className="text-sm text-amber-700 mt-1">
@@ -458,7 +471,30 @@ const KycVerificationForm: React.FC = () => {
     }
   }
 
-  return <div className="max-w-2xl mx-auto">{renderContent()}</div>
-}
+  return (
+    <Card className="w-full max-w-2xl mx-auto p-6 md:p-8">
+      {/* Hidden file inputs are rendered here to persist them in the DOM */}
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        ref={frontIdInputRef}
+        style={{ display: 'none' }}
+        onChange={(e) => handleIdFileSelected(e, 'front')}
+        key="front-id-input" // Added key for stability, though ref should suffice
+      />
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        ref={backIdInputRef}
+        style={{ display: 'none' }}
+        onChange={(e) => handleIdFileSelected(e, 'back')}
+        key="back-id-input" // Added key for stability
+      />
+      {renderContent()}
+    </Card>
+  );
+};
 
-export default KycVerificationForm
+export default KycVerificationForm;
