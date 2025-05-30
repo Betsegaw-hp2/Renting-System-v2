@@ -57,24 +57,32 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
 
   // Handle video loaded metadata
   const handleVideoMetadata = () => {
+    // This can still be useful for initial dimension checks if needed,
+    // but isCameraReady will now be set by onPlaying.
+    console.log("Video metadata loaded")
+  }
+
+  // Handle video playing event
+  const handleVideoPlaying = () => {
+    console.log("Video is playing")
     setIsCameraReady(true)
   }
 
   // Initialize camera on component mount
   useEffect(() => {
     async function listDevices() {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      devices.forEach(device => {
-        console.log(`${device.kind}: ${device.label} id = ${device.deviceId}`);
-      });
-    } catch (err) {
-      console.error("Error listing devices:", err);
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        devices.forEach((device) => {
+          console.log(`${device.kind}: ${device.label} id = ${device.deviceId}`)
+        })
+      } catch (err) {
+        console.error("Error listing devices:", err)
+      }
     }
-  }
     listDevices()
 
-    initCamera();
+    initCamera()
 
     // Cleanup function to stop camera stream when component unmounts
     // or when initCamera changes (e.g., due to isFrontCamera changing)
@@ -82,13 +90,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
       // Access the stream directly from the state for cleanup
       // This ensures we're cleaning up the most current stream
       // if the component unmounts while a stream is active.
-      setStream(currentStream => {
+      setStream((currentStream) => {
         if (currentStream) {
-          currentStream.getTracks().forEach((track) => track.stop());
+          currentStream.getTracks().forEach((track) => track.stop())
         }
-        return null; // Set stream to null after stopping
-      });
-    };
+        return null // Set stream to null after stopping
+      })
+    }
   }, [initCamera])
 
   // Switch between front and back camera
@@ -178,7 +186,8 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
           autoPlay
           playsInline
           muted
-          onLoadedMetadata={handleVideoMetadata}
+          onLoadedMetadata={handleVideoMetadata} // Keep for potential metadata use
+          onPlaying={handleVideoPlaying} // Use onPlaying to set isCameraReady
           className={`w-full h-full object-cover ${captureType === "face" && isFrontCamera ? "transform scale-x-[-1]" : ""}`}
         />
 
