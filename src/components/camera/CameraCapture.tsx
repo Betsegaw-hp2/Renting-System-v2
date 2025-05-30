@@ -22,8 +22,9 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
   // Initialize camera
   const initCamera = useCallback(async () => {
     try {
+      // If a stream already exists, stop its tracks before getting a new one.
+      // This is important when switching cameras or re-initializing.
       if (stream) {
-        // Stop previous stream
         stream.getTracks().forEach((track) => track.stop())
       }
 
@@ -52,7 +53,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
       console.error("Error accessing camera:", err)
       setError("Could not access camera. Please ensure you've granted camera permissions.")
     }
-  }, [stream, isFrontCamera])
+  }, [isFrontCamera]) // Removed 'stream' from dependencies
 
   // Handle video loaded metadata
   const handleVideoMetadata = () => {
@@ -73,14 +74,21 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel, capt
   }
     listDevices()
 
-    initCamera()
+    initCamera();
 
     // Cleanup function to stop camera stream when component unmounts
+    // or when initCamera changes (e.g., due to isFrontCamera changing)
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop())
-      }
-    }
+      // Access the stream directly from the state for cleanup
+      // This ensures we're cleaning up the most current stream
+      // if the component unmounts while a stream is active.
+      setStream(currentStream => {
+        if (currentStream) {
+          currentStream.getTracks().forEach((track) => track.stop());
+        }
+        return null; // Set stream to null after stopping
+      });
+    };
   }, [initCamera])
 
   // Switch between front and back camera
