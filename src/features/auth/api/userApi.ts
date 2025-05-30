@@ -44,6 +44,20 @@ export const userApi = {
     }
   },
 
+  // Get user KYC information
+  getUserKyc: async (userId: string) => {
+    try {
+      const response = await apiClient.get(`/users/${userId}/kyc`)
+      return response.data
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null // Return null if KYC not found
+      }
+      console.error(`Error fetching KYC for user ${userId}:`, error)
+      throw error // Re-throw other errors
+    }
+  },
+
   // Upload KYC documents
   uploadKycDocuments: async (userId: string, faceImage: File, frontsideImage: File, backsideImage: File) => {
     try {

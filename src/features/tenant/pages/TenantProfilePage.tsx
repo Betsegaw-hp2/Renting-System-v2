@@ -15,8 +15,8 @@ import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
 import { useToast } from "@/hooks/useToast"
 import type { AppDispatch } from "@/store"
-import type { User } from "@/types/user.types"
-import { AlertTriangle, Calendar, Download, Loader2, MapPin, Star, Upload } from "lucide-react"
+import type { User, UserKYC } from "@/types/user.types"
+import { AlertTriangle, Calendar, CheckCircle, Clock, Download, Loader2, MapPin, Star, Upload, XCircle } from "lucide-react"; // Removed ShieldAlert as it's unused
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
@@ -27,6 +27,8 @@ const TenantProfilePage = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const user: User = useSelector((state: any) => state.auth.user)
+  const [userKyc, setUserKyc] = useState<UserKYC | null>(null); 
+  const [isKycLoading, setIsKycLoading] = useState(false); 
 
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
@@ -56,14 +58,15 @@ const TenantProfilePage = () => {
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
-  const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null) // Commented out as unused
 
   // Fetch user data on component mount
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchUserDataAndKyc = async () => {
       if (!user?.id) return
 
       setIsLoadingProfile(true)
+      setIsKycLoading(true); 
       try {
         const userData = await userApi.getCurrentUser()
         setPersonalInfo({
@@ -72,19 +75,22 @@ const TenantProfilePage = () => {
           email: userData.email || "",
           username: userData.username || "",
         })
-        // log successful fetch
+        const kycData = await userApi.getUserKyc(user.id);
+        setUserKyc(kycData);
+
       } catch (error: any) {
         toast({
-          title: "Error fetching profile",
-          description: error.message || "Failed to load your profile information",
+          title: "Error fetching profile data",
+          description: error.message || "Failed to load your profile or KYC information",
           variant: "destructive",
         })
       } finally {
         setIsLoadingProfile(false)
+        setIsKycLoading(false); 
       }
     }
 
-    fetchUserData()
+    fetchUserDataAndKyc()
   }, [user?.id, toast])
 
   // Handle personal info form changes
@@ -118,7 +124,7 @@ const TenantProfilePage = () => {
   }
 
   // Handle email form changes
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => { // Commented out as unused
     const { value } = e.target
     setEmailForm({ email: value })
     setEmailError(null)
@@ -242,27 +248,21 @@ const TenantProfilePage = () => {
   }
 
   // Handle email form submission
-  const handleUpdateEmail = async (e: React.FormEvent) => {
+  const handleUpdateEmail = async (e: React.FormEvent) => { // Commented out as unused
     e.preventDefault()
     setEmailError(null)
-
     if (!emailForm.email.trim()) {
       setEmailError("Email is required")
       return
     }
-
     if (!/\S+@\S+\.\S+/.test(emailForm.email)) {
       setEmailError("Email is invalid")
       return
     }
-
     setIsUpdatingEmail(true)
     try {
       await updateEmail(user.id, emailForm.email)
-      
-      // Update Redux store with new email
       dispatch(updateUserProfile({ ...user, email: emailForm.email }))
-      
       toast({
         title: "Email updated",
         description: "Your email has been updated successfully. Please check your inbox to verify the new email address.",
@@ -274,7 +274,7 @@ const TenantProfilePage = () => {
     }
   }
 
-  if (isLoadingProfile) {
+  if (isLoadingProfile || isKycLoading) { 
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -309,14 +309,31 @@ const TenantProfilePage = () => {
                   {user?.first_name} {user?.last_name}
                 </h2>
                 <p className="text-muted-foreground">{user?.email}</p>
-                {user?.kyc_verified && (
-                  <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+                
+                {user?.kyc_verified ? (
+                  <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-1" />
                     KYC Verified
                   </Badge>
+                ) : userKyc && userKyc.id ? ( 
+                  <Badge variant="outline" className="mt-2 bg-yellow-50 text-yellow-700 border-yellow-300 flex items-center">
+                    <Clock className="h-4 w-4 mr-1" />
+                    KYC Pending Review
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="mt-2 bg-red-50 text-red-700 border-red-200 flex items-center">
+                    <XCircle className="h-4 w-4 mr-1" />
+                    KYC Unverified
+                  </Badge>
                 )}
-                {user?.is_verified && (
+
+                {user?.is_verified ? (
                   <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
                     Email Verified
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="mt-2 bg-gray-50 text-gray-700 border-gray-200">
+                    Email Not Verified
                   </Badge>
                 )}
               </div>
@@ -460,7 +477,7 @@ const TenantProfilePage = () => {
                   <CardTitle>Email Address</CardTitle>
                   <CardDescription>Update your email address</CardDescription>
                 </CardHeader>
-                <form onSubmit={handleUpdateEmail}>
+                 <form onSubmit={handleUpdateEmail}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">New Email Address</Label>
