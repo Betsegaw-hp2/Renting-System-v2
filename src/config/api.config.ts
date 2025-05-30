@@ -10,6 +10,8 @@ const config = {
 
   // Mock API delay in milliseconds (to simulate network latency)
   mockApiDelay: 500,
+
+  dev: true
 }
 
 export default config

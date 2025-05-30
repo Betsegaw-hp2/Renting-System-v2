@@ -167,6 +167,15 @@ const router = createBrowserRouter([
       </Suspense>
     )
   },
+  // New route for handling direct token redirects:
+  {
+    path: "/auth/callback", // Or any other path you prefer e.g. /handle-token
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <OAuthCallbackPage />
+      </Suspense>
+    )
+  },
 
   // Protected routes
 

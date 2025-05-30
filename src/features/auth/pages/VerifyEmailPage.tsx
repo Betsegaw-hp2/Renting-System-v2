@@ -30,7 +30,7 @@ export function VerifyEmailPage() {
       <OtpVerificationStep
         userId={userId}
         email={email}
-        onVerified={() => navigate("/home")}
+        onVerified={() => navigate("/login", { replace: true, state: { from: location } })}
       />
     </AuthLayout>
   )
