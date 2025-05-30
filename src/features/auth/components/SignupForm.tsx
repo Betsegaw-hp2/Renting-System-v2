@@ -1,10 +1,10 @@
 "use client"
 
-import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, Loader2, User } from "lucide-react"; // Re-added Loader2, ChevronRight remains removed
-import { useState } from "react"; // Added useState
-import { Link } from "react-router-dom"; // Keep Link for the "Already have an account?" section
-import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
-import { Button } from "../../../components/ui/button"
+import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, Loader2, User } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert";
+import { Button } from "../../../components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,20 +12,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../../../components/ui/dialog"; // Added Dialog
-import { Label } from "../../../components/ui/label"; // Added Label
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"; // Added Select
-import { cn } from "../../../lib/utils"
-import { UserRole, UserRole as UserRolesEnum } from "../../../types/user.types"; // Added UserRolesEnum alias
-import { useMultiStepSignup } from "../hooks/useMultiStepSignup"
-import { SIGNUP_STEPS } from "../types/signup.types"
-import { AccountInfoStep } from "./signup/AccountInfoStep"
-import { OtpVerificationStep } from "./signup/OtpVerficationStep"
-import { OwnerDetailsStep } from "./signup/OwnerDetailsStep"
-import { StepIndicator } from "./signup/StepIndicator"
-import { TenantDetailsStep } from "./signup/TenantDetailsStep"
+} from "../../../components/ui/dialog";
+import { Label } from "../../../components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { cn } from "../../../lib/utils";
+import { UserRole, UserRole as UserRolesEnum } from "../../../types/user.types";
+import { useMultiStepSignup } from "../hooks/useMultiStepSignup";
+import { SIGNUP_STEPS } from "../types/signup.types";
+import { AccountInfoStep } from "./signup/AccountInfoStep";
+import { OtpVerificationStep } from "./signup/OtpVerficationStep";
+import { OwnerDetailsStep } from "./signup/OwnerDetailsStep";
+import { StepIndicator } from "./signup/StepIndicator";
+import { TenantDetailsStep } from "./signup/TenantDetailsStep";
 
-const API_BASE = import.meta.env.VITE_API_PROD_BASE_URL // Added API_BASE
+const API_BASE = import.meta.env.VITE_API_PROD_BASE_URL 
 
 export function SignupForm() {
   const {
@@ -50,7 +50,7 @@ export function SignupForm() {
       setShowOauthRoleErrorDialog(true)
       return
     }
-    window.location.href = `${API_BASE}/oauth/${provider}?role=${oauthSelectedRole}&isSignup=true`
+    window.location.href = `${API_BASE}/oauth/${provider}?role=${oauthSelectedRole}`
   }
 
   // Render OTP step exclusively

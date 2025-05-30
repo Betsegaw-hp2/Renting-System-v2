@@ -59,9 +59,25 @@ export function OAuthCallbackPage() {
 
   return (
 	<AuthLayout>
-		<div className="flex h-screen items-center justify-center">
-		<p>Finishing sign-in with {provider}…</p>
-		</div>
+    <div className="flex h-screen flex-col items-center justify-center space-y-8 bg-background p-4 text-center">
+      <div className="relative flex h-20 w-20 items-center justify-center">
+      <div className="absolute h-full w-full animate-spin rounded-full border-4 border-dashed border-primary opacity-75"></div>
+      <div className="h-8 w-8 animate-ping rounded-full bg-primary opacity-75"></div>
+      <div className="absolute h-5 w-5 rounded-full bg-primary"></div>
+      </div>
+
+      <div className="space-y-2">
+      <p className="text-2xl font-bold tracking-tight text-foreground">
+      Authenticating with {provider}...
+      </p>
+      <p className="text-md text-muted-foreground">
+      Please wait while we securely connect your account.
+      </p>
+      <p className="pt-4 text-xs text-muted-foreground/80">
+      This should only take a moment.
+      </p>
+      </div>
+    </div>
 	</AuthLayout>
   )
 }
