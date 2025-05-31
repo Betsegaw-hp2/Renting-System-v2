@@ -33,40 +33,41 @@ export const useLogin = () => {
 
     if (!validateRequired(password)) {
       newErrors.password = "Password is required"
-    }
-
-    setErrors(newErrors)
+    }    setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!validateForm()) {
       return
-    }
+    }    const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
 
-    const resultAction = await dispatch(loginUser({ email, password, remember_me: rememberMe }))
-
-    if (loginUser.fulfilled.match(resultAction)) {
-        try {
-                  const user = unwrapResult(resultAction)
-          if (!user?.is_verified) {
-            return navigate(`/verify-email/${user.id}`)          } else if(user) {
-            const needsTagPrompt = !user.tags || user.tags.length === 0
-            
-            if (needsTagPrompt) {
-              sessionStorage.setItem('triggerTagPromptAfterLogin', 'true')
-              sessionStorage.removeItem('skippedTagPrompt')
-            } else {
-              sessionStorage.removeItem('triggerTagPromptAfterLogin')
-            }
-            
-            navigate("/home")
-            return
+    if (loginUser.fulfilled.match(resultAction)) {      try {
+        const loginResponse = unwrapResult(resultAction)
+        
+        if (!loginResponse?.is_verified) {
+          return navigate(`/verify-email/${loginResponse.id}`)
+        } else if (loginResponse) {
+          const needsTagPrompt = !loginResponse.tags || loginResponse.tags.length === 0
+          
+          if (needsTagPrompt) {
+            sessionStorage.setItem('triggerTagPromptAfterLogin', 'true')
+            sessionStorage.removeItem('skippedTagPrompt')
+          } else {
+            sessionStorage.removeItem('triggerTagPromptAfterLogin')
           }
-        } catch (e) {
-          console.error("Login failed or bad payload:", e)
+          
+          // Wait longer to ensure Redux state is fully updated and propagated
+          setTimeout(() => {
+            navigate("/home")
+          }, 300)
+          return
         }
+      } catch (e) {
+        console.error("Login failed or bad payload:", e)
+      }
     }
   }
 

@@ -9,7 +9,7 @@ const initialState: AuthState = {
   user: null,
   token: getAuthToken() || null,
   is_authenticated: !!getAuthToken(),
-  is_loading: !!getAuthToken(), // Set to true if token exists, indicating an initial load/check will occur
+  is_loading: false, // Don't set loading to true initially - let components trigger the fetch
   error: null,
 }
 
@@ -117,9 +117,10 @@ export const fetchCurrentUser = createAsyncThunk<User,void, { rejectValue: strin
     const user = await authApi.getCurrentUser()
     return user
   } catch (error: any) {
-    // If we get a 401 Unauthorized, remove the token
+    // If we get a 401 Unauthorized, remove the token and include it in error message
     if (error?.response?.status === 401) {
       removeAuthToken()
+      return rejectWithValue("401 Unauthorized - " + getErrorMessage(error))
     }
     return rejectWithValue(getErrorMessage(error))
   }
@@ -197,13 +198,17 @@ const authSlice = createSlice({
       state.is_loading = false
       state.user = action.payload
       state.is_authenticated = true
-    })
-    builder.addCase(fetchCurrentUser.rejected, (state, action) => { // Ensure action is typed if you use action.payload
+    });    builder.addCase(fetchCurrentUser.rejected, (state, action) => {
       state.is_loading = false
-      state.user = null
-      state.token = null // Also clear token on rejection if auth fails
-      state.is_authenticated = false
-      state.error = action.payload as string // Store the error message
+      // Only clear auth state if it's actually an auth error (401)
+      // For other errors (network, 500, etc.), keep the token and let user retry
+      if (action.payload?.includes('401') || action.payload?.includes('Unauthorized')) {
+        state.user = null
+        state.token = null
+        state.is_authenticated = false
+        removeAuthToken()
+      }
+      state.error = action.payload as string
     })
   },
 })

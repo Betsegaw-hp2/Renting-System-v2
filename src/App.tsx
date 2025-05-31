@@ -15,14 +15,16 @@ import { store, type AppDispatch, type RootState } from "./store"
 
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>()
-  const { token, user } = useSelector((s: RootState) => s.auth)
+  const { token, user, is_authenticated } = useSelector((s: RootState) => s.auth)
   const { isTagPromptOpen, handleSaveTags, handleCloseTagPrompt } = useTagManager()
 
   useEffect(() => {
-    if (token && user === null) {
+    // On mount or when token changes, fetch user if we have a token but no user data
+    if (token && is_authenticated && user === null) {
+      console.log("App: Fetching current user - token exists but no user data")
       dispatch(fetchCurrentUser())
     }
-  }, [dispatch, token, user])
+  }, [dispatch, token, is_authenticated, user])
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="rental-theme">

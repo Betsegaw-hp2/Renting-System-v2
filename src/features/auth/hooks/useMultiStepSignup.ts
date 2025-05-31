@@ -114,11 +114,14 @@ export const useMultiStepSignup = () => {  const [currentStep, setCurrentStep] =
   const skipAndCreateAccount = async () => {
     if (!validateAccountStep()) return
     await submitSignup()
-  }
+  };  
   const handleOtpVerified = () => {
     // Set flag to trigger tag prompt after signup verification
     sessionStorage.setItem('triggerTagPromptAfterSignup', 'true')
-    navigate("/home")
+    // Add a small delay to ensure verification process is complete
+    setTimeout(() => {
+      navigate("/home")
+    }, 100)
   }
   return {
     currentStep,
