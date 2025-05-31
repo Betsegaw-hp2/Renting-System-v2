@@ -1,8 +1,8 @@
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TagSelectionModal } from "./TagSelectionModal"
 import type { Tag } from "@/types/tag.types"
+import { useState } from "react"
+import { TagSelectionModal } from "./TagSelectionModal"
 
 export function TagModalTest() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)

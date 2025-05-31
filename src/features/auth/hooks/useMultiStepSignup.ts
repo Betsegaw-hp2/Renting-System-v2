@@ -35,11 +35,9 @@ const initialFormData: SignupFormData = {
   agreeToTerms: false,
 }
 
-export const useMultiStepSignup = () => {
-  const [currentStep, setCurrentStep] = useState<SignupStep>("account")
+export const useMultiStepSignup = () => {  const [currentStep, setCurrentStep] = useState<SignupStep>("account")
   const [formData, setFormData] = useState<SignupFormData>(initialFormData)
   const [errors, setErrors] = useState<Record<string,string>>({})
-  const [registeredUserId, setRegisteredUserId] = useState<string | null>(null)
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { is_loading, error } = useSelector((state: RootState) => state.auth)
@@ -98,10 +96,8 @@ export const useMultiStepSignup = () => {
       navigate(`/verify-email/${userId}`, {
         state: { email: formData.email }
       })
-
-
     } catch (err) {
-      console.error("signup error or unwrapping result failed:", err)
+      console.error("Signup failed:", err)
     }
   }
 
@@ -124,7 +120,6 @@ export const useMultiStepSignup = () => {
     sessionStorage.setItem('triggerTagPromptAfterSignup', 'true')
     navigate("/home")
   }
-
   return {
     currentStep,
     formData,
@@ -137,7 +132,6 @@ export const useMultiStepSignup = () => {
     handleSubmit,
     skipAndCreateAccount,
     handleOtpVerified,
-    registeredUserId,
     setCurrentStep,
   }
 }

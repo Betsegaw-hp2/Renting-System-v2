@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react"
-import { useSelector } from "react-redux"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TagSelectionModal } from "@/components/preferences/TagSelectionModal"
 import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { TagModalTest } from "@/components/preferences/TagModalTest"
-import { useTagManager } from "@/hooks/useTagManager"
+import { TagSelectionModal } from "@/components/preferences/TagSelectionModal"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useUser } from "@/contexts/UserContext"
-import { Tags, RefreshCw, AlertCircle } from "lucide-react"
+import { useTagManager } from "@/hooks/useTagManager"
 import type { RootState } from "@/store"
+import { AlertCircle, RefreshCw, Tags } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useSelector } from "react-redux"
 
 export function TagSystemTestPage() {
   const [showTestModal, setShowTestModal] = useState(false)

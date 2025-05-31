@@ -33,15 +33,12 @@ export function TagSelectionModal({
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
-
-  // Initialize selected tags
   useEffect(() => {
     if (initialSelectedTags?.length > 0) {
       setSelectedTagIds(new Set(initialSelectedTags?.map(tag => tag.id)))
     }
   }, [initialSelectedTags])
 
-  // Fetch available tags when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchTags()
@@ -93,9 +90,7 @@ export function TagSelectionModal({
       setIsSaving(false)
     }
   }
-
   const handleSkip = () => {
-    // Optionally save to session storage that user skipped
     if (showSkipOption) {
       sessionStorage.setItem('skippedTagPrompt', 'true')
     }
@@ -103,14 +98,10 @@ export function TagSelectionModal({
   }
 
   const handleOpenChange = (open: boolean) => {
-    // Profile page (showSkipOption=false): Always allow closing
-    // Signup flow (showSkipOption=true): Only allow closing via Skip button
     if (!open) {
       if (!showSkipOption) {
-        // Profile page - allow closing via X or outside click
         onClose()
       }
-      // Signup flow - don't close via X or outside click, only via Skip/Save buttons
     }
   }
 

@@ -11,9 +11,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { updateEmail } from "@/features/auth/api/authApi"
 import { userApi, type UpdatePasswordPayload, type UpdateUserInfoPayload } from "@/features/auth/api/userApi"
+import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import { ownerApi } from "@/features/owner/api/ownerApi"
 import { useToast } from "@/hooks/useToast"
+import type { AppDispatch } from "@/store"
 import {
   AlertTriangle,
   Building,
@@ -28,11 +31,8 @@ import {
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
-import { updateUserProfile } from "@/features/auth/slices/authSlice"
-import type { AppDispatch } from "@/store"
-import { updateEmail } from "@/features/auth/api/authApi"
 
 const OwnerProfilePage = () => {
   const { toast } = useToast()

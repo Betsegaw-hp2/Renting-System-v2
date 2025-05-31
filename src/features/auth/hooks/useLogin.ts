@@ -51,31 +51,16 @@ export const useLogin = () => {
         try {
                   const user = unwrapResult(resultAction)
           if (!user?.is_verified) {
-            return navigate(`/verify-email/${user.id}`)
-          } else if(user) {
-            console.log("✅ Login successful for user:", {
-              id: user.id,
-              email: user.email,
-              tags: user.tags,
-              tagCount: user.tags?.length || 0
-            })
-            
-            // Check if user needs tag prompt
+            return navigate(`/verify-email/${user.id}`)          } else if(user) {
             const needsTagPrompt = !user.tags || user.tags.length === 0
             
             if (needsTagPrompt) {
-              console.log("🏷️ User has no tags, setting trigger flag for tag prompt")
               sessionStorage.setItem('triggerTagPromptAfterLogin', 'true')
-              // Also clear any existing skip flag to ensure prompt shows
               sessionStorage.removeItem('skippedTagPrompt')
-              sessionStorage.removeItem('lastCheckedUserId')
             } else {
-              console.log("🏷️ User already has tags, no prompt needed:", user.tags)
-              // Ensure no trigger flags are set
               sessionStorage.removeItem('triggerTagPromptAfterLogin')
             }
             
-            // Navigate to home after setting flags
             navigate("/home")
             return
           }

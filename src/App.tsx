@@ -16,7 +16,7 @@ import { store, type AppDispatch, type RootState } from "./store"
 function AppContent() {
   const dispatch = useDispatch<AppDispatch>()
   const { token, user } = useSelector((s: RootState) => s.auth)
-  const { isTagPromptOpen, handleSaveTags, handleCloseTagPrompt, currentUserTags } = useTagManager()
+  const { isTagPromptOpen, handleSaveTags, handleCloseTagPrompt } = useTagManager()
 
   useEffect(() => {
     if (token && user === null) {
@@ -30,12 +30,10 @@ function AppContent() {
         <Routes />
         <Toaster />
         
-        {/* Tag Selection Modal */}
-        <TagSelectionModal
+        {/* Tag Selection Modal */}        <TagSelectionModal
           isOpen={isTagPromptOpen}
           onClose={handleCloseTagPrompt}
           onSave={handleSaveTags}
-          initialSelectedTags={currentUserTags}
           title="Choose Your Interests"
           description="Select tags that match your interests to get personalized recommendations for rentals."
           showSkipOption={true}

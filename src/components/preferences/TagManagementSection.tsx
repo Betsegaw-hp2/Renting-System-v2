@@ -21,13 +21,11 @@ export function TagManagementSection() {
       fetchUserTags()
     }
   }, [currentUser])
-
   const fetchUserTags = async () => {
     if (!currentUser) return
     
     try {
       setIsLoading(true)
-      // Get tags from user object if available, otherwise fetch from API
       if (currentUser.tags && currentUser.tags?.length > 0) {
         setUserTags(currentUser.tags)
       } else {

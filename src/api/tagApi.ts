@@ -1,8 +1,7 @@
 import apiClient from "@/api/client"
 import config from "@/config/api.config"
-import type { Tag, CreateUserTagsPayload } from "@/types/tag.types"
+import type { CreateUserTagsPayload, Tag } from "@/types/tag.types"
 
-// Mock data for development since the tags endpoint isn't implemented yet
 const mockTags: Tag[] = [
   { id: "1", name: "Electronics" },
   { id: "2", name: "Furniture" },
@@ -22,30 +21,23 @@ const mockTags: Tag[] = [
 ]
 
 export const tagApi = {
-  // Get all available tags
   getAllTags: async (): Promise<Tag[]> => {
     try {
       if (config.useMockApi) {
-        console.log("Using mock API for tags")
         return mockTags
       }
 
-      // Once the backend endpoint is implemented, use this:
       const response = await apiClient.get<Tag[]>("/tags")
       return response.data
     } catch (error) {
       console.error("Error fetching tags:", error)
-      // Fallback to mock data if API fails
       return mockTags
     }
   },
 
-  // Get user's selected tags
   getUserTags: async (userId: string): Promise<Tag[]> => {
     try {
       if (config.useMockApi) {
-        console.log("Using mock API for user tags")
-        // Return empty array for mock since users won't have tags initially
         return []
       }
 
@@ -56,13 +48,9 @@ export const tagApi = {
       return []
     }
   },
-
-  // Update user's selected tags
   updateUserTags: async (userId: string, tagIds: string[]): Promise<void> => {
     try {
       if (config.useMockApi) {
-        console.log("Mock API: Updating user tags for user", userId, "with tags:", tagIds)
-        // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500))
         return
       }
@@ -75,11 +63,9 @@ export const tagApi = {
     }
   },
 
-  // Remove a specific tag from user
   removeUserTag: async (userId: string, tagId: string): Promise<void> => {
     try {
       if (config.useMockApi) {
-        console.log("Mock API: Removing tag", tagId, "from user", userId)
         await new Promise(resolve => setTimeout(resolve, 300))
         return
       }
