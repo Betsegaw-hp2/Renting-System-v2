@@ -10,8 +10,40 @@ export function useTagManager() {
   const [isTagPromptOpen, setIsTagPromptOpen] = useState(false)
   const [hasCheckedTags, setHasCheckedTags] = useState(false)
   const [lastUserId, setLastUserId] = useState<string | null>(null)
-  
-  // Reset checking state when user changes
+  const [currentPath, setCurrentPath] = useState(window.location.pathname)
+
+  // Update current path when it changes
+  useEffect(() => {
+    const updatePath = () => setCurrentPath(window.location.pathname)
+    window.addEventListener('popstate', updatePath)
+    // Also listen for programmatic navigation
+    const originalPushState = window.history.pushState
+    const originalReplaceState = window.history.replaceState
+    
+    window.history.pushState = function(...args) {
+      originalPushState.apply(this, args)
+      updatePath()
+    }
+    
+    window.history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args)
+      updatePath()
+    }
+    
+    return () => {
+      window.removeEventListener('popstate', updatePath)
+      window.history.pushState = originalPushState
+      window.history.replaceState = originalReplaceState
+    }
+  }, [])
+
+  // Define routes where tag prompt should NOT appear
+  const isOnVerificationPage = currentPath.includes('/verify-email') || 
+                               currentPath.includes('/email-verification') ||
+                               currentPath === '/verify' ||
+                               currentPath.includes('/oauth') ||
+                               currentPath.includes('/auth/callback')
+    // Reset checking state when user changes
   useEffect(() => {
     const userToCheck = currentUser || authUser
     const currentUserId = userToCheck?.id || null
@@ -21,22 +53,37 @@ export function useTagManager() {
       setLastUserId(currentUserId)
     }
   }, [currentUser, authUser, lastUserId])
-    useEffect(() => {
+    // Reset checking state when leaving verification pages
+  useEffect(() => {
+    if (!isOnVerificationPage) {
+      setHasCheckedTags(false)
+    }
+  }, [isOnVerificationPage])
+  
+  useEffect(() => {
+    // Don't show tag prompt on verification pages
+    if (isOnVerificationPage) return
+    
     // Wait for authentication state to stabilize and user data to be loaded
     if (!is_authenticated || userLoading || authLoading) return
     
     const userToCheck = currentUser || authUser
-    if (!userToCheck?.id || hasCheckedTags) return    // Check immediately if we have session storage flags set
+    if (!userToCheck?.id || hasCheckedTags) return
+
+    // Check immediately if we have session storage flags set
     const shouldTriggerAfterLogin = sessionStorage.getItem('triggerTagPromptAfterLogin') === 'true'
     const shouldTriggerAfterSignup = sessionStorage.getItem('triggerTagPromptAfterSignup') === 'true'
-      if (shouldTriggerAfterLogin || shouldTriggerAfterSignup) {
+    
+    if (shouldTriggerAfterLogin || shouldTriggerAfterSignup) {
       sessionStorage.removeItem('triggerTagPromptAfterLogin')
       sessionStorage.removeItem('triggerTagPromptAfterSignup')
       sessionStorage.removeItem('skippedTagPrompt')
       setIsTagPromptOpen(true)
       setHasCheckedTags(true)
       return
-    }    // For normal tag checking, add a small delay to ensure navigation is complete
+    }
+
+    // For normal tag checking, add a small delay to ensure navigation is complete
     const timer = setTimeout(() => {
       const shouldShow = shouldShowTagPrompt(userToCheck)
       if (shouldShow) {
@@ -46,7 +93,7 @@ export function useTagManager() {
     }, 200) // Increased delay slightly
 
     return () => clearTimeout(timer)
-  }, [authUser, currentUser, hasCheckedTags, userLoading, authLoading, is_authenticated])
+  }, [authUser, currentUser, hasCheckedTags, userLoading, authLoading, is_authenticated, isOnVerificationPage, currentPath])
 
   const shouldShowTagPrompt = (user: any): boolean => {
     if (sessionStorage.getItem('skippedTagPrompt') === 'true') {
