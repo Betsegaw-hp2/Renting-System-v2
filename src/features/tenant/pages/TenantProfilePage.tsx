@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/Header"
+import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -584,8 +585,17 @@ const TenantProfilePage = () => {
                   <CardTitle>Preferences</CardTitle>
                   <CardDescription>Manage your account preferences</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
+                <CardContent className="space-y-6">                  <div>
+                    <h3 className="text-lg font-medium mb-4">Interest Tags</h3>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Manage your interests to get personalized rental recommendations.
+                      </p>
+                      <TagManagementSection />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t">
                     <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">

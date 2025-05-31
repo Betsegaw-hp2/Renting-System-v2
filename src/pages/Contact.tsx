@@ -2,13 +2,13 @@
 
 import type React from "react"
 
+import { CheckCircle } from "lucide-react"
 import { useState } from "react"
-import { Header } from "../components/layout/Header"
 import { Footer } from "../components/layout/Footer"
+import { Header } from "../components/layout/Header"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { CheckCircle } from "lucide-react"
 
 export default function ContactPage() {
   const [name, setName] = useState("")
@@ -133,7 +133,7 @@ export default function ContactPage() {
                         <p className="text-sm text-gray-500">
                           123 Rental Street, Suite 100
                           <br />
-                          San Francisco, CA 94103
+                          Addis Abeba, Bole
                         </p>
                       </div>
                     </div>

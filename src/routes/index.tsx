@@ -44,6 +44,7 @@ const HomePage = lazy(() => import("../pages/HomePage"))
 const BrowsePage = lazy(() => import("../pages/BrowsePage"))
 const AboutPage = lazy(() => import("../pages/About"))
 const ContactPage = lazy(() => import("../pages/Contact"))
+const TagSystemTestPage = lazy(() => import("../pages/TagSystemTestPage"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
 // We'll need to create a ListingDetailsPage component
 // const ListingDetailsPage = lazy(() => import("../pages/ListingDetails"))
@@ -102,12 +103,19 @@ const router = createBrowserRouter([
         <AboutPage />
       </Suspense>
     ),
-  },
-  {
+  },  {
     path: "/contact",
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <ContactPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/tag-system-test",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <TagSystemTestPage />
       </Suspense>
     ),
   },

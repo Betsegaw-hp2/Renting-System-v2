@@ -298,7 +298,7 @@ export default function HomePage() {
                   </svg>
                 </Link>
                 <Link
-                  to="/list-property"
+                  to="/home"
                   className="inline-flex h-12 items-center justify-center rounded-md border border-blue-200 bg-white/80 backdrop-blur-sm px-8 text-sm font-medium text-blue-600 shadow-sm transition-all duration-300 hover:scale-105 hover:bg-blue-50 hover:shadow-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   List Your Property

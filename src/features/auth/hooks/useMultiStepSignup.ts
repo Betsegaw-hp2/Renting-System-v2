@@ -119,8 +119,9 @@ export const useMultiStepSignup = () => {
     if (!validateAccountStep()) return
     await submitSignup()
   }
-
   const handleOtpVerified = () => {
+    // Set flag to trigger tag prompt after signup verification
+    sessionStorage.setItem('triggerTagPromptAfterSignup', 'true')
     navigate("/home")
   }
 

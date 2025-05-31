@@ -38,7 +38,6 @@ export const useLogin = () => {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -50,11 +49,35 @@ export const useLogin = () => {
 
     if (loginUser.fulfilled.match(resultAction)) {
         try {
-          const user = unwrapResult(resultAction)
+                  const user = unwrapResult(resultAction)
           if (!user?.is_verified) {
             return navigate(`/verify-email/${user.id}`)
           } else if(user) {
-            return navigate("/home")
+            console.log("✅ Login successful for user:", {
+              id: user.id,
+              email: user.email,
+              tags: user.tags,
+              tagCount: user.tags?.length || 0
+            })
+            
+            // Check if user needs tag prompt
+            const needsTagPrompt = !user.tags || user.tags.length === 0
+            
+            if (needsTagPrompt) {
+              console.log("🏷️ User has no tags, setting trigger flag for tag prompt")
+              sessionStorage.setItem('triggerTagPromptAfterLogin', 'true')
+              // Also clear any existing skip flag to ensure prompt shows
+              sessionStorage.removeItem('skippedTagPrompt')
+              sessionStorage.removeItem('lastCheckedUserId')
+            } else {
+              console.log("🏷️ User already has tags, no prompt needed:", user.tags)
+              // Ensure no trigger flags are set
+              sessionStorage.removeItem('triggerTagPromptAfterLogin')
+            }
+            
+            // Navigate to home after setting flags
+            navigate("/home")
+            return
           }
         } catch (e) {
           console.error("Login failed or bad payload:", e)

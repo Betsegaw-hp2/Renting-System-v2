@@ -2,6 +2,7 @@
 
 import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
+import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,7 +22,6 @@ import {
   Download,
   Home,
   Loader2,
-  MapPin,
   Star,
   Upload,
   Users,
@@ -39,17 +39,12 @@ const OwnerProfilePage = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const user = useSelector((state: any) => state.auth.user)
-
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
     first_name: "",
     last_name: "",
     email: "",
     username: "",
-    company_name: "",
-    business_address: "",
-    tax_id: "",
-    phone_number: "",
   })
 
   // Password form state
@@ -91,17 +86,12 @@ const OwnerProfilePage = () => {
       if (!user?.id) return
 
       setIsLoadingProfile(true)
-      try {
-        const userData = await userApi.getCurrentUser()
+      try {        const userData = await userApi.getCurrentUser()
         setPersonalInfo({
           first_name: userData.first_name || "",
           last_name: userData.last_name || "",
           email: userData.email || "",
           username: userData.username || "",
-          company_name: userData.company_name || "",
-          business_address: userData.business_address || "",
-          tax_id: userData.tax_id || "",
-          phone_number: userData.phone_number || "",
         })
       } catch (error: any) {
         toast({
@@ -216,14 +206,8 @@ const OwnerProfilePage = () => {
       errors.email = "Email is required"
     } else if (!/\S+@\S+\.\S+/.test(personalInfo.email)) {
       errors.email = "Email is invalid"
-    }
-
-    if (!personalInfo.username.trim()) {
+    }    if (!personalInfo.username.trim()) {
       errors.username = "Username is required"
-    }
-
-    if (!personalInfo.phone_number.trim()) {
-      errors.phone_number = "Phone number is required"
     }
 
     setPersonalInfoErrors(errors)
@@ -257,11 +241,9 @@ const OwnerProfilePage = () => {
     if (!validatePersonalInfo()) return
 
     setIsUpdatingProfile(true)
-    try {
-      const payload: UpdateUserInfoPayload = {
+    try {      const payload: UpdateUserInfoPayload = {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
-        email: personalInfo.email,
         username: personalInfo.username,
       }
 
@@ -389,10 +371,8 @@ const OwnerProfilePage = () => {
                     {user?.first_name} {user?.last_name}
                   </h2>
                   <p className="text-muted-foreground">{user?.email}</p>
-                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
-                    Property Owner
+                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">                  Property Owner
                   </Badge>
-                  {personalInfo.company_name && <p className="text-sm font-medium mt-2">{personalInfo.company_name}</p>}
                 </div>
 
                 <div className="mt-8 space-y-4">
@@ -402,17 +382,7 @@ const OwnerProfilePage = () => {
                       <p className="text-sm font-medium">Member Since</p>
                       <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
                     </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Business Location</p>
-                      <p className="text-sm text-muted-foreground">{personalInfo.business_address || "Not specified"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
+                  </div>                  <div className="flex items-center">
                     <Star className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Owner Rating</p>
@@ -492,12 +462,10 @@ const OwnerProfilePage = () => {
           </div>
 
           {/* Main content */}
-          <div className="md:col-span-2">
-            <Tabs defaultValue="personal-info">
-              <TabsList className="grid grid-cols-3 mb-8">
+          <div className="md:col-span-2">            <Tabs defaultValue="personal-info">              <TabsList className="grid grid-cols-3 mb-8">
                 <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-                <TabsTrigger value="business-info">Business Info</TabsTrigger>
                 <TabsTrigger value="properties">My Properties</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
 
               {/* Personal Info Tab */}
@@ -550,23 +518,7 @@ const OwnerProfilePage = () => {
                         {personalInfoErrors.username && (
                           <p className="text-sm text-red-500">{personalInfoErrors.username}</p>
                         )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone_number">Phone Number</Label>
-                        <Input
-                          id="phone_number"
-                          name="phone_number"
-                          value={personalInfo.phone_number}
-                          onChange={handlePersonalInfoChange}
-                          className={personalInfoErrors.phone_number ? "border-red-500" : ""}
-                        />
-                        {personalInfoErrors.phone_number && (
-                          <p className="text-sm text-red-500">{personalInfoErrors.phone_number}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
+                      </div>                      <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea id="bio" placeholder="Tell us a little about yourself" className="resize-none" />
                       </div>
@@ -652,99 +604,7 @@ const OwnerProfilePage = () => {
                       </Button>
                     </CardFooter>
                   </form>
-                </Card>
-              </TabsContent>
-
-              {/* Business Info Tab */}
-              <TabsContent value="business-info">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Business Information</CardTitle>
-                    <CardDescription>Update your business details</CardDescription>
-                  </CardHeader>
-                  <form onSubmit={handleUpdatePersonalInfo}>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company_name">Company Name</Label>
-                        <Input
-                          id="company_name"
-                          name="company_name"
-                          value={personalInfo.company_name}
-                          onChange={handlePersonalInfoChange}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="business_address">Business Address</Label>
-                        <Textarea
-                          id="business_address"
-                          name="business_address"
-                          value={personalInfo.business_address}
-                          onChange={handlePersonalInfoChange}
-                          className="resize-none"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tax_id">Tax ID / Business Registration Number</Label>
-                        <Input
-                          id="tax_id"
-                          name="tax_id"
-                          value={personalInfo.tax_id}
-                          onChange={handlePersonalInfoChange}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="business_description">Business Description</Label>
-                        <Textarea
-                          id="business_description"
-                          placeholder="Tell us about your business"
-                          className="resize-none"
-                        />
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
-                        {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Business Info
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </Card>
-
-                <Card className="mt-8">
-                  <CardHeader>
-                    <CardTitle>Payment Information</CardTitle>
-                    <CardDescription>Update your payment details</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="bank_name">Bank Name</Label>
-                      <Input id="bank_name" placeholder="Enter your bank name" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="account_number">Account Number</Label>
-                        <Input id="account_number" placeholder="Enter your account number" type="password" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="routing_number">Routing Number</Label>
-                        <Input id="routing_number" placeholder="Enter your routing number" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="account_holder">Account Holder Name</Label>
-                      <Input id="account_holder" placeholder="Enter the account holder name" />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="ml-auto">Save Payment Info</Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
+                </Card>              </TabsContent>
 
               {/* Properties Tab */}
               <TabsContent value="properties">
@@ -839,6 +699,100 @@ const OwnerProfilePage = () => {
                       </p>
                     </div>
                     <Button onClick={() => navigate("/add-property")}>Add New Property</Button>
+                  </CardFooter>                </Card>
+              </TabsContent>
+
+              {/* Preferences Tab */}
+              <TabsContent value="preferences">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Preferences</CardTitle>
+                    <CardDescription>Manage your account preferences</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Interest Tags</h3>
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Manage your interests to help tenants find your properties more easily.
+                        </p>
+                        <TagManagementSection />
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t">
+                      <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Email Notifications</p>
+                            <p className="text-sm text-muted-foreground">Receive updates about bookings and inquiries</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="email-notifications" className="sr-only">
+                              Email Notifications
+                            </Label>
+                            <input type="checkbox" id="email-notifications" className="toggle" defaultChecked />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">SMS Notifications</p>
+                            <p className="text-sm text-muted-foreground">Receive urgent updates via SMS</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="sms-notifications" className="sr-only">
+                              SMS Notifications
+                            </Label>
+                            <input type="checkbox" id="sms-notifications" className="toggle" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Marketing Communications</p>
+                            <p className="text-sm text-muted-foreground">
+                              Receive updates about new features and promotional opportunities
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="marketing-communications" className="sr-only">
+                              Marketing Communications
+                            </Label>
+                            <input type="checkbox" id="marketing-communications" className="toggle" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t">
+                      <h3 className="text-lg font-medium mb-4">Business Settings</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="currency">Default Currency</Label>
+                          <select id="currency" className="w-full border rounded-md p-2">
+                            <option value="usd">USD ($)</option>
+                            <option value="eur">EUR (€)</option>
+                            <option value="gbp">GBP (£)</option>
+                            <option value="cad">CAD ($)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="timezone">Timezone</Label>
+                          <select id="timezone" className="w-full border rounded-md p-2">
+                            <option value="utc">UTC (Coordinated Universal Time)</option>
+                            <option value="est">EST (Eastern Standard Time)</option>
+                            <option value="cst">CST (Central Standard Time)</option>
+                            <option value="pst">PST (Pacific Standard Time)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button className="ml-auto">Save Preferences</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
