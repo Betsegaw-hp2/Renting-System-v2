@@ -133,7 +133,15 @@ const authSlice = createSlice({
       state.error = null
     },
     updateUserProfile: (state, action: PayloadAction<User>) => {
-      state.user = action.payload
+      // Merge the updated data with existing user data
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          ...action.payload,
+        }
+      } else {
+        state.user = action.payload
+      }
     }
   },
   extraReducers: (builder) => {

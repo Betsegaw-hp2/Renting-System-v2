@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { userApi, type UpdatePasswordPayload, type UpdateUserInfoPayload } from "@/features/auth/api/userApi"
+import { updateEmail } from "@/features/auth/api/authApi"
+import {
+  userApi,
+  type UpdateUserPayload,
+  type UpdatePasswordPayload,
+  type CreatePaymentDetailPayload,
+  type PaymentDetail,
+} from "@/features/auth/api/userApi"
 import { ownerApi } from "@/features/owner/api/ownerApi"
 import { useToast } from "@/hooks/useToast"
 import {
@@ -21,10 +28,14 @@ import {
   Download,
   Home,
   Loader2,
-  MapPin,
   Star,
   Upload,
   Users,
+  CreditCard,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Info,
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
@@ -32,7 +43,8 @@ import { useSelector, useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import type { AppDispatch } from "@/store"
-import { updateEmail } from "@/features/auth/api/authApi"
+import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
+import type { UserKYC } from "@/types/user.types"
 
 const OwnerProfilePage = () => {
   const { toast } = useToast()
@@ -46,9 +58,6 @@ const OwnerProfilePage = () => {
     last_name: "",
     email: "",
     username: "",
-    company_name: "",
-    business_address: "",
-    tax_id: "",
     phone_number: "",
   })
 
@@ -56,6 +65,19 @@ const OwnerProfilePage = () => {
   const [passwordForm, setPasswordForm] = useState({
     password: "",
     confirmPassword: "",
+  })
+
+  // Email form state
+  const [emailForm, setEmailForm] = useState({
+    email: "",
+  })
+
+  // Payment details state
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetail | null>(null)
+  const [paymentForm, setPaymentForm] = useState({
+    bank_name: "",
+    account_number: "",
+    account_name: "",
   })
 
   // Properties state
@@ -68,22 +90,24 @@ const OwnerProfilePage = () => {
     totalRevenue: 0,
   })
 
+  // KYC state
+  const [userKyc, setUserKyc] = useState<UserKYC | null>(null)
+  const [isKycLoading, setIsKycLoading] = useState(false)
+
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isLoadingProperties, setIsLoadingProperties] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false)
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false)
 
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
-
-  // Email form state
-  const [emailForm, setEmailForm] = useState({
-    email: "",
-  })
-  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -91,18 +115,42 @@ const OwnerProfilePage = () => {
       if (!user?.id) return
 
       setIsLoadingProfile(true)
+      setIsKycLoading(true)
+      setIsLoadingPayment(true)
       try {
         const userData = await userApi.getCurrentUser()
+        if (!userData) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch user data",
+            variant: "destructive",
+          })
+          return
+        }
         setPersonalInfo({
           first_name: userData.first_name || "",
           last_name: userData.last_name || "",
           email: userData.email || "",
           username: userData.username || "",
-          company_name: userData.company_name || "",
-          business_address: userData.business_address || "",
-          tax_id: userData.tax_id || "",
           phone_number: userData.phone_number || "",
         })
+        // Update Redux store with the latest user data
+        dispatch(updateUserProfile(userData))
+
+        // Fetch KYC data
+        const kycData = await userApi.getUserKyc(user.id)
+        setUserKyc(kycData)
+
+        // Fetch payment details
+        const paymentData = await userApi.getUserPaymentDetails(user.id)
+        setPaymentDetails(paymentData[0] || null)
+        if (paymentData[0]) {
+          setPaymentForm({
+            bank_name: paymentData[0].bank_name,
+            account_number: paymentData[0].account_number,
+            account_name: paymentData[0].account_name,
+          })
+        }
       } catch (error: any) {
         toast({
           title: "Error fetching profile",
@@ -111,11 +159,13 @@ const OwnerProfilePage = () => {
         })
       } finally {
         setIsLoadingProfile(false)
+        setIsKycLoading(false)
+        setIsLoadingPayment(false)
       }
     }
 
     fetchUserData()
-  }, [user?.id, toast])
+  }, [user?.id, toast, dispatch])
 
   // Fetch owner properties
   useEffect(() => {
@@ -200,6 +250,21 @@ const OwnerProfilePage = () => {
     setEmailError(null)
   }
 
+  // Handle payment form changes
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPaymentForm((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error for this field if it exists
+    if (paymentErrors[name]) {
+      setPaymentErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
   // Validate personal info form
   const validatePersonalInfo = () => {
     const errors: Record<string, string> = {}
@@ -250,6 +315,26 @@ const OwnerProfilePage = () => {
     return Object.keys(errors).length === 0
   }
 
+  // Validate payment form
+  const validatePaymentForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!paymentForm.bank_name.trim()) {
+      errors.bank_name = "Bank name is required"
+    }
+
+    if (!paymentForm.account_number.trim()) {
+      errors.account_number = "Account number is required"
+    }
+
+    if (!paymentForm.account_name.trim()) {
+      errors.account_name = "Account holder name is required"
+    }
+
+    setPaymentErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Handle personal info form submission
   const handleUpdatePersonalInfo = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -258,19 +343,25 @@ const OwnerProfilePage = () => {
 
     setIsUpdatingProfile(true)
     try {
-      const payload: UpdateUserInfoPayload = {
+      const payload: UpdateUserPayload = {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
-        email: personalInfo.email,
         username: personalInfo.username,
       }
 
-      const updatedUser = await userApi.updateUserInfo(user.id, payload)
-      console.log("Profile updated successfully")
-      
+      const updatedUser = await userApi.updateUser(user.id, payload)
+
       // Update Redux store with new user data
       dispatch(updateUserProfile(updatedUser))
-      
+
+      // Update local state to match the updated user data
+      setPersonalInfo((prev) => ({
+        ...prev,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        username: updatedUser.username,
+      }))
+
       toast({
         title: "Profile updated",
         description: "Your personal information has been updated successfully",
@@ -339,18 +430,80 @@ const OwnerProfilePage = () => {
     setIsUpdatingEmail(true)
     try {
       await updateEmail(user.id, emailForm.email)
-      
+
       // Update Redux store with new email
       dispatch(updateUserProfile({ ...user, email: emailForm.email }))
-      
+
       toast({
         title: "Email updated",
-        description: "Your email has been updated successfully. Please check your inbox to verify the new email address.",
+        description:
+          "Your email has been updated successfully. Please check your inbox to verify the new email address.",
       })
     } catch (error: any) {
       setEmailError(error.message || "Failed to update email")
     } finally {
       setIsUpdatingEmail(false)
+    }
+  }
+
+  // Handle payment details submission
+  const handleUpdatePaymentDetails = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validatePaymentForm()) return
+
+    setIsUpdatingPayment(true)
+    try {
+      const payload: CreatePaymentDetailPayload = {
+        bank_name: paymentForm.bank_name,
+        account_number: paymentForm.account_number,
+        account_name: paymentForm.account_name,
+      }
+
+      const updatedPaymentDetails = await userApi.createPaymentDetail(user.id, payload)
+      setPaymentDetails(updatedPaymentDetails)
+
+      toast({
+        title: "Payment details updated",
+        description: "Your payment information has been saved successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update your payment details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingPayment(false)
+    }
+  }
+
+  // Handle payment details deletion
+  const handleDeletePaymentDetails = async () => {
+    if (!paymentDetails) return
+
+    setIsUpdatingPayment(true)
+    try {
+      await userApi.deletePaymentDetail(user.id, paymentDetails.id)
+      setPaymentDetails(null)
+      setPaymentForm({
+        bank_name: "",
+        account_number: "",
+        account_name: "",
+      })
+
+      toast({
+        title: "Payment details removed",
+        description: "Your payment information has been deleted successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete your payment details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingPayment(false)
     }
   }
 
@@ -392,7 +545,49 @@ const OwnerProfilePage = () => {
                   <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
                     Property Owner
                   </Badge>
-                  {personalInfo.company_name && <p className="text-sm font-medium mt-2">{personalInfo.company_name}</p>}
+
+                  {/* KYC Status Badge */}
+                  {user?.kyc_verified ? (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      KYC Verified
+                    </Badge>
+                  ) : userKyc && userKyc.id ? (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-yellow-50 text-yellow-700 border-yellow-300 flex items-center"
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      KYC Pending Review
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="mt-2 bg-red-50 text-red-700 border-red-200 flex items-center">
+                      <XCircle className="h-4 w-4 mr-1" />
+                      KYC Unverified
+                    </Badge>
+                  )}
+
+                  {/* Payment Status Badge */}
+                  {paymentDetails ? (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center"
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Payment Setup
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-orange-50 text-orange-700 border-orange-200 flex items-center"
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Payment Pending
+                    </Badge>
+                  )}
                 </div>
 
                 <div className="mt-8 space-y-4">
@@ -401,14 +596,6 @@ const OwnerProfilePage = () => {
                     <div>
                       <p className="text-sm font-medium">Member Since</p>
                       <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Business Location</p>
-                      <p className="text-sm text-muted-foreground">{personalInfo.business_address || "Not specified"}</p>
                     </div>
                   </div>
 
@@ -422,7 +609,9 @@ const OwnerProfilePage = () => {
                             <Star
                               key={star}
                               className={`h-4 w-4 ${
-                                star <= businessStats.averageRating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                                star <= businessStats.averageRating
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
                               }`}
                             />
                           ))}
@@ -494,9 +683,10 @@ const OwnerProfilePage = () => {
           {/* Main content */}
           <div className="md:col-span-2">
             <Tabs defaultValue="personal-info">
-              <TabsList className="grid grid-cols-3 mb-8">
+              <TabsList className="grid grid-cols-4 mb-8">
                 <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-                <TabsTrigger value="business-info">Business Info</TabsTrigger>
+                <TabsTrigger value="kyc-verification">KYC</TabsTrigger>
+                <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
                 <TabsTrigger value="properties">My Properties</TabsTrigger>
               </TabsList>
 
@@ -655,94 +845,169 @@ const OwnerProfilePage = () => {
                 </Card>
               </TabsContent>
 
-              {/* Business Info Tab */}
-              <TabsContent value="business-info">
+              {/* KYC Verification Tab */}
+              <TabsContent value="kyc-verification">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Business Information</CardTitle>
-                    <CardDescription>Update your business details</CardDescription>
+                    <CardTitle>KYC Verification</CardTitle>
+                    <CardDescription>
+                      {user?.kyc_verified
+                        ? "Your identity has been verified successfully."
+                        : "Verify your identity by uploading your ID documents."}
+                    </CardDescription>
                   </CardHeader>
-                  <form onSubmit={handleUpdatePersonalInfo}>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company_name">Company Name</Label>
-                        <Input
-                          id="company_name"
-                          name="company_name"
-                          value={personalInfo.company_name}
-                          onChange={handlePersonalInfoChange}
-                        />
+                  <CardContent>
+                    {isKycLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2">Loading KYC status...</span>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="business_address">Business Address</Label>
-                        <Textarea
-                          id="business_address"
-                          name="business_address"
-                          value={personalInfo.business_address}
-                          onChange={handlePersonalInfoChange}
-                          className="resize-none"
-                        />
+                    ) : user?.kyc_verified ? (
+                      <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
+                        <div className="bg-green-100 rounded-full p-2 mr-4">
+                          <CheckCircle className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-green-800">Verification Complete</h3>
+                          <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
+                        </div>
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tax_id">Tax ID / Business Registration Number</Label>
-                        <Input
-                          id="tax_id"
-                          name="tax_id"
-                          value={personalInfo.tax_id}
-                          onChange={handlePersonalInfoChange}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="business_description">Business Description</Label>
-                        <Textarea
-                          id="business_description"
-                          placeholder="Tell us about your business"
-                          className="resize-none"
-                        />
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
-                        {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Business Info
-                      </Button>
-                    </CardFooter>
-                  </form>
-                </Card>
-
-                <Card className="mt-8">
-                  <CardHeader>
-                    <CardTitle>Payment Information</CardTitle>
-                    <CardDescription>Update your payment details</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="bank_name">Bank Name</Label>
-                      <Input id="bank_name" placeholder="Enter your bank name" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="account_number">Account Number</Label>
-                        <Input id="account_number" placeholder="Enter your account number" type="password" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="routing_number">Routing Number</Label>
-                        <Input id="routing_number" placeholder="Enter your routing number" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="account_holder">Account Holder Name</Label>
-                      <Input id="account_holder" placeholder="Enter the account holder name" />
-                    </div>
+                    ) : (
+                      <KycVerificationForm />
+                    )}
                   </CardContent>
-                  <CardFooter>
-                    <Button className="ml-auto">Save Payment Info</Button>
-                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              {/* Payment Details Tab */}
+              <TabsContent value="payment-details">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payment Details</CardTitle>
+                    <CardDescription>Manage your payment information for receiving rental payments</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingPayment ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2">Loading payment details...</span>
+                      </div>
+                    ) : paymentDetails ? (
+                      <div className="space-y-6">
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                            <h3 className="font-medium text-green-800">Payment Details Configured</h3>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            Your payment information is set up and ready to receive payments.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Bank Name</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">{paymentDetails.bank_name}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Account Holder Name</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">{paymentDetails.account_name}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Account Number</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">****{paymentDetails.account_number.slice(-4)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            onClick={handleDeletePaymentDetails}
+                            disabled={isUpdatingPayment}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Remove Payment Details
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleUpdatePaymentDetails} className="space-y-6">
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                          <div className="flex items-center">
+                            <Info className="h-5 w-5 text-amber-600 mr-2" />
+                            <h3 className="font-medium text-amber-800">Payment Setup Required</h3>
+                          </div>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Add your bank details to receive rental payments from tenants.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="bank_name">Bank Name</Label>
+                            <Input
+                              id="bank_name"
+                              name="bank_name"
+                              value={paymentForm.bank_name}
+                              onChange={handlePaymentChange}
+                              placeholder="e.g., Commercial Bank of Ethiopia"
+                              className={paymentErrors.bank_name ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.bank_name && (
+                              <p className="text-sm text-red-500">{paymentErrors.bank_name}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="account_name">Account Holder Name</Label>
+                            <Input
+                              id="account_name"
+                              name="account_name"
+                              value={paymentForm.account_name}
+                              onChange={handlePaymentChange}
+                              placeholder="Full name as on bank account"
+                              className={paymentErrors.account_name ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.account_name && (
+                              <p className="text-sm text-red-500">{paymentErrors.account_name}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="account_number">Account Number</Label>
+                            <Input
+                              id="account_number"
+                              name="account_number"
+                              value={paymentForm.account_number}
+                              onChange={handlePaymentChange}
+                              placeholder="Enter your bank account number"
+                              className={paymentErrors.account_number ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.account_number && (
+                              <p className="text-sm text-red-500">{paymentErrors.account_number}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                          <h4 className="font-medium text-blue-800 mb-2">Supported Banks</h4>
+                          <p className="text-sm text-blue-700">
+                            Awash Bank, Bank of Abyssinia, CBEBirr, Commercial Bank of Ethiopia, Telebirr
+                          </p>
+                        </div>
+
+                        <Button type="submit" disabled={isUpdatingPayment} className="w-full">
+                          {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Save Payment Details
+                        </Button>
+                      </form>
+                    )}
+                  </CardContent>
                 </Card>
               </TabsContent>
 

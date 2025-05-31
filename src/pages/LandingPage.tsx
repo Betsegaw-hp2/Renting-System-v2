@@ -433,15 +433,22 @@ export default function HomePage() {
             >
               <Carousel itemsPerSlide={3} className="w-full">
                 <CarouselContent>
-                  {categories.map((category, index) => (
-                    <CarouselItem key={category.slug} className="md:basis-1/3 lg:basis-1/3">
-                      <div className="p-1 transition-all duration-500" style={{ transitionDelay: `${index * 100}ms` }}>
-                        <div className="transform transition-transform duration-300 hover:scale-105">
-                          <CategoryCard category={category} />
+                  {(() => {
+                    // Calculate how many items we need to add to make complete sets of 3
+                    const remainder = categories.length % 3;
+                    const itemsToAdd = remainder === 0 ? 0 : 3 - remainder;
+                    const duplicatedItems = [...categories, ...categories.slice(0, itemsToAdd)];
+                    
+                    return duplicatedItems.map((category, index) => (
+                      <CarouselItem key={`${category.slug}-${index}`} className="md:basis-1/3 lg:basis-1/3">
+                        <div className="p-1 transition-all duration-500" style={{ transitionDelay: `${index * 100}ms` }}>
+                          <div className="transform transition-transform duration-300 hover:scale-105">
+                            <CategoryCard category={category} />
+                          </div>
                         </div>
-                      </div>
-                    </CarouselItem>
-                  ))}
+                      </CarouselItem>
+                    ));
+                  })()}
                 </CarouselContent>
                 <CarouselPrevious className="left-2 bg-white shadow-md hover:bg-blue-50 transition-all duration-300" />
                 <CarouselNext className="right-2 bg-white shadow-md hover:bg-blue-50 transition-all duration-300" />

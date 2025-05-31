@@ -12,10 +12,45 @@ export interface UpdatePasswordPayload {
   password: string
 }
 
+export interface UpdateUserPayload {
+  first_name?: string
+  last_name?: string
+  username?: string
+}
+
+export interface PaymentDetail {
+  id: string
+  user_id: string
+  bank_name: string
+  account_number: string
+  account_name: string
+}
+
+export interface CreatePaymentDetailPayload {
+  bank_name: string
+  account_number: string
+  account_name: string
+}
+
+export interface UpdateUserPayload {
+  first_name?: string
+  last_name?: string
+  username?: string
+}
+
 // API functions for user profile management
 export const userApi = {
   // Update user personal information
   updateUserInfo: async (userId: string, data: UpdateUserInfoPayload) : Promise<User> => {
+    try {
+      const response = await apiClient.patch<User>(`/users/${userId}`, data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  updateUser: async (userId: string, data: UpdateUserPayload) : Promise<User> => {
     try {
       const response = await apiClient.patch<User>(`/users/${userId}`, data)
       return response.data
@@ -33,6 +68,10 @@ export const userApi = {
       throw error
     }
   },
+
+  
+
+  
 
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
@@ -77,4 +116,37 @@ export const userApi = {
       throw error
     }
   },
+
+  getUserPaymentDetails: async (userId: string): Promise<PaymentDetail[]> => {
+    try {
+      const response = await apiClient.get<PaymentDetail[]>(`/users/${userId}/payment-details`)
+      console.log("Payment details fetched successfully", response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching payment details for user ${userId}:`, error)
+      throw error 
+    }
+  },
+
+  createPaymentDetail: async (userId: string, data: CreatePaymentDetailPayload): Promise<PaymentDetail> => {
+    try {
+      const response = await apiClient.post<PaymentDetail>(`/users/${userId}/payment-details`, data)
+      console.log("Payment detail created successfully", response.data)
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  },
+
+  deletePaymentDetail: async (userId: string, paymentDetailId: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/users/${userId}/payment-details/${paymentDetailId}`)
+      console.log("Payment detail deleted successfully")
+    } catch (error) {
+      console.error(`Error deleting payment detail for user ${userId}:`, error)
+      throw error
+    }
+  },
+
+  
 }

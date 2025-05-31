@@ -359,7 +359,7 @@ const ManageListingPage: React.FC = () => {
               )}
             </CardHeader>
             <CardContent>
-              <ReviewsSection reviews={reviews ?? []} isLoading={false} />
+              <ReviewsSection reviews={reviews ?? []} isLoading={false} listingId={id ?? ""} />
             </CardContent>
           </Card>
         </div>

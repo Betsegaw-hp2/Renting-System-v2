@@ -33,6 +33,10 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
   const [reviewText, setReviewText] = useState("")
   const { toast } = useToast()
   const { isOwner, isTenant } = usePermissions()
+  const [editingReview, setEditingReview] = useState<string | null>(null)
+  const [editTexts, setEditTexts] = useState<Record<string, string>>({})
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false)
+  const [isDeletingReview, setIsDeletingReview] = useState(false)
 
   const fetchReviews = async () => {
     try {
@@ -153,6 +157,71 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
 
   const canReply = (review: Review) => {
     return isOwner && !replies[review.id]
+  }
+
+  const handleEditSubmit = async (reviewId: string) => {
+    const editText = editTexts[reviewId]?.trim()
+    if (!editText) return
+
+    setIsSubmittingEdit(true)
+    try {
+      const updatedReview = await reviewsApi.updateReview(listingId, reviewId, {
+        rating: reviews.find(r => r.id === reviewId)?.rating || 5,
+        description: editText,
+      })
+
+      // Update the reviews list with the edited review
+      setReviews(prev => prev.map(review => 
+        review.id === reviewId ? updatedReview : review
+      ))
+
+      setEditTexts(prev => ({ ...prev, [reviewId]: "" }))
+      setEditingReview(null)
+
+      toast({
+        title: "Review updated",
+        description: "Your review has been updated successfully.",
+      })
+    } catch (error) {
+      console.error("Error updating review:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update review. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmittingEdit(false)
+    }
+  }
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return
+
+    setIsDeletingReview(true)
+    try {
+      await reviewsApi.deleteReview(listingId, reviewId)
+      
+      // Remove the deleted review from the list
+      setReviews(prev => prev.filter(review => review.id !== reviewId))
+
+      toast({
+        title: "Review deleted",
+        description: "Your review has been deleted successfully.",
+      })
+    } catch (error) {
+      console.error("Error deleting review:", error)
+      toast({
+        title: "Error",
+        description: "Failed to delete review. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeletingReview(false)
+    }
+  }
+
+  const handleEditTextChange = (reviewId: string, text: string) => {
+    setEditTexts(prev => ({ ...prev, [reviewId]: text }))
   }
 
   if (isLoading) {
@@ -277,7 +346,12 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
                               Verified Renter
                             </Badge>
                           </div>
-                          <span className="text-sm text-gray-500">{formatDate(review.created_at)}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">{formatDate(review.created_at)}</span>
+                            {review.updated_at && review.updated_at !== review.created_at && (
+                              <span className="text-xs text-gray-400">(edited)</span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-2 mb-3">
@@ -285,29 +359,61 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
                           <span className="text-sm font-medium text-gray-700">({review.rating}/5)</span>
                         </div>
 
-                        <div className="bg-gray-50 rounded-lg p-4 mb-3">
-                          <p className="text-gray-700 leading-relaxed">{displayText}</p>
-                          {shouldTruncate && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleReviewExpansion(review.id)}
-                              className="mt-2 p-0 h-auto text-blue-600 hover:text-blue-700"
-                            >
-                              {isExpanded ? (
-                                <>
-                                  <ChevronUp className="h-4 w-4 mr-1" />
-                                  Show less
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-4 w-4 mr-1" />
-                                  Read more
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
+                        {editingReview === review.id ? (
+                          <div className="space-y-3">
+                            <Textarea
+                              placeholder="Edit your review..."
+                              value={editTexts[review.id] || review.description}
+                              onChange={(e) => handleEditTextChange(review.id, e.target.value)}
+                              className="min-h-[80px] resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => handleEditSubmit(review.id)}
+                                disabled={!editTexts[review.id]?.trim() || isSubmittingEdit}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                              >
+                                {isSubmittingEdit ? "Saving..." : "Save Changes"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingReview(null)
+                                  setEditTexts(prev => ({ ...prev, [review.id]: "" }))
+                                }}
+                                disabled={isSubmittingEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                            <p className="text-gray-700 leading-relaxed">{displayText}</p>
+                            {shouldTruncate && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleReviewExpansion(review.id)}
+                                className="mt-2 p-0 h-auto text-blue-600 hover:text-blue-700"
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="h-4 w-4 mr-1" />
+                                    Show less
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-4 w-4 mr-1" />
+                                    Read more
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        )}
 
                         {/* Owner Reply */}
                         {replies[review.id] && (
@@ -384,6 +490,32 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
                               Reply
                             </Button>
                           )
+                        )}
+
+                        {/* Edit and Delete buttons */}
+                        {!editingReview && (
+                          <div className="flex gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingReview(review.id)
+                                setEditTexts(prev => ({ ...prev, [review.id]: review.description }))
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteReview(review.id)}
+                              disabled={isDeletingReview}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>

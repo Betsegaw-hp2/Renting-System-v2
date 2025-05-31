@@ -746,10 +746,13 @@ export default function OwnerHomePage() {
                       <CardContent className="p-0">
                         <div className="divide-y">
                           {userListings?.length > 0 ? (
-                            (userListings ?? []).map((listing) => (
+                            (userListings ?? []).map((listing, index) => (
                               <div key={listing.id} className="p-4">
                                 <div className="flex justify-between items-center mb-2">
-                                  <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                                    <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
+                                  </div>
                                   <span
                                     className={`px-2 py-1 rounded text-xs font-medium ${listing.status === "completed"
                                       ? "bg-green-100 text-green-800"

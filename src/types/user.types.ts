@@ -69,6 +69,11 @@ export interface User {
   created_at: string;
   updated_at: string;
   location: Location | null;
+  // Business-related fields
+  company_name?: string;
+  business_address?: string;
+  tax_id?: string;
+  phone_number?: string;
 }
 
 export interface UserWithLocation extends User {

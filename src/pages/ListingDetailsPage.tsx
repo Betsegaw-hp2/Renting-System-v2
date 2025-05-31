@@ -9,6 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 import { ReportButton } from "@/features/report/components/ReportButton"
 import { reviewsApi } from "@/features/reviews/api/reviewApi"
 import { ReviewsList } from "@/features/reviews/components/ReviewsList"
@@ -100,6 +107,8 @@ export default function ListingDetailsPage() {
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviewsRefreshTrigger, setReviewsRefreshTrigger] = useState(0)
   const [reviewsCount, setReviewsCount] = useState<number>(0)
+  const [isImageGalleryOpen, setIsImageGalleryOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -291,6 +300,12 @@ export default function ListingDetailsPage() {
     }
   }
 
+  // Add this function to handle opening the image gallery
+  const openImageGallery = (index: number) => {
+    setCurrentImageIndex(index)
+    setIsImageGalleryOpen(true)
+  }
+
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -389,7 +404,7 @@ export default function ListingDetailsPage() {
           {/* Image gallery with null checks */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="md:col-span-2">
-              <div className="rounded-lg overflow-hidden bg-white border h-[400px]">
+              <div className="rounded-lg overflow-hidden bg-white border h-[400px] cursor-pointer" onClick={() => openImageGallery(0)}>
                 <img
                   src={selectedImage || "/placeholder.svg"}
                   alt={listing?.title || "Listing image"}
@@ -406,7 +421,10 @@ export default function ListingDetailsPage() {
                 <div
                   key={index}
                   className={`rounded-lg overflow-hidden bg-white border h-[120px] cursor-pointer transition-all ${selectedImage === image ? "ring-2 ring-blue-500" : ""}`}
-                  onClick={() => setSelectedImage(image)}
+                  onClick={() => {
+                    setSelectedImage(image)
+                    openImageGallery(index + 1)
+                  }}
                 >
                   <img
                     src={image}
@@ -420,7 +438,10 @@ export default function ListingDetailsPage() {
               ))}
 
               {images?.length > 3 && (
-                <div className="rounded-lg overflow-hidden bg-white border h-[120px] relative">
+                <div 
+                  className="rounded-lg overflow-hidden bg-white border h-[120px] relative cursor-pointer"
+                  onClick={() => openImageGallery(3)}
+                >
                   <img
                     src={images[3] || "/placeholder.svg"}
                     alt={`${listing.title} - image 5`}
@@ -429,13 +450,48 @@ export default function ListingDetailsPage() {
                       e.currentTarget.src = "/placeholder.svg"
                     }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium">
-                    +{images.length - 2} more
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white font-medium hover:bg-opacity-60 transition-all">
+                    +{images.length - 3} more
                   </div>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Add the Image Gallery Dialog */}
+          <Dialog open={isImageGalleryOpen} onOpenChange={setIsImageGalleryOpen}>
+            <DialogContent className="max-w-4xl p-0 overflow-hidden">
+              <div className="relative">
+                <Carousel
+                  itemsPerSlide={1}
+                  className="w-full"
+                  onSlideChange={(index) => setCurrentImageIndex(index)}
+                >
+                  <CarouselContent>
+                    {images.map((image, index) => (
+                      <CarouselItem key={index}>
+                        <div className="relative aspect-[4/3] w-full">
+                          <img
+                            src={image}
+                            alt={`${listing.title} - image ${index + 1}`}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              e.currentTarget.src = "/placeholder.svg"
+                            }}
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="left-4 bg-white/80 hover:bg-white shadow-md" />
+                  <CarouselNext className="right-4 bg-white/80 hover:bg-white shadow-md" />
+                </Carousel>
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                  {currentImageIndex + 1} / {images.length}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Main content */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

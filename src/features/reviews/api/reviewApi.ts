@@ -113,12 +113,12 @@ export const reviewsApi = {
   },
 
   // Delete a review
-//   deleteReview: async (listingId: string, reviewId: string): Promise<void> => {
-//     try {
-//       await reviewsAxiosInstance.delete(`/listings/${listingId}/reviews/${reviewId}`)
-//     } catch (error) {
-//       console.error("Error deleting review:", error)
-//       throw error
-//     }
-//   },
+  deleteReview: async (listingId: string, reviewId: string): Promise<void> => {
+    try {
+      await reviewsAxiosInstance.delete(`/listings/${listingId}/reviews/${reviewId}`)
+    } catch (error) {
+      console.error("Error deleting review:", error)
+      throw error
+    }
+  },
 }

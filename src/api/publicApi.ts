@@ -123,8 +123,6 @@ export interface Booking {
   updated_at: string
 }
 
-
-
 export const publicAxiosInstance = apiClient
 
 // Helper function to convert API response to our app's format

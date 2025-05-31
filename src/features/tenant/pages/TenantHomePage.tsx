@@ -111,19 +111,41 @@ export default function TenantHomePage() {
     return savedListings?.some((listing) => listing.id === listingId)
   }
 
- const handleCancelBooking = async (bookingId: string) => {
+  const handlePaymentRelease = async (bookingId: string) => {
     try {
-      await tenantApi.PaymentCancelled(bookingId)
-      setBookings((prev) => (prev ?? []).filter((booking) => booking.id !== bookingId))
+      await tenantApi.PaymentReleased(bookingId)
+      // Refresh bookings after successful release
+      const updatedBookings = await tenantApi.getUserBookings(user?.id || "")
+      setBookings(updatedBookings)
       toast({
         title: "Success",
-        description: "Booking cancelled successfully.",
+        description: "Payment released successfully.",
       })
     } catch (error) {
-      console.error("Error cancelling booking:", error)
+      console.error("Error releasing payment:", error)
       toast({
         title: "Error",
-        description: "Failed to cancel booking. Please try again.",
+        description: "Failed to release payment. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      await tenantApi.PaymentCancelled(bookingId)
+      // Refresh bookings after successful cancellation
+      const updatedBookings = await tenantApi.getUserBookings(user?.id || "")
+      setBookings(updatedBookings)
+      toast({
+        title: "Success",
+        description: "Payment cancelled successfully.",
+      })
+    } catch (error) {
+      console.error("Error cancelling payment:", error)
+      toast({
+        title: "Error",
+        description: "Failed to cancel payment. Please try again.",
         variant: "destructive",
       })
     }
@@ -359,10 +381,13 @@ export default function TenantHomePage() {
                     <Card>
                       <CardContent className="p-0">
                         <div className="divide-y">
-                          {bookings.map((booking) => (
+                          {bookings.map((booking, index) => (
                             <div key={booking.id} className="p-4">
                               <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold">Booking #{booking.id.substring(0, 8)}</h3>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                                  <h3 className="font-bold">Booking #{booking.id.substring(0, 8)}</h3>
+                                </div>
                                 <span
                                   className={`px-2 py-1 rounded text-xs font-medium ${booking.status === "completed"
                                     ? "bg-green-100 text-green-800"
@@ -390,24 +415,26 @@ export default function TenantHomePage() {
                                   </Button>
                                 </Link>
 
-                                {/* BOOKING STATUS and the RELEASE and CANCEL PAYMENT */}
-                                {/* {(booking.status === "pending" || booking.status === "booked") && (
-                                  <Button
-                                    variant={booking.status == "pending" ? "destructive" :   "secondary"}
+                                {booking.payment_status === "in_escrow" && booking.status === "booked" && (
+                                  <Button 
+                                    className="bg-green-500" 
                                     size="sm"
-                                    onClick={
-                                      booking.status === "pending"
-                                      ? () => handleCancelBooking(booking.listing_id, booking.id)
-                                      : undefined
-                                    }
+                                    onClick={() => handlePaymentRelease(booking.id)}
                                   >
-                                    {booking.status === "pending" ? "Cancel Booking" : "Release Booking"}
+                                    Release Payment
                                   </Button>
-                                )} */}
-                                 
-                                <Button className="bg-green-500" size="sm">
-                                  Release
-                                </Button>
+                                )}
+
+                                {booking.payment_status === "in_escrow" && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleCancelBooking(booking.id)}
+                                  >
+                                    Cancel Payment
+                                  </Button>
+                                )}
+
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -420,11 +447,6 @@ export default function TenantHomePage() {
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="bg-gray-50">
-                        <Button variant="outline" className="w-full" onClick={() => navigate("/tenant/bookings")}>
-                          View All Bookings
-                        </Button>
-                      </CardFooter>
                     </Card>
                   ) : (
                     <Card>

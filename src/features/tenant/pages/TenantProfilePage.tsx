@@ -9,13 +9,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateEmail } from "@/features/auth/api/authApi"
-import { userApi, type UpdatePasswordPayload, type UpdateUserInfoPayload } from "@/features/auth/api/userApi"
+import {
+  userApi,
+  type UpdatePasswordPayload,
+  type UpdateUserInfoPayload,
+  type CreatePaymentDetailPayload,
+  type PaymentDetail,
+} from "@/features/auth/api/userApi"
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
 import { useToast } from "@/hooks/useToast"
 import type { AppDispatch } from "@/store"
 import type { User, UserKYC } from "@/types/user.types"
-import { AlertTriangle, Calendar, CheckCircle, Clock, Download, Loader2, MapPin, Star, Upload, XCircle } from "lucide-react"; // Removed ShieldAlert as it's unused
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Download,
+  Loader2,
+  MapPin,
+  Star,
+  Upload,
+  XCircle,
+  CreditCard,
+  Info,
+} from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
@@ -26,8 +45,8 @@ const TenantProfilePage = () => {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const user: User = useSelector((state: any) => state.auth.user)
-  const [userKyc, setUserKyc] = useState<UserKYC | null>(null); 
-  const [isKycLoading, setIsKycLoading] = useState(false); 
+  const [userKyc, setUserKyc] = useState<UserKYC | null>(null)
+  const [isKycLoading, setIsKycLoading] = useState(false)
 
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
@@ -48,16 +67,27 @@ const TenantProfilePage = () => {
     email: "",
   })
 
+  // Payment details state
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetail | null>(null)
+  const [paymentForm, setPaymentForm] = useState({
+    bank_name: "",
+    account_number: "",
+    account_name: "",
+  })
+
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
+  const [isLoadingPayment, setIsLoadingPayment] = useState(false)
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false)
 
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
-  const [emailError, setEmailError] = useState<string | null>(null) // Commented out as unused
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -65,7 +95,8 @@ const TenantProfilePage = () => {
       if (!user?.id) return
 
       setIsLoadingProfile(true)
-      setIsKycLoading(true); 
+      setIsKycLoading(true)
+      setIsLoadingPayment(true)
       try {
         const userData = await userApi.getCurrentUser()
         setPersonalInfo({
@@ -74,23 +105,38 @@ const TenantProfilePage = () => {
           email: userData.email || "",
           username: userData.username || "",
         })
-        const kycData = await userApi.getUserKyc(user.id);
-        setUserKyc(kycData);
+        // Update Redux store with the latest user data
+        dispatch(updateUserProfile(userData))
 
+        const kycData = await userApi.getUserKyc(user.id)
+        setUserKyc(kycData)
+
+        // Fetch payment details
+        const paymentData = await userApi.getUserPaymentDetails(user.id)
+        setPaymentDetails(paymentData[0] || null)
+        if (paymentData[0]) {
+          setPaymentForm({
+            bank_name: paymentData[0].bank_name,
+            account_number: paymentData[0].account_number,
+            account_name: paymentData[0].account_name,
+          })
+        }
       } catch (error: any) {
         toast({
           title: "Error fetching profile data",
-          description: error.response?.data?.message || error.message || "Failed to load your profile or KYC information",
+          description:
+            error.response?.data?.message || error.message || "Failed to load your profile or KYC information",
           variant: "destructive",
         })
       } finally {
         setIsLoadingProfile(false)
-        setIsKycLoading(false); 
+        setIsKycLoading(false)
+        setIsLoadingPayment(false)
       }
     }
 
     fetchUserDataAndKyc()
-  }, [user?.id, toast])
+  }, [user?.id, toast, dispatch])
 
   // Handle personal info form changes
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,10 +169,25 @@ const TenantProfilePage = () => {
   }
 
   // Handle email form changes
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => { // Commented out as unused
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target
     setEmailForm({ email: value })
     setEmailError(null)
+  }
+
+  // Handle payment form changes
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPaymentForm((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error for this field if it exists
+    if (paymentErrors[name]) {
+      setPaymentErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
   }
 
   // Validate personal info form
@@ -175,6 +236,26 @@ const TenantProfilePage = () => {
     return Object.keys(errors).length === 0
   }
 
+  // Validate payment form
+  const validatePaymentForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!paymentForm.bank_name.trim()) {
+      errors.bank_name = "Bank name is required"
+    }
+
+    if (!paymentForm.account_number.trim()) {
+      errors.account_number = "Account number is required"
+    }
+
+    if (!paymentForm.account_name.trim()) {
+      errors.account_name = "Account holder name is required"
+    }
+
+    setPaymentErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Handle personal info form submission
   const handleUpdatePersonalInfo = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -190,11 +271,18 @@ const TenantProfilePage = () => {
       }
 
       const updatedUser = await userApi.updateUserInfo(user.id, payload)
-      console.log("Profile updated successfully")
-      
+
       // Update Redux store with new user data
       dispatch(updateUserProfile(updatedUser))
-      
+
+      // Update local state to match the updated user data
+      setPersonalInfo((prev) => ({
+        ...prev,
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        username: updatedUser.username,
+      }))
+
       toast({
         title: "Profile updated",
         description: "Your personal information has been updated successfully",
@@ -246,7 +334,7 @@ const TenantProfilePage = () => {
   }
 
   // Handle email form submission
-  const handleUpdateEmail = async (e: React.FormEvent) => { // Commented out as unused
+  const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     setEmailError(null)
     if (!emailForm.email.trim()) {
@@ -263,7 +351,8 @@ const TenantProfilePage = () => {
       dispatch(updateUserProfile({ ...user, email: emailForm.email }))
       toast({
         title: "Email updated",
-        description: "Your email has been updated successfully. Please check your inbox to verify the new email address.",
+        description:
+          "Your email has been updated successfully. Please check your inbox to verify the new email address.",
       })
     } catch (error: any) {
       setEmailError(error.response?.data?.message || error.message || "Failed to update email")
@@ -272,7 +361,68 @@ const TenantProfilePage = () => {
     }
   }
 
-  if (isLoadingProfile || isKycLoading) { 
+  // Handle payment details submission
+  const handleUpdatePaymentDetails = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validatePaymentForm()) return
+
+    setIsUpdatingPayment(true)
+    try {
+      const payload: CreatePaymentDetailPayload = {
+        bank_name: paymentForm.bank_name,
+        account_number: paymentForm.account_number,
+        account_name: paymentForm.account_name,
+      }
+
+      const updatedPaymentDetails = await userApi.createPaymentDetail(user.id, payload)
+      setPaymentDetails(updatedPaymentDetails)
+
+      toast({
+        title: "Payment details updated",
+        description: "Your payment information has been saved successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message || "Failed to update your payment details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingPayment(false)
+    }
+  }
+
+  // Handle payment details deletion
+  const handleDeletePaymentDetails = async () => {
+    if (!paymentDetails) return
+
+    setIsUpdatingPayment(true)
+    try {
+      await userApi.deletePaymentDetail(user.id, paymentDetails.id)
+      setPaymentDetails(null)
+      setPaymentForm({
+        bank_name: "",
+        account_number: "",
+        account_name: "",
+      })
+
+      toast({
+        title: "Payment details removed",
+        description: "Your payment information has been deleted successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Delete failed",
+        description: error.message || "Failed to delete your payment details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingPayment(false)
+    }
+  }
+
+  if (isLoadingProfile || isKycLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -282,389 +432,548 @@ const TenantProfilePage = () => {
   }
 
   return (
-     <div className="min-h-screen bg-gray-50">
-      <Header/>
-    <div className="container mx-auto py-8 px-4 md:px-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Left sidebar */}
-        <div className="md:col-span-1">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center">
-                <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src={user?.profile_picture || ""} alt={user?.username || "User"} />
-                  <AvatarFallback className="text-2xl">
-                    {user?.first_name?.[0]}
-                    {user?.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="relative">
-                  <Button variant="outline" size="sm" className="absolute -top-12 -right-12 rounded-full">
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                </div>
-                <h2 className="text-xl font-bold mt-2">
-                  {user?.first_name} {user?.last_name}
-                </h2>
-                <p className="text-muted-foreground">{user?.email}</p>
-                
-                {user?.kyc_verified ? (
-                  <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center">
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    KYC Verified
-                  </Badge>
-                ) : userKyc && userKyc.id ? ( 
-                  <Badge variant="outline" className="mt-2 bg-yellow-50 text-yellow-700 border-yellow-300 flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    KYC Pending Review
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="mt-2 bg-red-50 text-red-700 border-red-200 flex items-center">
-                    <XCircle className="h-4 w-4 mr-1" />
-                    KYC Unverified
-                  </Badge>
-                )}
-
-                {user?.is_verified ? (
-                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
-                    Email Verified
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="mt-2 bg-gray-50 text-gray-700 border-gray-200">
-                    Email Not Verified
-                  </Badge>
-                )}
-              </div>
-
-              <div className="mt-8 space-y-4">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Member Since</p>
-                    <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {user?.location?.city || "Not specified"}, {user?.location?.country || ""}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Tenant Rating</p>
-                    <div className="flex items-center">
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-4 w-4 ${star <= 5 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="ml-2 text-sm font-medium">5.0</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 pt-6 border-t">
-                <h3 className="font-medium mb-4">Account Actions</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download My Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Deactivate Account
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main content */}
-        <div className="md:col-span-2">
-          <Tabs defaultValue="personal-info">
-            <TabsList className="grid grid-cols-3 mb-8">
-              <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-              <TabsTrigger value="kyc-documents">KYC Documents</TabsTrigger>
-              <TabsTrigger value="preferences">Preferences</TabsTrigger>
-            </TabsList>
-
-            {/* Personal Info Tab */}
-            <TabsContent value="personal-info">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Update your personal details</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleUpdatePersonalInfo}>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="first_name">First Name</Label>
-                        <Input
-                          id="first_name"
-                          name="first_name"
-                          value={personalInfo.first_name}
-                          onChange={handlePersonalInfoChange}
-                          className={personalInfoErrors.first_name ? "border-red-500" : ""}
-                        />
-                        {personalInfoErrors.first_name && (
-                          <p className="text-sm text-red-500">{personalInfoErrors.first_name}</p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="last_name">Last Name</Label>
-                        <Input
-                          id="last_name"
-                          name="last_name"
-                          value={personalInfo.last_name}
-                          onChange={handlePersonalInfoChange}
-                          className={personalInfoErrors.last_name ? "border-red-500" : ""}
-                        />
-                        {personalInfoErrors.last_name && (
-                          <p className="text-sm text-red-500">{personalInfoErrors.last_name}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        name="username"
-                        value={personalInfo.username}
-                        onChange={handlePersonalInfoChange}
-                        className={personalInfoErrors.username ? "border-red-500" : ""}
-                      />
-                      {personalInfoErrors.username && (
-                        <p className="text-sm text-red-500">{personalInfoErrors.username}</p>
-                      )}
-                    </div>
-
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
-                      {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Changes
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <div className="container mx-auto py-8 px-4 md:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Left sidebar */}
+          <div className="md:col-span-1">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center">
+                  <Avatar className="h-24 w-24 mb-4">
+                    <AvatarImage src={user?.profile_picture || ""} alt={user?.username || "User"} />
+                    <AvatarFallback className="text-2xl">
+                      {user?.first_name?.[0]}
+                      {user?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="relative">
+                    <Button variant="outline" size="sm" className="absolute -top-12 -right-12 rounded-full">
+                      <Upload className="h-4 w-4" />
                     </Button>
-                  </CardFooter>
-                </form>
-              </Card>
+                  </div>
+                  <h2 className="text-xl font-bold mt-2">
+                    {user?.first_name} {user?.last_name}
+                  </h2>
+                  <p className="text-muted-foreground">{user?.email}</p>
 
-              {/* Email Update Card */}
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>Email Address</CardTitle>
-                  <CardDescription>Update your email address</CardDescription>
-                </CardHeader>
-                 <form onSubmit={() => console.log("Update Email! not implemented")}>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">New Email Address</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={emailForm.email}
-                        onChange={handleEmailChange}
-                        className={emailError ? "border-red-500" : ""}
-                      />
-                      {emailError && <p className="text-sm text-red-500">{emailError}</p>}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" disabled={isUpdatingEmail} className="ml-auto">
-                      {isUpdatingEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Update Email
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>Password & Security</CardTitle>
-                  <CardDescription>Update your password and security settings</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleUpdatePassword}>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="password">New Password</Label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        value={passwordForm.password}
-                        onChange={handlePasswordChange}
-                        className={passwordErrors.password ? "border-red-500" : ""}
-                      />
-                      {passwordErrors.password && <p className="text-sm text-red-500">{passwordErrors.password}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        value={passwordForm.confirmPassword}
-                        onChange={handlePasswordChange}
-                        className={passwordErrors.confirmPassword ? "border-red-500" : ""}
-                      />
-                      {passwordErrors.confirmPassword && (
-                        <p className="text-sm text-red-500">{passwordErrors.confirmPassword}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" disabled={isUpdatingPassword} className="ml-auto">
-                      {isUpdatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Update Password
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-
-            {/* KYC Documents Tab */}
-            <TabsContent value="kyc-documents">
-              <Card>
-                <CardHeader>
-                  <CardTitle>KYC Documents</CardTitle>
-                  <CardDescription>
-                    {user?.kyc_verified
-                      ? "Your identity has been verified successfully."
-                      : "Verify your identity by uploading your ID documents."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
                   {user?.kyc_verified ? (
-                    <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
-                      <div className="bg-green-100 rounded-full p-2 mr-4">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-green-600"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-green-800">Verification Complete</h3>
-                        <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      KYC Verified
+                    </Badge>
+                  ) : userKyc && userKyc.id ? (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-yellow-50 text-yellow-700 border-yellow-300 flex items-center"
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      KYC Pending Review
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="mt-2 bg-red-50 text-red-700 border-red-200 flex items-center">
+                      <XCircle className="h-4 w-4 mr-1" />
+                      KYC Unverified
+                    </Badge>
+                  )}
+
+                  {user?.is_verified ? (
+                    <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
+                      Email Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="mt-2 bg-gray-50 text-gray-700 border-gray-200">
+                      Email Not Verified
+                    </Badge>
+                  )}
+
+                  {/* Payment Status Badge */}
+                  {paymentDetails ? (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-green-50 text-green-700 border-green-200 flex items-center"
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Payment Setup
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="mt-2 bg-orange-50 text-orange-700 border-orange-200 flex items-center"
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Payment Pending
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Member Since</p>
+                      <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.location?.city || "Not specified"}, {user?.location?.country || ""}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Tenant Rating</p>
+                      <div className="flex items-center">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-4 w-4 ${star <= 5 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="ml-2 text-sm font-medium">5.0</span>
                       </div>
                     </div>
-                  ) : (
-                    <KycVerificationForm />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </div>
+                </div>
 
-            {/* Preferences Tab */}
-            <TabsContent value="preferences">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preferences</CardTitle>
-                  <CardDescription>Manage your account preferences</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Email Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates about your bookings via email</p>
+                <div className="mt-8 pt-6 border-t">
+                  <h3 className="font-medium mb-4">Account Actions</h3>
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download My Data
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Deactivate Account
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main content */}
+          <div className="md:col-span-2">
+            <Tabs defaultValue="personal-info">
+              <TabsList className="grid grid-cols-4 mb-8">
+                <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
+                <TabsTrigger value="kyc-documents">KYC Documents</TabsTrigger>
+                <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences</TabsTrigger>
+              </TabsList>
+
+              {/* Personal Info Tab */}
+              <TabsContent value="personal-info">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Personal Information</CardTitle>
+                    <CardDescription>Update your personal details</CardDescription>
+                  </CardHeader>
+                  <form onSubmit={handleUpdatePersonalInfo}>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="first_name">First Name</Label>
+                          <Input
+                            id="first_name"
+                            name="first_name"
+                            value={personalInfo.first_name}
+                            onChange={handlePersonalInfoChange}
+                            className={personalInfoErrors.first_name ? "border-red-500" : ""}
+                          />
+                          {personalInfoErrors.first_name && (
+                            <p className="text-sm text-red-500">{personalInfoErrors.first_name}</p>
+                          )}
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="email-notifications" className="sr-only">
-                            Email Notifications
-                          </Label>
-                          <input type="checkbox" id="email-notifications" className="toggle" defaultChecked />
+                        <div className="space-y-2">
+                          <Label htmlFor="last_name">Last Name</Label>
+                          <Input
+                            id="last_name"
+                            name="last_name"
+                            value={personalInfo.last_name}
+                            onChange={handlePersonalInfoChange}
+                            className={personalInfoErrors.last_name ? "border-red-500" : ""}
+                          />
+                          {personalInfoErrors.last_name && (
+                            <p className="text-sm text-red-500">{personalInfoErrors.last_name}</p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">SMS Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates about your bookings via SMS</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="sms-notifications" className="sr-only">
-                            SMS Notifications
-                          </Label>
-                          <input type="checkbox" id="sms-notifications" className="toggle" />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                          id="username"
+                          name="username"
+                          value={personalInfo.username}
+                          onChange={handlePersonalInfoChange}
+                          className={personalInfoErrors.username ? "border-red-500" : ""}
+                        />
+                        {personalInfoErrors.username && (
+                          <p className="text-sm text-red-500">{personalInfoErrors.username}</p>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit" disabled={isUpdatingProfile} className="ml-auto">
+                        {isUpdatingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+
+                {/* Email Update Card */}
+                <Card className="mt-8">
+                  <CardHeader>
+                    <CardTitle>Email Address</CardTitle>
+                    <CardDescription>Update your email address</CardDescription>
+                  </CardHeader>
+                  <form onSubmit={handleUpdateEmail}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">New Email Address</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={emailForm.email}
+                          onChange={handleEmailChange}
+                          className={emailError ? "border-red-500" : ""}
+                        />
+                        {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit" disabled={isUpdatingEmail} className="ml-auto">
+                        {isUpdatingEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Update Email
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+
+                <Card className="mt-8">
+                  <CardHeader>
+                    <CardTitle>Password & Security</CardTitle>
+                    <CardDescription>Update your password and security settings</CardDescription>
+                  </CardHeader>
+                  <form onSubmit={handleUpdatePassword}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="password">New Password</Label>
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          value={passwordForm.password}
+                          onChange={handlePasswordChange}
+                          className={passwordErrors.password ? "border-red-500" : ""}
+                        />
+                        {passwordErrors.password && <p className="text-sm text-red-500">{passwordErrors.password}</p>}
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={handlePasswordChange}
+                          className={passwordErrors.confirmPassword ? "border-red-500" : ""}
+                        />
+                        {passwordErrors.confirmPassword && (
+                          <p className="text-sm text-red-500">{passwordErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit" disabled={isUpdatingPassword} className="ml-auto">
+                        {isUpdatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Update Password
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+              </TabsContent>
+
+              {/* KYC Documents Tab */}
+              <TabsContent value="kyc-documents">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>KYC Documents</CardTitle>
+                    <CardDescription>
+                      {user?.kyc_verified
+                        ? "Your identity has been verified successfully."
+                        : "Verify your identity by uploading your ID documents."}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {user?.kyc_verified ? (
+                      <div className="bg-green-50 border border-green-200 rounded-md p-4 flex items-center">
+                        <div className="bg-green-100 rounded-full p-2 mr-4">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 text-green-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
                         <div>
-                          <p className="font-medium">Marketing Communications</p>
-                          <p className="text-sm text-muted-foreground">
-                            Receive updates about new features and promotions
+                          <h3 className="font-medium text-green-800">Verification Complete</h3>
+                          <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <KycVerificationForm />
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Payment Details Tab */}
+              <TabsContent value="payment-details">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payment Details</CardTitle>
+                    <CardDescription>Manage your payment information for rental transactions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingPayment ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2">Loading payment details...</span>
+                      </div>
+                    ) : paymentDetails ? (
+                      <div className="space-y-6">
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                            <h3 className="font-medium text-green-800">Payment Details Configured</h3>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            Your payment information is set up for rental transactions.
                           </p>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Label htmlFor="marketing-communications" className="sr-only">
-                            Marketing Communications
-                          </Label>
-                          <input type="checkbox" id="marketing-communications" className="toggle" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Bank Name</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">{paymentDetails.bank_name}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Account Holder Name</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">{paymentDetails.account_name}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Account Number</Label>
+                            <div className="p-3 bg-gray-50 rounded-md">
+                              <p className="text-sm font-medium">****{paymentDetails.account_number.slice(-4)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            onClick={handleDeletePaymentDetails}
+                            disabled={isUpdatingPayment}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Remove Payment Details
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleUpdatePaymentDetails} className="space-y-6">
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+                          <div className="flex items-center">
+                            <Info className="h-5 w-5 text-amber-600 mr-2" />
+                            <h3 className="font-medium text-amber-800">Payment Setup Optional</h3>
+                          </div>
+                          <p className="text-sm text-amber-700 mt-1">
+                            Add your bank details for easier payment processing during rentals.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="bank_name">Bank Name</Label>
+                            <Input
+                              id="bank_name"
+                              name="bank_name"
+                              value={paymentForm.bank_name}
+                              onChange={handlePaymentChange}
+                              placeholder="e.g., Commercial Bank of Ethiopia"
+                              className={paymentErrors.bank_name ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.bank_name && (
+                              <p className="text-sm text-red-500">{paymentErrors.bank_name}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="account_name">Account Holder Name</Label>
+                            <Input
+                              id="account_name"
+                              name="account_name"
+                              value={paymentForm.account_name}
+                              onChange={handlePaymentChange}
+                              placeholder="Full name as on bank account"
+                              className={paymentErrors.account_name ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.account_name && (
+                              <p className="text-sm text-red-500">{paymentErrors.account_name}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="account_number">Account Number</Label>
+                            <Input
+                              id="account_number"
+                              name="account_number"
+                              value={paymentForm.account_number}
+                              onChange={handlePaymentChange}
+                              placeholder="Enter your bank account number"
+                              className={paymentErrors.account_number ? "border-red-500" : ""}
+                            />
+                            {paymentErrors.account_number && (
+                              <p className="text-sm text-red-500">{paymentErrors.account_number}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                          <h4 className="font-medium text-blue-800 mb-2">Supported Banks</h4>
+                          <p className="text-sm text-blue-700">
+                            Awash Bank, Bank of Abyssinia, CBEBirr, Commercial Bank of Ethiopia, Telebirr
+                          </p>
+                        </div>
+
+                        <Button type="submit" disabled={isUpdatingPayment} className="w-full">
+                          {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Save Payment Details
+                        </Button>
+                      </form>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Preferences Tab */}
+              <TabsContent value="preferences">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Preferences</CardTitle>
+                    <CardDescription>Manage your account preferences</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Email Notifications</p>
+                            <p className="text-sm text-muted-foreground">
+                              Receive updates about your bookings via email
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="email-notifications" className="sr-only">
+                              Email Notifications
+                            </Label>
+                            <input type="checkbox" id="email-notifications" className="toggle" defaultChecked />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">SMS Notifications</p>
+                            <p className="text-sm text-muted-foreground">Receive updates about your bookings via SMS</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="sms-notifications" className="sr-only">
+                              SMS Notifications
+                            </Label>
+                            <input type="checkbox" id="sms-notifications" className="toggle" />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Marketing Communications</p>
+                            <p className="text-sm text-muted-foreground">
+                              Receive updates about new features and promotions
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Label htmlFor="marketing-communications" className="sr-only">
+                              Marketing Communications
+                            </Label>
+                            <input type="checkbox" id="marketing-communications" className="toggle" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pt-6 border-t">
-                    <h3 className="text-lg font-medium mb-4">Language & Region</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="language">Language</Label>
-                        <select id="language" className="w-full border rounded-md p-2">
-                          <option value="en">English</option>
-                          <option value="fr">French</option>
-                          <option value="es">Spanish</option>
-                          <option value="de">German</option>
-                        </select>
-                      </div>
+                    <div className="pt-6 border-t">
+                      <h3 className="text-lg font-medium mb-4">Language & Region</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="language">Language</Label>
+                          <select id="language" className="w-full border rounded-md p-2">
+                            <option value="en">English</option>
+                            <option value="fr">French</option>
+                            <option value="es">Spanish</option>
+                            <option value="de">German</option>
+                          </select>
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="timezone">Timezone</Label>
-                        <select id="timezone" className="w-full border rounded-md p-2">
-                          <option value="utc">UTC (Coordinated Universal Time)</option>
-                          <option value="est">EST (Eastern Standard Time)</option>
-                          <option value="cst">CST (Central Standard Time)</option>
-                          <option value="pst">PST (Pacific Standard Time)</option>
-                        </select>
+                        <div className="space-y-2">
+                          <Label htmlFor="timezone">Timezone</Label>
+                          <select id="timezone" className="w-full border rounded-md p-2">
+                            <option value="utc">UTC (Coordinated Universal Time)</option>
+                            <option value="est">EST (Eastern Standard Time)</option>
+                            <option value="cst">CST (Central Standard Time)</option>
+                            <option value="pst">PST (Pacific Standard Time)</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button className="ml-auto">Save Preferences</Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  </CardContent>
+                  <CardFooter>
+                    <Button className="ml-auto">Save Preferences</Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
-    </div>
     </div>
   )
 }

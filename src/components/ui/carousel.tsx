@@ -29,8 +29,9 @@ const Carousel = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & {
     orientation?: "horizontal" | "vertical"
     itemsPerSlide: number
+    onSlideChange?: (index: number) => void
   }
->(({ orientation = "horizontal", className, children, itemsPerSlide, ...props }, ref) => {
+>(({ orientation = "horizontal", className, children, itemsPerSlide, onSlideChange, ...props }, ref) => {
   const containerRef = React.useRef<HTMLDivElement | null>(null)
   const [currentSlide, setCurrentSlide] = React.useState(0)
   const [totalSlides, setTotalSlides] = React.useState(0)
@@ -50,14 +51,16 @@ const Carousel = React.forwardRef<
   const scrollPrev = React.useCallback(() => {
     if (currentSlide > 0) {
       setCurrentSlide((prev) => prev - 1)
+      onSlideChange?.(currentSlide - 1)
     }
-  }, [currentSlide])
+  }, [currentSlide, onSlideChange])
 
   const scrollNext = React.useCallback(() => {
     if (currentSlide < totalSlides - 1) {
       setCurrentSlide((prev) => prev + 1)
+      onSlideChange?.(currentSlide + 1)
     }
-  }, [currentSlide, totalSlides])
+  }, [currentSlide, totalSlides, onSlideChange])
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
