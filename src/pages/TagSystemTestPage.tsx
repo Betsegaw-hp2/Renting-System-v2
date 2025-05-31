@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TagSelectionModal } from "@/components/preferences/TagSelectionModal"
 import { TagManagementSection } from "@/components/preferences/TagManagementSection"
+import { TagModalTest } from "@/components/preferences/TagModalTest"
 import { useTagManager } from "@/hooks/useTagManager"
 import { useUser } from "@/contexts/UserContext"
 import { Tags, RefreshCw, AlertCircle } from "lucide-react"
@@ -243,6 +244,9 @@ export function TagSystemTestPage() {
         description="This is a test of the tag selection modal component."
         showSkipOption={true}
       />
+
+      {/* Tag Modal Test */}
+      <TagModalTest />
     </div>
   )
 }

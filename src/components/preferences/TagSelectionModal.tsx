@@ -74,40 +74,52 @@ export function TagSelectionModal({
     }
     setSelectedTagIds(newSelectedTags)
   }
-
   const handleSave = async () => {
     try {
       setIsSaving(true)
       await onSave(Array.from(selectedTagIds))
-      onClose()
       toast({
         title: "Success",
         description: "Your preferences have been saved successfully!",
       })
+      onClose()
     } catch (error) {
       console.error("Failed to save tags:", error)
       toast({
         title: "Error",
         description: "Failed to save your preferences. Please try again.",
         variant: "destructive"
-      })
-    } finally {
+      })    } finally {
       setIsSaving(false)
     }
   }
 
   const handleSkip = () => {
-    onClose()
     // Optionally save to session storage that user skipped
-    sessionStorage.setItem('skippedTagPrompt', 'true')
+    if (showSkipOption) {
+      sessionStorage.setItem('skippedTagPrompt', 'true')
+    }
+    onClose()
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    // Profile page (showSkipOption=false): Always allow closing
+    // Signup flow (showSkipOption=true): Only allow closing via Skip button
+    if (!open) {
+      if (!showSkipOption) {
+        // Profile page - allow closing via X or outside click
+        onClose()
+      }
+      // Signup flow - don't close via X or outside click, only via Skip/Save buttons
+    }
   }
 
   const selectedTagsArray = availableTags.filter(tag => selectedTagIds.has(tag.id))
 
   return (
-    <Dialog open={isOpen} onOpenChange={showSkipOption ? onClose : undefined}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
-        <DialogHeader>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Tags className="h-5 w-5" />
             {title}
@@ -117,7 +129,7 @@ export function TagSelectionModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-4 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -183,10 +195,9 @@ export function TagSelectionModal({
                 </CardContent>
               </Card>
             </div>
-          )}
-        </div>
+          )}        </div>
 
-        <DialogFooter className="flex gap-2">
+        <DialogFooter className="flex-shrink-0 flex gap-2 pt-4 border-t">
           {showSkipOption && (
             <Button variant="outline" onClick={handleSkip} disabled={isSaving}>
               Skip for now

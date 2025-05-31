@@ -45,7 +45,6 @@ export function TagManagementSection() {
       setIsLoading(false)
     }
   }
-
   const handleSaveTags = async (selectedTagIds: string[]): Promise<void> => {
     if (!currentUser) throw new Error("No user logged in")
 
@@ -54,7 +53,6 @@ export function TagManagementSection() {
       // Refresh user data to get updated tags
       await refreshUser()
       await fetchUserTags()
-      setIsModalOpen(false)
       toast({
         title: "Success",
         description: "Your interest tags have been updated successfully!",
@@ -63,6 +61,10 @@ export function TagManagementSection() {
       console.error("Failed to save user tags:", error)
       throw error
     }
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
   }
 
   const handleRemoveTag = async (tagId: string) => {
@@ -157,11 +159,9 @@ export function TagManagementSection() {
             </p>
           </CardContent>
         )}
-      </Card>
-
-      <TagSelectionModal
+      </Card>      <TagSelectionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSave={handleSaveTags}
         initialSelectedTags={userTags}
         title="Manage Your Interests"
