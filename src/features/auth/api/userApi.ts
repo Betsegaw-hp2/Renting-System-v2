@@ -1,3 +1,4 @@
+import type { CreateLocation, Location, UpdateLocation } from "@/types/location.types"
 import type { User } from "@/types/user.types"
 import apiClient from "../../../api/client"
 
@@ -68,10 +69,6 @@ export const userApi = {
       throw error
     }
   },
-
-  
-
-  
 
   // Get current user profile
   getCurrentUser: async (): Promise<User> => {
@@ -147,6 +144,40 @@ export const userApi = {
       throw error
     }
   },
+  // Location management
+  getUserLocation: async (): Promise<Location | null> => {
+    try {
+      const response = await apiClient.get<Location>(`/locations`)
+      console.log("User location fetched successfully", response.data)
+      return response.data
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null // Return null if location not found
+      }
+      console.error(`Error fetching location for current user:`, error)
+      throw error
+    }
+  },
 
-  
+  createUserLocation: async (data: CreateLocation): Promise<Location> => {
+    try {
+      const response = await apiClient.post<Location>('/locations', data)
+      console.log("User location created successfully", response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error creating location for user:`, error)
+      throw error
+    }
+  },
+  updateUserLocation: async (locationId: string, data: UpdateLocation): Promise<Location> => {
+    try {
+      const response = await apiClient.patch<Location>(`/locations/${locationId}`, data)
+      console.log("User location updated successfully", response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error updating location for user with location id ${locationId}:`, error)
+      throw error
+    }
+  },
+
 }

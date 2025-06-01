@@ -49,7 +49,58 @@ export const dismiss = (id: string): void => {
 
 export const toast = ({ title, description, action, duration = 5000, variant }: ToastActionProps): string => {
   const id = generateId()
-  const newToast: ToastProps = { id, title, description, action, duration, variant }
+  
+  // Helper function to safely convert description to string
+  const safeDescription = (desc: any): string | undefined => {
+    if (desc === null || desc === undefined) {
+      return undefined
+    }
+    
+    if (typeof desc === 'string') {
+      return desc
+    }
+    
+    if (typeof desc === 'object') {
+      // Handle error objects or API response objects
+      if (desc.message && typeof desc.message === 'string') {
+        return desc.message
+      }
+      
+      if (desc.error && typeof desc.error === 'string') {
+        return desc.error
+      }
+      
+      // If it's an object with field-specific errors, extract the first error
+      const errorValues = Object.values(desc).filter(value => typeof value === 'string')
+      if (errorValues.length > 0) {
+        return errorValues[0] as string
+      }
+      
+      // If errors are in an array format
+      if (Array.isArray(desc) && desc.length > 0 && typeof desc[0] === 'string') {
+        return desc[0]
+      }
+      
+      // Fallback to JSON.stringify for objects
+      try {
+        return JSON.stringify(desc)
+      } catch {
+        return "An error occurred"
+      }
+    }
+    
+    // For any other type, convert to string
+    return String(desc)
+  }
+  
+  const newToast: ToastProps = { 
+    id, 
+    title, 
+    description: safeDescription(description), 
+    action, 
+    duration, 
+    variant 
+  }
 
   // Add to global toasts
   // Ensure not to add duplicate toasts if rapidly called, though ID generation should prevent this.
