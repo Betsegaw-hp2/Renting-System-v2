@@ -28,10 +28,10 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
   useEffect(() => {
     setCurrentEmail(email)
   }, [email])
-
   useEffect(() => {
     inputsRef.current[activeIndex]?.focus()
   }, [activeIndex])
+  
   const handleVerify = async () => {
     const otp = codes.join("")
     if (otp.length < CODE_LENGTH) {
@@ -42,9 +42,26 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
     setError(null)
     try {
       await verifyEmail({ user_id: userId, otp_code: otp })
-      onVerified()
+      
+      // Store verification success info for login page
+      sessionStorage.setItem('emailJustVerified', 'true')
+      sessionStorage.setItem('verifiedUserEmail', email)
+      sessionStorage.setItem('triggerTagPromptAfterSignup', 'true')
+      
+      // Show success message and redirect to login
+      toast({
+        title: "Email verified successfully!",
+        description: "Please log in to continue.",
+        variant: "default"
+      })
+      
+      // Redirect to login page instead of calling onVerified()
+      setTimeout(() => {
+        window.location.href = `/login?verified=true&email=${encodeURIComponent(email)}`
+      }, 2000)
+      
     } catch (e: any) {
-      setError(e.message ?? "Invalid code")
+      setError(e.response.data.message || e.message || "Invalid code")
     } finally {
       setLoading(false)
     }
