@@ -103,12 +103,13 @@ export const useMultiStepSignup = () => {  const [currentStep, setCurrentStep] =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (currentStep === "account") {
-      goToNextStep()
-    } else if (currentStep === "tenant-details" || currentStep === "owner-details") {
-      if (!validateDetailsStep()) return
+    // if (currentStep === "account") {
+    //   goToNextStep()
+    // } else if (currentStep === "tenant-details" || currentStep === "owner-details") {
+      // if (!validateDetailsStep()) return
+      if (!validateAccountStep()) return
       await submitSignup()
-    }
+    // }
   }
 
   const skipAndCreateAccount = async () => {

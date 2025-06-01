@@ -30,3 +30,19 @@ export interface Conversation {
   unreadCount: number
   isOnline?: boolean
 }
+
+
+export interface UserMessage {
+  id: string
+  content: string
+  is_read: boolean
+  listing_id: string
+  sender_id: string
+  receiver_id: string
+  receiver_avatar?: string
+  receiver_name?: string
+  sender_avatar?: string
+  sender_name?: string
+  sent_at: string
+  updated_at: string
+}

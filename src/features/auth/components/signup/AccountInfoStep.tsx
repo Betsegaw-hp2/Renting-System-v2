@@ -237,6 +237,22 @@ export function AccountInfoStep({ formData, errors, updateFormData }: AccountInf
           Your information is secure and will only be used for account purposes.
         </p>
       </div>
+      <div className="flex items-center space-x-2">
+        <input
+          id="terms"
+          type="checkbox"
+          checked={formData.agreeToTerms || false}
+          onChange={e => updateFormData("agreeToTerms", e.target.checked)}
+          className="accent-blue-600 h-4 w-4"
+          required
+        />
+        <Label htmlFor="terms" className="text-sm">
+          I have read and accept the <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">terms and policy</a>
+        </Label>
+      </div>
+      {errors.agreeToTerms && (
+        <p className="text-sm text-red-500">{errors.agreeToTerms}</p>
+      )}
     </div>
   )
 }
