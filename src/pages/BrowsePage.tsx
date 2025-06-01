@@ -18,12 +18,13 @@ export default function BrowsePage() {
   const [listings, setListings] = useState<FeaturedListing[]>([])
   const [filteredListings, setFilteredListings] = useState<FeaturedListing[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Get search params
-  const queryParam = searchParams.get("query") || ""
+  const [error, setError] = useState<string | null>(null)  // Get search params
+  const queryParam = searchParams.get("search") || ""
   const categoryParam = searchParams.get("category") || ""
-  const dateRangeParam = searchParams.get("dateRange") || "any"
+  const dateRangeParam = searchParams.get("date_range") || "any"
+  const minPriceParam = searchParams.get("min_price") || ""
+  const maxPriceParam = searchParams.get("max_price") || ""
+  const cityParam = searchParams.get("city") || ""
   const useMockApiParam = searchParams.get("mock") !== "false" // Default to true if not specified
 
   // Date range options mapping
@@ -98,7 +99,7 @@ export default function BrowsePage() {
           dateRange,
           useMockApi: false, // Force use of real API
         })
-
+        
         // Always use the search API with appropriate filters
         const searchResults = await publicApi.searchListings(
           queryParam,
@@ -106,6 +107,9 @@ export default function BrowsePage() {
           dateRange.startDate,
           dateRange.endDate,
           false, // Force use of real API, not mock data
+          minPriceParam ? parseFloat(minPriceParam) : undefined,
+          maxPriceParam ? parseFloat(maxPriceParam) : undefined,
+          cityParam || undefined,
         )
 
         console.log(`Fetched ${searchResults.length} listings from API`)
@@ -121,7 +125,7 @@ export default function BrowsePage() {
     }
 
     fetchAndFilterListings()
-  }, [queryParam, categoryParam, dateRangeParam])
+  }, [queryParam, categoryParam, dateRangeParam, minPriceParam, maxPriceParam, cityParam])
 
   // Update the handleSearch function to not use mock data
   const handleSearch = async (filters: SearchFiltersType) => {
@@ -131,26 +135,44 @@ export default function BrowsePage() {
     try {
       // Update URL with search params (without navigating)
       const params = new URLSearchParams(window.location.search)
-
+      
       if (filters.query) {
-        params.set("query", filters.query)
+        params.set("search", filters.query)
       } else {
-        params.delete("query")
+        params.delete("search")
       }
 
       if (filters.category) {
         params.set("category", filters.category)
       } else {
         params.delete("category")
-      }
-
-      // Get the date range value from the label
+      }      // Get the date range value from the label
       const dateRangeValue = DATE_RANGES.find((range) => range.label === filters.dateRange.label)?.value || "any"
 
       if (dateRangeValue !== "any") {
-        params.set("dateRange", dateRangeValue)
+        params.set("date_range", dateRangeValue)
       } else {
-        params.delete("dateRange")
+        params.delete("date_range")
+      }
+
+      // Handle price parameters
+      if (filters.minPrice !== undefined) {
+        params.set("min_price", filters.minPrice.toString())
+      } else {
+        params.delete("min_price")
+      }
+
+      if (filters.maxPrice !== undefined) {
+        params.set("max_price", filters.maxPrice.toString())
+      } else {
+        params.delete("max_price")
+      }
+
+      // Handle city parameter
+      if (filters.city) {
+        params.set("city", filters.city)
+      } else {
+        params.delete("city")
       }
 
       // Always set mock to false to use real API
@@ -159,7 +181,7 @@ export default function BrowsePage() {
       window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
 
       console.log("Searching with filters:", filters)
-
+      
       // Fetch new results based on filters
       const searchResults = await publicApi.searchListings(
         filters.query,
@@ -167,6 +189,9 @@ export default function BrowsePage() {
         filters.dateRange.startDate,
         filters.dateRange.endDate,
         false, // Force use of real API
+        filters.minPrice,
+        filters.maxPrice,
+        filters.city,
       )
 
       console.log(`Search returned ${searchResults.length} results`)
@@ -179,12 +204,14 @@ export default function BrowsePage() {
       setIsLoading(false)
     }
   }
-
   // Prepare initial values for the search form
   const initialSearchValues: Partial<SearchFiltersType> = {
     query: queryParam,
     category: categoryParam,
     dateRange: getDateRangeFromValue(dateRangeParam),
+    minPrice: minPriceParam ? parseFloat(minPriceParam) : undefined,
+    maxPrice: maxPriceParam ? parseFloat(maxPriceParam) : undefined,
+    city: cityParam,
     useMockApi: useMockApiParam,
   }
 
@@ -236,9 +263,7 @@ export default function BrowsePage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">
               {filteredListings.length} {filteredListings.length === 1 ? "Result" : "Results"} Found
-            </h2>
-
-            {(queryParam || categoryParam || dateRangeParam !== "any") && (
+            </h2>            {(queryParam || categoryParam || dateRangeParam !== "any" || minPriceParam || maxPriceParam || cityParam) && (
               <Button
                 variant="outline"
                 onClick={() => {
