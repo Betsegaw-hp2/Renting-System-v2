@@ -117,9 +117,9 @@ export const userApi = {
     }
   },
 
-  getUserPaymentDetails: async (userId: string): Promise<PaymentDetail[]> => {
+  getUserPaymentDetails: async (userId: string): Promise<PaymentDetail> => {
     try {
-      const response = await apiClient.get<PaymentDetail[]>(`/users/${userId}/payment-details`)
+      const response = await apiClient.get<PaymentDetail>(`/users/${userId}/payment-details`)
       console.log("Payment details fetched successfully", response.data)
       return response.data
     } catch (error) {

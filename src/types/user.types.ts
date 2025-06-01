@@ -74,6 +74,7 @@ export interface User {
   business_address?: string;
   tax_id?: string;
   phone_number?: string;
+  tags?: Array<{ id: string; name: string }>;
 }
 
 export interface UserWithLocation extends User {

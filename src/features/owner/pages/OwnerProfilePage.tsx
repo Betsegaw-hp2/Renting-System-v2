@@ -2,6 +2,7 @@
 
 import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
+import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,10 +14,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { updateEmail } from "@/features/auth/api/authApi"
 import {
   userApi,
-  type UpdateUserPayload,
-  type UpdatePasswordPayload,
   type CreatePaymentDetailPayload,
   type PaymentDetail,
+  type UpdatePasswordPayload,
+  type UpdateUserPayload
 } from "@/features/auth/api/userApi"
 import { ownerApi } from "@/features/owner/api/ownerApi"
 import { useToast } from "@/hooks/useToast"
@@ -24,34 +25,34 @@ import {
   AlertTriangle,
   Building,
   Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
   DollarSign,
   Download,
   Home,
+  Info,
   Loader2,
   Star,
   Upload,
   Users,
-  CreditCard,
-  CheckCircle,
-  Clock,
   XCircle,
-  Info,
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
+
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
-import type { AppDispatch } from "@/store"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
-import type { UserKYC } from "@/types/user.types"
+import type { AppDispatch } from "@/store"
+import type { User, UserKYC } from "@/types/user.types"; // Ensure User is imported
 
 const OwnerProfilePage = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const user = useSelector((state: any) => state.auth.user)
-
+  const user = useSelector((state: { auth: { user: User | null } }) => state.auth.user) // Typed user state
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
     first_name: "",
@@ -112,43 +113,42 @@ const OwnerProfilePage = () => {
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user?.id) return
+      if (!user?.id) return; // This guard ensures user and user.id are valid
 
       setIsLoadingProfile(true)
       setIsKycLoading(true)
       setIsLoadingPayment(true)
       try {
-        const userData = await userApi.getCurrentUser()
-        if (!userData) {
+        const userDataResponse = await userApi.getCurrentUser()
+        if (!userDataResponse) {
           toast({
             title: "Error",
             description: "Failed to fetch user data",
             variant: "destructive",
           })
+          setIsLoadingProfile(false)
+          setIsKycLoading(false)
+          setIsLoadingPayment(false)
           return
         }
         setPersonalInfo({
-          first_name: userData.first_name || "",
-          last_name: userData.last_name || "",
-          email: userData.email || "",
-          username: userData.username || "",
-          phone_number: userData.phone_number || "",
+          first_name: userDataResponse.first_name || "",
+          last_name: userDataResponse.last_name || "",
+          email: userDataResponse.email || "",
+          username: userDataResponse.username || "",
+          phone_number: userDataResponse.phone_number || "",
         })
-        // Update Redux store with the latest user data
-        dispatch(updateUserProfile(userData))
-
-        // Fetch KYC data
+        dispatch(updateUserProfile(userDataResponse))        // user.id is safe here due to the initial guard
         const kycData = await userApi.getUserKyc(user.id)
         setUserKyc(kycData)
 
-        // Fetch payment details
         const paymentData = await userApi.getUserPaymentDetails(user.id)
-        setPaymentDetails(paymentData[0] || null)
-        if (paymentData[0]) {
+        setPaymentDetails(paymentData)
+        if (paymentData) {
           setPaymentForm({
-            bank_name: paymentData[0].bank_name,
-            account_number: paymentData[0].account_number,
-            account_name: paymentData[0].account_name,
+            bank_name: paymentData.bank_name,
+            account_number: paymentData.account_number,
+            account_name: paymentData.account_name,
           })
         }
       } catch (error: any) {
@@ -156,8 +156,7 @@ const OwnerProfilePage = () => {
           title: "Error fetching profile",
           description: error.message || "Failed to load your profile information",
           variant: "destructive",
-        })
-      } finally {
+        })      } finally {
         setIsLoadingProfile(false)
         setIsKycLoading(false)
         setIsLoadingPayment(false)
@@ -165,7 +164,23 @@ const OwnerProfilePage = () => {
     }
 
     fetchUserData()
-  }, [user?.id, toast, dispatch])
+  }, [user?.id, dispatch, toast]) // Corrected dependencies
+
+  // Sync form state with Redux user state
+  useEffect(() => {
+    if (user) {
+      setPersonalInfo({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        phone_number: user.phone_number || "",
+      })
+      setEmailForm({
+        email: user.email || "",
+      })
+    }
+  }, [user])
 
   // Fetch owner properties
   useEffect(() => {
@@ -281,14 +296,8 @@ const OwnerProfilePage = () => {
       errors.email = "Email is required"
     } else if (!/\S+@\S+\.\S+/.test(personalInfo.email)) {
       errors.email = "Email is invalid"
-    }
-
-    if (!personalInfo.username.trim()) {
+    }    if (!personalInfo.username.trim()) {
       errors.username = "Username is required"
-    }
-
-    if (!personalInfo.phone_number.trim()) {
-      errors.phone_number = "Phone number is required"
     }
 
     setPersonalInfoErrors(errors)
@@ -338,7 +347,10 @@ const OwnerProfilePage = () => {
   // Handle personal info form submission
   const handleUpdatePersonalInfo = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePersonalInfo()) return
 
     setIsUpdatingProfile(true)
@@ -347,21 +359,18 @@ const OwnerProfilePage = () => {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
         username: personalInfo.username,
+        // phone_number is not part of UpdateUserPayload based on its definition
       }
 
       const updatedUser = await userApi.updateUser(user.id, payload)
-
-      // Update Redux store with new user data
       dispatch(updateUserProfile(updatedUser))
-
-      // Update local state to match the updated user data
       setPersonalInfo((prev) => ({
         ...prev,
-        first_name: updatedUser.first_name,
-        last_name: updatedUser.last_name,
-        username: updatedUser.username,
+        first_name: updatedUser.first_name || prev.first_name,
+        last_name: updatedUser.last_name || prev.last_name,
+        username: updatedUser.username || prev.username,
+        phone_number: updatedUser.phone_number || prev.phone_number,
       }))
-
       toast({
         title: "Profile updated",
         description: "Your personal information has been updated successfully",
@@ -380,7 +389,10 @@ const OwnerProfilePage = () => {
   // Handle password form submission
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePassword()) return
 
     setIsUpdatingPassword(true)
@@ -415,6 +427,10 @@ const OwnerProfilePage = () => {
   // Handle email form submission
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     setEmailError(null)
 
     if (!emailForm.email.trim()) {
@@ -449,7 +465,10 @@ const OwnerProfilePage = () => {
   // Handle payment details submission
   const handleUpdatePaymentDetails = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePaymentForm()) return
 
     setIsUpdatingPayment(true)
@@ -480,6 +499,10 @@ const OwnerProfilePage = () => {
 
   // Handle payment details deletion
   const handleDeletePaymentDetails = async () => {
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!paymentDetails) return
 
     setIsUpdatingPayment(true)
@@ -542,8 +565,7 @@ const OwnerProfilePage = () => {
                     {user?.first_name} {user?.last_name}
                   </h2>
                   <p className="text-muted-foreground">{user?.email}</p>
-                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
-                    Property Owner
+                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">                  Property Owner
                   </Badge>
 
                   {/* KYC Status Badge */}
@@ -595,11 +617,11 @@ const OwnerProfilePage = () => {
                     <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Member Since</p>
-                      <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center">
+                 <div className="flex items-center">
                     <Star className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Owner Rating</p>
@@ -683,11 +705,12 @@ const OwnerProfilePage = () => {
           {/* Main content */}
           <div className="md:col-span-2">
             <Tabs defaultValue="personal-info">
-              <TabsList className="grid grid-cols-4 mb-8">
+              <TabsList className="grid grid-cols-5 mb-8"> {/* Changed to grid-cols-5 */}
                 <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
                 <TabsTrigger value="kyc-verification">KYC</TabsTrigger>
                 <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
                 <TabsTrigger value="properties">My Properties</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
 
               {/* Personal Info Tab */}
@@ -740,23 +763,7 @@ const OwnerProfilePage = () => {
                         {personalInfoErrors.username && (
                           <p className="text-sm text-red-500">{personalInfoErrors.username}</p>
                         )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone_number">Phone Number</Label>
-                        <Input
-                          id="phone_number"
-                          name="phone_number"
-                          value={personalInfo.phone_number}
-                          onChange={handlePersonalInfoChange}
-                          className={personalInfoErrors.phone_number ? "border-red-500" : ""}
-                        />
-                        {personalInfoErrors.phone_number && (
-                          <p className="text-sm text-red-500">{personalInfoErrors.phone_number}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
+                      </div>                      <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea id="bio" placeholder="Tell us a little about yourself" className="resize-none" />
                       </div>
@@ -872,8 +879,26 @@ const OwnerProfilePage = () => {
                           <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
                         </div>
                       </div>
+                    ) : userKyc && userKyc.id && !user?.kyc_verified ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex flex-col items-start">
+                        <div className="flex items-center mb-2">
+                          <div className="bg-yellow-100 rounded-full p-2 mr-4">
+                            <Clock className="h-6 w-6 text-yellow-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-yellow-800">KYC Pending Review</h3>
+                            <p className="text-sm text-yellow-700">Your KYC documents are pending review.</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-yellow-700 mb-4">You can update your submission if needed.</p>
+                        <div className="mt-2 w-full">
+                          <KycVerificationForm />
+                        </div>
+                      </div>
                     ) : (
-                      <KycVerificationForm />
+                      <div className="w-full"> {/* Wrapper for consistent styling/layout */}
+                        <KycVerificationForm />
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1059,36 +1084,35 @@ const OwnerProfilePage = () => {
                                     className={`${
                                       property.status === "available"
                                         ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                        : "bg-red-50 text-red-700 border-red-200"
                                     }`}
                                   >
-                                    {property.status === "available" ? "Available" : "Unavailable"}
+                                    {property.status === "available" ? "Active" : "Inactive"}
                                   </Badge>
                                 </div>
-                                <div className="mt-2">
-                                  <p className="text-sm">{property.description.substring(0, 100)}...</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {property.tags.map((tag: string) => (
+                                    <Badge key={tag} variant="outline" className="text-muted-foreground">
+                                      {tag}
+                                    </Badge>
+                                  ))}
                                 </div>
-                                <div className="mt-4 flex justify-between items-center">
-                                  <div className="flex items-center">
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                    <span className="ml-1 font-medium">${property.price}/night</span>
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/properties/${property.id}`)}
-                                    >
-                                      View Details
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/properties/${property.id}/edit`)}
-                                    >
-                                      Edit
-                                    </Button>
-                                  </div>
+                                <div className="mt-4 flex gap-2">
+                                  <Button
+                                    onClick={() => navigate(`/properties/${property.id}/edit`)}
+                                    className="flex-1"
+                                  >
+                                    Edit Property
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      // Handle property deletion
+                                    }}
+                                    variant="outline"
+                                    className="flex-1 text-red-600 hover:text-red-700"
+                                  >
+                                    Delete Property
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -1097,14 +1121,19 @@ const OwnerProfilePage = () => {
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Showing {properties.length} of {properties.length} properties
-                      </p>
-                    </div>
-                    <Button onClick={() => navigate("/add-property")}>Add New Property</Button>
-                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              {/* Preferences Tab */}
+              <TabsContent value="preferences">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Preferences</CardTitle>
+                    <CardDescription>Manage your account preferences and settings.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TagManagementSection />
+                  </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>

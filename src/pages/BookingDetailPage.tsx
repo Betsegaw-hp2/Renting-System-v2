@@ -304,7 +304,7 @@ const BookingDetailPage = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
                   <p className="text-gray-600">Total Amount</p>
-                  <p className="font-medium">${booking.total_amount.toFixed(2)}</p>
+                  <p className="font-medium">ETB {booking.total_amount.toFixed(2)}</p>
                 </div>
                 {booking.payment_reference && (
                   <div className="flex justify-between">
@@ -380,11 +380,11 @@ const BookingDetailPage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-blue-700">Daily Rate:</span>
-                      <span className="font-medium text-blue-900">${calculateDailyRate(listing.price).toFixed(2)}</span>
+                      <span className="font-medium text-blue-900">ETB {calculateDailyRate(listing.price).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between border-t border-blue-200 pt-1">
                       <span className="font-medium text-blue-700">New Total:</span>
-                      <span className="font-medium text-blue-900">${calculateTotalAmount().toFixed(2)}</span>
+                      <span className="font-medium text-blue-900">ETB {calculateTotalAmount().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

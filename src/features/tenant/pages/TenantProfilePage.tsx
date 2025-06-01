@@ -1,6 +1,7 @@
 "use client"
 
 import { Header } from "@/components/layout/Header"
+import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,10 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { updateEmail } from "@/features/auth/api/authApi"
 import {
   userApi,
-  type UpdatePasswordPayload,
-  type UpdateUserInfoPayload,
   type CreatePaymentDetailPayload,
   type PaymentDetail,
+  type UpdatePasswordPayload,
+  type UpdateUserInfoPayload,
 } from "@/features/auth/api/userApi"
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
@@ -26,14 +27,13 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  CreditCard,
   Download,
+  Info,
   Loader2,
   MapPin,
-  Star,
   Upload,
-  XCircle,
-  CreditCard,
-  Info,
+  XCircle
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
@@ -109,16 +109,14 @@ const TenantProfilePage = () => {
         dispatch(updateUserProfile(userData))
 
         const kycData = await userApi.getUserKyc(user.id)
-        setUserKyc(kycData)
-
-        // Fetch payment details
+        setUserKyc(kycData)        // Fetch payment details
         const paymentData = await userApi.getUserPaymentDetails(user.id)
-        setPaymentDetails(paymentData[0] || null)
-        if (paymentData[0]) {
+        setPaymentDetails(paymentData || null)
+        if (paymentData) {
           setPaymentForm({
-            bank_name: paymentData[0].bank_name,
-            account_number: paymentData[0].account_number,
-            account_name: paymentData[0].account_name,
+            bank_name: paymentData.bank_name,
+            account_number: paymentData.account_number,
+            account_name: paymentData.account_name,
           })
         }
       } catch (error: any) {
@@ -530,23 +528,6 @@ const TenantProfilePage = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Tenant Rating</p>
-                      <div className="flex items-center">
-                        <div className="flex">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`h-4 w-4 ${star <= 5 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                            />
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm font-medium">5.0</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="mt-8 pt-6 border-t">
@@ -885,7 +866,32 @@ const TenantProfilePage = () => {
               </TabsContent>
 
               {/* Preferences Tab */}
-              <TabsContent value="preferences">
+              {/* Preferences Tab */}
+            <TabsContent value="preferences">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Preferences</CardTitle>
+                  <CardDescription>Manage your account preferences</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">                  <div>
+                    <h3 className="text-lg font-medium mb-4">Interest Tags</h3>
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Manage your interests to get personalized rental recommendations.
+                      </p>
+                      <TagManagementSection />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t">
+                    <h3 className="text-lg font-medium mb-4">Notification Settings</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Email Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive updates about your bookings via email</p>
+                        </div>
+              {/* <TabsContent value="preferences">
                 <Card>
                   <CardHeader>
                     <CardTitle>Preferences</CardTitle>
@@ -901,7 +907,7 @@ const TenantProfilePage = () => {
                             <p className="text-sm text-muted-foreground">
                               Receive updates about your bookings via email
                             </p>
-                          </div>
+                          </div> */}
                           <div className="flex items-center space-x-2">
                             <Label htmlFor="email-notifications" className="sr-only">
                               Email Notifications

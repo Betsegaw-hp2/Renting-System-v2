@@ -102,14 +102,12 @@ const router = createBrowserRouter([
         <AboutPage />
       </Suspense>
     ),
-  },
-  {
+  },  {
     path: "/contact",
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <ContactPage />
-      </Suspense>
-    ),
+      </Suspense>    ),
   },
   {
     path: "/listings/:id",
