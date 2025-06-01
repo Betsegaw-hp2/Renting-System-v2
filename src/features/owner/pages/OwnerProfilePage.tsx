@@ -184,7 +184,8 @@ const OwnerProfilePage = () => {
           title: "Error fetching profile",
           description: error.response.data.message || error.message || "Failed to load your profile information",
           variant: "destructive",
-        })      } finally {
+        })      
+      } finally {
         setIsLoadingProfile(false)
         setIsKycLoading(false)
         setIsLoadingPayment(false)

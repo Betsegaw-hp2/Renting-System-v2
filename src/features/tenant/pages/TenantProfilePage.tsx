@@ -21,6 +21,7 @@ import { updateUserProfile } from "@/features/auth/slices/authSlice"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
 import { useToast } from "@/hooks/useToast"
 import type { AppDispatch } from "@/store"
+import type { CreateLocation, Location, UpdateLocation } from "@/types/location.types"
 import type { User, UserKYC } from "@/types/user.types"
 import {
   AlertTriangle,
@@ -56,6 +57,17 @@ const TenantProfilePage = () => {
     username: "",
   })
 
+    // Location state
+    const [userLocation, setUserLocation] = useState<Location | null>(null)
+    const [locationForm, setLocationForm] = useState({
+      address: "",
+      city: "",
+      country: "",
+      region: "",
+      postal_code: "",
+      phone: "",
+    })
+
   // Password form state
   const [passwordForm, setPasswordForm] = useState({
     password: "",
@@ -82,12 +94,16 @@ const TenantProfilePage = () => {
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
   const [isLoadingPayment, setIsLoadingPayment] = useState(false)
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
 
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
   const [emailError, setEmailError] = useState<string | null>(null)
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
+  const [locationErrors, setLocationErrors] = useState<Record<string, string>>({})
+  
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -97,6 +113,8 @@ const TenantProfilePage = () => {
       setIsLoadingProfile(true)
       setIsKycLoading(true)
       setIsLoadingPayment(true)
+      setIsLoadingLocation(true)
+
       try {
         const userData = await userApi.getCurrentUser()
         setPersonalInfo({
@@ -119,6 +137,20 @@ const TenantProfilePage = () => {
             account_name: paymentData.account_name,
           })
         }
+
+        // Fetch location data
+        const locationData = await userApi.getUserLocation()
+        setUserLocation(locationData)
+        if (locationData) {
+          setLocationForm({
+            address: locationData.address || "",
+            city: locationData.city || "",
+            country: locationData.country || "",
+            region: locationData.region || "",
+            postal_code: locationData.postal_code || "",
+            phone: locationData.phone || "",
+          })
+        }
       } catch (error: any) {
         toast({
           title: "Error fetching profile data",
@@ -130,11 +162,62 @@ const TenantProfilePage = () => {
         setIsLoadingProfile(false)
         setIsKycLoading(false)
         setIsLoadingPayment(false)
+        setIsLoadingLocation(false)
+
       }
     }
 
     fetchUserDataAndKyc()
   }, [user?.id, toast, dispatch])
+
+  // Handle location form changes
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setLocationForm((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error for this field if it exists
+    if (locationErrors[name]) {
+      setLocationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
+  // Validate location form
+  const validateLocationForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!locationForm.address.trim()) {
+      errors.address = "Address is required"
+    }
+
+    if (!locationForm.city.trim()) {
+      errors.city = "City is required"
+    }
+
+    if (!locationForm.country.trim()) {
+      errors.country = "Country is required"
+    }
+
+    if (!locationForm.region.trim()) {
+      errors.region = "Region/State is required"
+    }
+
+    if (!locationForm.postal_code.trim()) {
+      errors.postal_code = "Postal code is required"
+    }
+
+    if (!locationForm.phone.trim()) {
+      errors.phone = "Phone number is required"
+    } else if (!/^\+?[\d\s\-\(\)]+$/.test(locationForm.phone)) {
+      errors.phone = "Please enter a valid phone number"
+    }
+
+    setLocationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   // Handle personal info form changes
   const handlePersonalInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -420,6 +503,82 @@ const TenantProfilePage = () => {
     }
   }
 
+    // Handle create location
+    const handleCreateLocation = async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!user) {
+        toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+        return
+      }
+      if (!validateLocationForm()) return
+  
+      setIsUpdatingLocation(true)
+      try {
+        const payload: CreateLocation = {
+          address: locationForm.address,
+          city: locationForm.city,
+          country: locationForm.country,
+          region: locationForm.region,
+          postal_code: locationForm.postal_code,
+          phone: locationForm.phone,
+        }
+  
+        const newLocation = await userApi.createUserLocation(payload)
+        setUserLocation(newLocation)
+  
+        toast({
+          title: "Location added",
+          description: "Your location details have been saved successfully",
+        })
+      } catch (error: any) {
+        toast({
+          title: "Create failed",
+          description: error.response.data.message || error.message || "Failed to create your location details",
+          variant: "destructive",
+        })
+      } finally {
+        setIsUpdatingLocation(false)
+      }
+    }
+  
+    // Handle update location
+    const handleUpdateLocation = async (e: React.FormEvent) => {
+      e.preventDefault()
+      if (!user) {
+        toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+        return
+      }
+      if (!validateLocationForm()) return
+  
+      setIsUpdatingLocation(true)
+      try {
+        const payload: UpdateLocation = {
+          address: locationForm.address,
+          city: locationForm.city,
+          country: locationForm.country,
+          region: locationForm.region,
+          postal_code: locationForm.postal_code,
+          phone: locationForm.phone,
+        }
+  
+        const updatedLocation = await userApi.updateUserLocation(user.id, payload)
+        setUserLocation(updatedLocation)
+  
+        toast({
+          title: "Location updated",
+          description: "Your location details have been updated successfully",
+        })
+      } catch (error: any) {
+        toast({
+          title: "Update failed",
+          description: error.response.data.message || error.message || "Failed to update your location details",
+          variant: "destructive",
+        })
+      } finally {
+        setIsUpdatingLocation(false)
+      }
+    }
+
   if (isLoadingProfile || isKycLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -693,6 +852,243 @@ const TenantProfilePage = () => {
                       </Button>
                     </CardFooter>
                   </form>
+                </Card>
+
+                {/* Location Details Card */}
+                <Card className="mt-8">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Location Details
+                    </CardTitle>
+                    <CardDescription>
+                      {userLocation ? "Update your location information" : "Add your location information"}
+                    </CardDescription>
+                  </CardHeader>
+                  {isLoadingLocation ? (
+                    <CardContent>
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2">Loading location details...</span>
+                      </div>
+                    </CardContent>
+                  ) : userLocation ? (
+                    // Display existing location with update form
+                    <form onSubmit={handleUpdateLocation}>
+                      <CardContent className="space-y-4">
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                            <h3 className="font-medium text-green-800">Location Details Configured</h3>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            Your location information is set up. You can update it below.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Input
+                              id="address"
+                              name="address"
+                              value={locationForm.address}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your street address"
+                              className={locationErrors.address ? "border-red-500" : ""}
+                            />
+                            {locationErrors.address && (
+                              <p className="text-sm text-red-500">{locationErrors.address}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
+                            <Input
+                              id="city"
+                              name="city"
+                              value={locationForm.city}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your city"
+                              className={locationErrors.city ? "border-red-500" : ""}
+                            />
+                            {locationErrors.city && (
+                              <p className="text-sm text-red-500">{locationErrors.city}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country</Label>
+                            <Input
+                              id="country"
+                              name="country"
+                              value={locationForm.country}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your country"
+                              className={locationErrors.country ? "border-red-500" : ""}
+                            />
+                            {locationErrors.country && (
+                              <p className="text-sm text-red-500">{locationErrors.country}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="region">Region/State</Label>
+                            <Input
+                              id="region"
+                              name="region"
+                              value={locationForm.region}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your region or state"
+                              className={locationErrors.region ? "border-red-500" : ""}
+                            />
+                            {locationErrors.region && (
+                              <p className="text-sm text-red-500">{locationErrors.region}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="postal_code">Postal Code</Label>
+                            <Input
+                              id="postal_code"
+                              name="postal_code"
+                              value={locationForm.postal_code}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your postal code"
+                              className={locationErrors.postal_code ? "border-red-500" : ""}
+                            />
+                            {locationErrors.postal_code && (
+                              <p className="text-sm text-red-500">{locationErrors.postal_code}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input
+                              id="phone"
+                              name="phone"
+                              value={locationForm.phone}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your phone number"
+                              className={locationErrors.phone ? "border-red-500" : ""}
+                            />
+                            {locationErrors.phone && (
+                              <p className="text-sm text-red-500">{locationErrors.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button type="submit" disabled={isUpdatingLocation}>
+                          {isUpdatingLocation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Update Location
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  ) : (
+                    // Create new location form
+                    <form onSubmit={handleCreateLocation}>
+                      <CardContent className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                          <div className="flex items-center">
+                            <Info className="h-5 w-5 text-blue-600 mr-2" />
+                            <h3 className="font-medium text-blue-800">Add Location Information</h3>
+                          </div>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Add your location details to help tenants find your properties.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="address">Address *</Label>
+                            <Input
+                              id="address"
+                              name="address"
+                              value={locationForm.address}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your street address"
+                              className={locationErrors.address ? "border-red-500" : ""}
+                            />
+                            {locationErrors.address && (
+                              <p className="text-sm text-red-500">{locationErrors.address}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City *</Label>
+                            <Input
+                              id="city"
+                              name="city"
+                              value={locationForm.city}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your city"
+                              className={locationErrors.city ? "border-red-500" : ""}
+                            />
+                            {locationErrors.city && (
+                              <p className="text-sm text-red-500">{locationErrors.city}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country *</Label>
+                            <Input
+                              id="country"
+                              name="country"
+                              value={locationForm.country}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your country"
+                              className={locationErrors.country ? "border-red-500" : ""}
+                            />
+                            {locationErrors.country && (
+                              <p className="text-sm text-red-500">{locationErrors.country}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="region">Region/State *</Label>
+                            <Input
+                              id="region"
+                              name="region"
+                              value={locationForm.region}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your region or state"
+                              className={locationErrors.region ? "border-red-500" : ""}
+                            />
+                            {locationErrors.region && (
+                              <p className="text-sm text-red-500">{locationErrors.region}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="postal_code">Postal Code *</Label>
+                            <Input
+                              id="postal_code"
+                              name="postal_code"
+                              value={locationForm.postal_code}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your postal code"
+                              className={locationErrors.postal_code ? "border-red-500" : ""}
+                            />
+                            {locationErrors.postal_code && (
+                              <p className="text-sm text-red-500">{locationErrors.postal_code}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number *</Label>
+                            <Input
+                              id="phone"
+                              name="phone"
+                              value={locationForm.phone}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your phone number"
+                              className={locationErrors.phone ? "border-red-500" : ""}
+                            />
+                            {locationErrors.phone && (
+                              <p className="text-sm text-red-500">{locationErrors.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button type="submit" disabled={isUpdatingLocation} className="ml-auto">
+                          {isUpdatingLocation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Add Location
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  )}
                 </Card>
               </TabsContent>
 
