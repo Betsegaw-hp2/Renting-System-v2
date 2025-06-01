@@ -80,9 +80,9 @@ export function LoginForm() {
               <Label htmlFor="password" className="text-sm font-medium">
                 Password
               </Label>
-              <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-500">
+              {/* <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-500">
                 Forgot password?
-              </Link>
+              </Link> */}
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">

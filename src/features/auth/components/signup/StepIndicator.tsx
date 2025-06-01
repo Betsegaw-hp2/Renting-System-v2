@@ -11,7 +11,7 @@ interface StepIndicatorProps {
 export function StepIndicator({ currentStep, role }: StepIndicatorProps) {
   const steps: SignupStep[] = [
     "account",
-    role === UserRole.TENANT ? "tenant-details" : "owner-details",
+    // role === UserRole.TENANT ? "tenant-details" : "owner-details",
     "verify-email",
   ]
   const currentIndex = steps.indexOf(currentStep)

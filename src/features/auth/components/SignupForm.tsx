@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, ArrowLeft, ArrowRight, Briefcase, Loader2, User } from "lucide-react";
+import { AlertCircle, ArrowLeft, Briefcase, Loader2, User } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert";
@@ -21,9 +21,7 @@ import { useMultiStepSignup } from "../hooks/useMultiStepSignup";
 import { SIGNUP_STEPS } from "../types/signup.types";
 import { AccountInfoStep } from "./signup/AccountInfoStep";
 import { OtpVerificationStep } from "./signup/OtpVerficationStep";
-import { OwnerDetailsStep } from "./signup/OwnerDetailsStep";
 import { StepIndicator } from "./signup/StepIndicator";
-import { TenantDetailsStep } from "./signup/TenantDetailsStep";
 
 const API_BASE = import.meta.env.VITE_API_PROD_BASE_URL 
 
@@ -191,18 +189,18 @@ export function SignupForm() {
             </div>
 
             {/* Tenant Details */}
-            <div className={cn("transition-all duration-300", currentStep !== "tenant-details" && "hidden")}>  
+            {/* <div className={cn("transition-all duration-300", currentStep !== "tenant-details" && "hidden")}>  
               {formData.role === UserRole.TENANT && (
                 <TenantDetailsStep formData={formData} errors={errors} updateFormData={updateFormData} />
               )}
-            </div>
+            </div> */}
 
             {/* Owner Details */}
-            <div className={cn("transition-all duration-300", currentStep !== "owner-details" && "hidden")}>  
+            {/* <div className={cn("transition-all duration-300", currentStep !== "owner-details" && "hidden")}>  
               {formData.role === UserRole.PROPERTY_OWNER && (
                 <OwnerDetailsStep formData={formData} errors={errors} updateFormData={updateFormData} />
               )}
-            </div>
+            </div> */}
 
             {/* Action Buttons */}
             <div className="flex justify-between pt-4">
@@ -221,12 +219,14 @@ export function SignupForm() {
               )}
 
               {/* Next/Submit Buttons */}
-              {currentStep === "account" ? (
-                <Button type="button" onClick={goToNextStep} disabled={isLoading} className="flex items-center gap-2">
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
+              {currentStep === "account" &&
+              // ? (
+              //   <Button type="button" onClick={goToNextStep} disabled={isLoading} className="flex items-center gap-2">
+              //     Continue
+              //     <ArrowRight className="h-4 w-4" />
+              //   </Button>
+              // ) : 
+              (
                 <div className="flex gap-3 justify-end w-full"> {/* Ensure button is on the right like others */}
                   <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
                     {isLoading ? (
