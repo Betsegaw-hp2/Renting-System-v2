@@ -11,9 +11,10 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requiredRole, requiredPermission }: ProtectedRouteProps) => {
-  const { is_authenticated, user, is_loading } = useSelector((state: RootState) => state.auth)
+  const { is_authenticated, user, is_loading, token } = useSelector((state: RootState) => state.auth)
   const location = useLocation()
 
+  // Show loading if we're currently loading auth operations
   if (is_loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -22,13 +23,14 @@ const ProtectedRoute = ({ children, requiredRole, requiredPermission }: Protecte
     )
   }
 
-  if (!is_authenticated) {
+  if (!is_authenticated || !token) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   // User is authenticated, now check roles and permissions if required
-  if (requiredRole) {
+  if (requiredRole && user) {
     if (!user || user.role !== requiredRole) {
+      console.log(`Access denied: User role ${user?.role} does not match required role ${requiredRole}`)
       return <Navigate to="/access-denied" state={{ from: location.pathname, requiredRole }} replace />
     }
   }

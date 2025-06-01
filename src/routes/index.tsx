@@ -29,6 +29,7 @@ const AdminListingDetailPage = lazy(() => import("../features/admin/pages/Listin
 const AdminCategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage"))
 const AdminReportsPage = lazy(() => import("../features/admin/pages/ReportsPage"))
 const AdminSettingsPage = lazy(() => import("../features/admin/pages/SettingsPage"))
+const AdminProfilePage = lazy(() => import("../features/admin/pages/AdminProfilePage"))
 
 // Tenant pages
 const TenantProfilePage = lazy(() => import("../features/tenant/pages/TenantProfilePage"))
@@ -102,14 +103,12 @@ const router = createBrowserRouter([
         <AboutPage />
       </Suspense>
     ),
-  },
-  {
+  },  {
     path: "/contact",
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <ContactPage />
-      </Suspense>
-    ),
+      </Suspense>    ),
   },
   {
     path: "/listings/:id",
@@ -387,7 +386,7 @@ const router = createBrowserRouter([
     element: (
       <AdminRoute>
         <Suspense fallback={<LoadingFallback />}>
-          <AdminUserDetailPage />
+          <AdminProfilePage />
         </Suspense>
       </AdminRoute>
     )

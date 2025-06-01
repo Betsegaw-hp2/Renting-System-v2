@@ -20,13 +20,18 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
   const [loading, setLoading] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
   const [showChangeEmail, setShowChangeEmail] = useState(false)
+  const [currentEmail, setCurrentEmail] = useState(email) // Track current email locally
   const inputsRef = useRef<Array<HTMLInputElement | null>>([])
   const { toast } = useToast()
 
+  // Update local email state when prop changes
+  useEffect(() => {
+    setCurrentEmail(email)
+  }, [email])
   useEffect(() => {
     inputsRef.current[activeIndex]?.focus()
   }, [activeIndex])
-
+  
   const handleVerify = async () => {
     const otp = codes.join("")
     if (otp.length < CODE_LENGTH) {
@@ -36,11 +41,27 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
     setLoading(true)
     setError(null)
     try {
-      const newToken = await verifyEmail({ user_id: userId, otp_code: otp })
-      // setAuthToken(newToken, false)
-      onVerified()
+      await verifyEmail({ user_id: userId, otp_code: otp })
+      
+      // Store verification success info for login page
+      sessionStorage.setItem('emailJustVerified', 'true')
+      sessionStorage.setItem('verifiedUserEmail', email)
+      sessionStorage.setItem('triggerTagPromptAfterSignup', 'true')
+      
+      // Show success message and redirect to login
+      toast({
+        title: "Email verified successfully!",
+        description: "Please log in to continue.",
+        variant: "default"
+      })
+      
+      // Redirect to login page instead of calling onVerified()
+      setTimeout(() => {
+        window.location.href = `/login?verified=true&email=${encodeURIComponent(email)}`
+      }, 2000)
+      
     } catch (e: any) {
-      setError(e.message ?? "Invalid code")
+      setError(e.response.data.message || e.message || "Invalid code")
     } finally {
       setLoading(false)
     }
@@ -62,11 +83,10 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
     setActiveIndex(nextEmpty === -1 ? CODE_LENGTH - 1 : nextEmpty)
   }
 
-  return (
-    <div className="max-w-md mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md text-center">
+  return (    <div className="max-w-md mx-auto p-6 space-y-6 bg-white rounded-xl shadow-md text-center">
       <h3 className="text-2xl font-semibold">Verify Your Email</h3>
       <p className="text-sm text-gray-500">
-        We sent a code to <strong>{email}</strong>.
+        We sent a code to <strong>{currentEmail}</strong>.
       </p>
 
       {/* six 1-char inputs with paste support */}
@@ -111,12 +131,10 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
         >
           Log in to update it
         </button>
-      </div>
-
-      {/* Login modal */}
+      </div>      {/* Login modal */}
       {showLogin && (
         <LoginModal
-          initialEmail={email}
+          initialEmail={currentEmail}
           onClose={() => setShowLogin(false)}
           onSuccess={token => {
             setShowLogin(false)
@@ -130,10 +148,11 @@ export function OtpVerificationStep({ userId, email, onVerified }: {
       {showChangeEmail && (
         <ChangeEmailModal
           userId={userId}
-          currentEmail={email}
+          currentEmail={currentEmail}
           onClose={() => setShowChangeEmail(false)}
           onEmailUpdated={newEmail => {
             setShowChangeEmail(false)
+            setCurrentEmail(newEmail) // Update the local email state
             toast({ title: "Email changed", description: "Code resent to new address." })
             setCodes(Array(CODE_LENGTH).fill(""))
             setActiveIndex(0)

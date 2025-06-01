@@ -2,6 +2,7 @@
 
 import type { FeaturedListing } from "@/api/publicApi"
 import { Header } from "@/components/layout/Header"
+import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -13,45 +14,47 @@ import { Textarea } from "@/components/ui/textarea"
 import { updateEmail } from "@/features/auth/api/authApi"
 import {
   userApi,
-  type UpdateUserPayload,
-  type UpdatePasswordPayload,
   type CreatePaymentDetailPayload,
   type PaymentDetail,
+  type UpdatePasswordPayload,
+  type UpdateUserPayload
 } from "@/features/auth/api/userApi"
 import { ownerApi } from "@/features/owner/api/ownerApi"
 import { useToast } from "@/hooks/useToast"
+import type { CreateLocation, Location, UpdateLocation } from "@/types/location.types"
 import {
   AlertTriangle,
   Building,
   Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
   DollarSign,
   Download,
   Home,
+  Info,
   Loader2,
+  MapPin,
   Star,
   Upload,
   Users,
-  CreditCard,
-  CheckCircle,
-  Clock,
   XCircle,
-  Info,
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useSelector, useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
+
 import { updateUserProfile } from "@/features/auth/slices/authSlice"
-import type { AppDispatch } from "@/store"
 import KycVerificationForm from "@/features/tenant/components/KYCVerificationForm"
-import type { UserKYC } from "@/types/user.types"
+import type { AppDispatch } from "@/store"
+import type { User, UserKYC } from "@/types/user.types"; // Ensure User is imported
 
 const OwnerProfilePage = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const user = useSelector((state: any) => state.auth.user)
-
+  const user = useSelector((state: { auth: { user: User | null } }) => state.auth.user) // Typed user state
   // Personal info form state
   const [personalInfo, setPersonalInfo] = useState({
     first_name: "",
@@ -71,13 +74,23 @@ const OwnerProfilePage = () => {
   const [emailForm, setEmailForm] = useState({
     email: "",
   })
-
   // Payment details state
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetail | null>(null)
   const [paymentForm, setPaymentForm] = useState({
     bank_name: "",
     account_number: "",
     account_name: "",
+  })
+
+  // Location state
+  const [userLocation, setUserLocation] = useState<Location | null>(null)
+  const [locationForm, setLocationForm] = useState({
+    address: "",
+    city: "",
+    country: "",
+    region: "",
+    postal_code: "",
+    phone: "",
   })
 
   // Properties state
@@ -93,7 +106,6 @@ const OwnerProfilePage = () => {
   // KYC state
   const [userKyc, setUserKyc] = useState<UserKYC | null>(null)
   const [isKycLoading, setIsKycLoading] = useState(false)
-
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isLoadingProperties, setIsLoadingProperties] = useState(false)
@@ -102,70 +114,103 @@ const OwnerProfilePage = () => {
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false)
   const [isLoadingPayment, setIsLoadingPayment] = useState(false)
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false)
-
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
   const [emailError, setEmailError] = useState<string | null>(null)
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
+  const [locationErrors, setLocationErrors] = useState<Record<string, string>>({})
 
   // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user?.id) return
-
-      setIsLoadingProfile(true)
+      if (!user?.id) return; // This guard ensures user and user.id are valid      setIsLoadingProfile(true)
       setIsKycLoading(true)
       setIsLoadingPayment(true)
+      setIsLoadingLocation(true)
       try {
-        const userData = await userApi.getCurrentUser()
-        if (!userData) {
+        const userDataResponse = await userApi.getCurrentUser()
+        if (!userDataResponse) {
           toast({
             title: "Error",
             description: "Failed to fetch user data",
             variant: "destructive",
           })
+          setIsLoadingProfile(false)
+          setIsKycLoading(false)
+          setIsLoadingPayment(false)
+          setIsLoadingLocation(false)
           return
         }
         setPersonalInfo({
-          first_name: userData.first_name || "",
-          last_name: userData.last_name || "",
-          email: userData.email || "",
-          username: userData.username || "",
-          phone_number: userData.phone_number || "",
-        })
-        // Update Redux store with the latest user data
-        dispatch(updateUserProfile(userData))
-
-        // Fetch KYC data
+          first_name: userDataResponse.first_name || "",
+          last_name: userDataResponse.last_name || "",
+          email: userDataResponse.email || "",
+          username: userDataResponse.username || "",
+          phone_number: userDataResponse.phone_number || "",        })
+        dispatch(updateUserProfile(userDataResponse))
+        
+        // user.id is safe here due to the initial guard        
         const kycData = await userApi.getUserKyc(user.id)
         setUserKyc(kycData)
 
-        // Fetch payment details
         const paymentData = await userApi.getUserPaymentDetails(user.id)
-        setPaymentDetails(paymentData[0] || null)
-        if (paymentData[0]) {
+        setPaymentDetails(paymentData)
+        if (paymentData) {
           setPaymentForm({
-            bank_name: paymentData[0].bank_name,
-            account_number: paymentData[0].account_number,
-            account_name: paymentData[0].account_name,
+            bank_name: paymentData.bank_name,
+            account_number: paymentData.account_number,
+            account_name: paymentData.account_name,
+          })
+        }
+
+        // Fetch location data
+        const locationData = await userApi.getUserLocation()
+        setUserLocation(locationData)
+        if (locationData) {
+          setLocationForm({
+            address: locationData.address || "",
+            city: locationData.city || "",
+            country: locationData.country || "",
+            region: locationData.region || "",
+            postal_code: locationData.postal_code || "",
+            phone: locationData.phone || "",
           })
         }
       } catch (error: any) {
         toast({
           title: "Error fetching profile",
-          description: error.message || "Failed to load your profile information",
+          description: error.response.data.message || error.message || "Failed to load your profile information",
           variant: "destructive",
-        })
+        })      
       } finally {
         setIsLoadingProfile(false)
         setIsKycLoading(false)
         setIsLoadingPayment(false)
+        setIsLoadingLocation(false)
       }
     }
 
     fetchUserData()
-  }, [user?.id, toast, dispatch])
+  }, [user?.id, dispatch, toast]) // Corrected dependencies
+
+  // Sync form state with Redux user state
+  useEffect(() => {
+    if (user) {
+      setPersonalInfo({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        phone_number: user.phone_number || "",
+      })
+      setEmailForm({
+        email: user.email || "",
+      })
+    }
+  }, [user])
 
   // Fetch owner properties
   useEffect(() => {
@@ -202,7 +247,7 @@ const OwnerProfilePage = () => {
       } catch (error: any) {
         toast({
           title: "Error fetching properties",
-          description: error.message || "Failed to load your properties",
+          description: error.response.data.message || error.message || "Failed to load your properties",
           variant: "destructive",
         })
       } finally {
@@ -264,6 +309,34 @@ const OwnerProfilePage = () => {
       })
     }
   }
+  // Handle location form changes
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setLocationForm((prev) => ({ ...prev, [name]: value }))
+
+    // Clear error for this field if it exists
+    if (locationErrors[name]) {
+      setLocationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
+  // Handle country select change
+  const handleCountryChange = (value: string) => {
+    setLocationForm((prev) => ({ ...prev, country: value }))
+
+    // Clear error for country field if it exists
+    if (locationErrors.country) {
+      setLocationErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors.country
+        return newErrors
+      })
+    }
+  }
 
   // Validate personal info form
   const validatePersonalInfo = () => {
@@ -281,14 +354,8 @@ const OwnerProfilePage = () => {
       errors.email = "Email is required"
     } else if (!/\S+@\S+\.\S+/.test(personalInfo.email)) {
       errors.email = "Email is invalid"
-    }
-
-    if (!personalInfo.username.trim()) {
+    }    if (!personalInfo.username.trim()) {
       errors.username = "Username is required"
-    }
-
-    if (!personalInfo.phone_number.trim()) {
-      errors.phone_number = "Phone number is required"
     }
 
     setPersonalInfoErrors(errors)
@@ -335,10 +402,47 @@ const OwnerProfilePage = () => {
     return Object.keys(errors).length === 0
   }
 
+  // Validate location form
+  const validateLocationForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!locationForm.address.trim()) {
+      errors.address = "Address is required"
+    }
+
+    if (!locationForm.city.trim()) {
+      errors.city = "City is required"
+    }
+
+    if (!locationForm.country.trim()) {
+      errors.country = "Country is required"
+    }
+
+    if (!locationForm.region.trim()) {
+      errors.region = "Region/State is required"
+    }
+
+    if (!locationForm.postal_code.trim()) {
+      errors.postal_code = "Postal code is required"
+    }
+
+    if (!locationForm.phone.trim()) {
+      errors.phone = "Phone number is required"
+    } else if (!/^\+?[\d\s\-\(\)]+$/.test(locationForm.phone)) {
+      errors.phone = "Please enter a valid phone number"
+    }
+
+    setLocationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   // Handle personal info form submission
   const handleUpdatePersonalInfo = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePersonalInfo()) return
 
     setIsUpdatingProfile(true)
@@ -347,21 +451,18 @@ const OwnerProfilePage = () => {
         first_name: personalInfo.first_name,
         last_name: personalInfo.last_name,
         username: personalInfo.username,
+        // phone_number is not part of UpdateUserPayload based on its definition
       }
 
       const updatedUser = await userApi.updateUser(user.id, payload)
-
-      // Update Redux store with new user data
       dispatch(updateUserProfile(updatedUser))
-
-      // Update local state to match the updated user data
       setPersonalInfo((prev) => ({
         ...prev,
-        first_name: updatedUser.first_name,
-        last_name: updatedUser.last_name,
-        username: updatedUser.username,
+        first_name: updatedUser.first_name || prev.first_name,
+        last_name: updatedUser.last_name || prev.last_name,
+        username: updatedUser.username || prev.username,
+        phone_number: updatedUser.phone_number || prev.phone_number,
       }))
-
       toast({
         title: "Profile updated",
         description: "Your personal information has been updated successfully",
@@ -369,7 +470,7 @@ const OwnerProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update your profile information",
+        description: error.response.data.message || error.message || "Failed to update your profile information",
         variant: "destructive",
       })
     } finally {
@@ -380,7 +481,10 @@ const OwnerProfilePage = () => {
   // Handle password form submission
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePassword()) return
 
     setIsUpdatingPassword(true)
@@ -404,7 +508,7 @@ const OwnerProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update your password",
+        description: error.response.data.message || error.message || "Failed to update your password",
         variant: "destructive",
       })
     } finally {
@@ -415,6 +519,10 @@ const OwnerProfilePage = () => {
   // Handle email form submission
   const handleUpdateEmail = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     setEmailError(null)
 
     if (!emailForm.email.trim()) {
@@ -440,7 +548,7 @@ const OwnerProfilePage = () => {
           "Your email has been updated successfully. Please check your inbox to verify the new email address.",
       })
     } catch (error: any) {
-      setEmailError(error.message || "Failed to update email")
+      setEmailError(error.response.data.message || error.message || "Failed to update email")
     } finally {
       setIsUpdatingEmail(false)
     }
@@ -449,7 +557,10 @@ const OwnerProfilePage = () => {
   // Handle payment details submission
   const handleUpdatePaymentDetails = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!validatePaymentForm()) return
 
     setIsUpdatingPayment(true)
@@ -470,7 +581,7 @@ const OwnerProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Update failed",
-        description: error.message || "Failed to update your payment details",
+        description: error.response.data.message || error.message || "Failed to update your payment details",
         variant: "destructive",
       })
     } finally {
@@ -480,6 +591,10 @@ const OwnerProfilePage = () => {
 
   // Handle payment details deletion
   const handleDeletePaymentDetails = async () => {
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
     if (!paymentDetails) return
 
     setIsUpdatingPayment(true)
@@ -499,11 +614,87 @@ const OwnerProfilePage = () => {
     } catch (error: any) {
       toast({
         title: "Delete failed",
-        description: error.message || "Failed to delete your payment details",
+        description: error.response.data.message || error.message || "Failed to delete your payment details",
         variant: "destructive",
       })
     } finally {
       setIsUpdatingPayment(false)
+    }
+  }
+
+  // Handle create location
+  const handleCreateLocation = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
+    if (!validateLocationForm()) return
+
+    setIsUpdatingLocation(true)
+    try {
+      const payload: CreateLocation = {
+        address: locationForm.address,
+        city: locationForm.city,
+        country: locationForm.country,
+        region: locationForm.region,
+        postal_code: locationForm.postal_code,
+        phone: locationForm.phone,
+      }
+
+      const newLocation = await userApi.createUserLocation(payload)
+      setUserLocation(newLocation)
+
+      toast({
+        title: "Location added",
+        description: "Your location details have been saved successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Create failed",
+        description: error.response.data.message || error.message || "Failed to create your location details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingLocation(false)
+    }
+  }
+
+  // Handle update location
+  const handleUpdateLocation = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) {
+      toast({ title: "Error", description: "User not found. Please log in again.", variant: "destructive" })
+      return
+    }
+    if (!validateLocationForm()) return
+
+    setIsUpdatingLocation(true)
+    try {
+      const payload: UpdateLocation = {
+        address: locationForm.address,
+        city: locationForm.city,
+        country: locationForm.country,
+        region: locationForm.region,
+        postal_code: locationForm.postal_code,
+        phone: locationForm.phone,
+      }
+
+      const updatedLocation = await userApi.updateUserLocation(user.id, payload)
+      setUserLocation(updatedLocation)
+
+      toast({
+        title: "Location updated",
+        description: "Your location details have been updated successfully",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.response.data.message || error.message || "Failed to update your location details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUpdatingLocation(false)
     }
   }
 
@@ -542,8 +733,7 @@ const OwnerProfilePage = () => {
                     {user?.first_name} {user?.last_name}
                   </h2>
                   <p className="text-muted-foreground">{user?.email}</p>
-                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">
-                    Property Owner
+                  <Badge variant="outline" className="mt-2 bg-blue-50 text-blue-700 border-blue-200">                  Property Owner
                   </Badge>
 
                   {/* KYC Status Badge */}
@@ -595,11 +785,11 @@ const OwnerProfilePage = () => {
                     <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Member Since</p>
-                      <p className="text-sm text-muted-foreground">{new Date(user?.created_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-muted-foreground">{user?.created_at ? new Date(user.created_at).toLocaleDateString() : "N/A"}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center">
+                 <div className="flex items-center">
                     <Star className="h-4 w-4 mr-2 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Owner Rating</p>
@@ -683,11 +873,12 @@ const OwnerProfilePage = () => {
           {/* Main content */}
           <div className="md:col-span-2">
             <Tabs defaultValue="personal-info">
-              <TabsList className="grid grid-cols-4 mb-8">
+              <TabsList className="grid grid-cols-5 mb-8"> {/* Changed to grid-cols-5 */}
                 <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
                 <TabsTrigger value="kyc-verification">KYC</TabsTrigger>
                 <TabsTrigger value="payment-details">Payment Details</TabsTrigger>
                 <TabsTrigger value="properties">My Properties</TabsTrigger>
+                <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
 
               {/* Personal Info Tab */}
@@ -740,23 +931,7 @@ const OwnerProfilePage = () => {
                         {personalInfoErrors.username && (
                           <p className="text-sm text-red-500">{personalInfoErrors.username}</p>
                         )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone_number">Phone Number</Label>
-                        <Input
-                          id="phone_number"
-                          name="phone_number"
-                          value={personalInfo.phone_number}
-                          onChange={handlePersonalInfoChange}
-                          className={personalInfoErrors.phone_number ? "border-red-500" : ""}
-                        />
-                        {personalInfoErrors.phone_number && (
-                          <p className="text-sm text-red-500">{personalInfoErrors.phone_number}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
+                      </div>                      <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea id="bio" placeholder="Tell us a little about yourself" className="resize-none" />
                       </div>
@@ -841,7 +1016,243 @@ const OwnerProfilePage = () => {
                         Update Password
                       </Button>
                     </CardFooter>
-                  </form>
+                  </form>                </Card>
+
+                {/* Location Details Card */}
+                <Card className="mt-8">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Location Details
+                    </CardTitle>
+                    <CardDescription>
+                      {userLocation ? "Update your location information" : "Add your location information"}
+                    </CardDescription>
+                  </CardHeader>
+                  {isLoadingLocation ? (
+                    <CardContent>
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <span className="ml-2">Loading location details...</span>
+                      </div>
+                    </CardContent>
+                  ) : userLocation ? (
+                    // Display existing location with update form
+                    <form onSubmit={handleUpdateLocation}>
+                      <CardContent className="space-y-4">
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                            <h3 className="font-medium text-green-800">Location Details Configured</h3>
+                          </div>
+                          <p className="text-sm text-green-700 mt-1">
+                            Your location information is set up. You can update it below.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Input
+                              id="address"
+                              name="address"
+                              value={locationForm.address}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your street address"
+                              className={locationErrors.address ? "border-red-500" : ""}
+                            />
+                            {locationErrors.address && (
+                              <p className="text-sm text-red-500">{locationErrors.address}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
+                            <Input
+                              id="city"
+                              name="city"
+                              value={locationForm.city}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your city"
+                              className={locationErrors.city ? "border-red-500" : ""}
+                            />
+                            {locationErrors.city && (
+                              <p className="text-sm text-red-500">{locationErrors.city}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country</Label>
+                            <Input
+                              id="country"
+                              name="country"
+                              value={locationForm.country}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your country"
+                              className={locationErrors.country ? "border-red-500" : ""}
+                            />
+                            {locationErrors.country && (
+                              <p className="text-sm text-red-500">{locationErrors.country}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="region">Region/State</Label>
+                            <Input
+                              id="region"
+                              name="region"
+                              value={locationForm.region}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your region or state"
+                              className={locationErrors.region ? "border-red-500" : ""}
+                            />
+                            {locationErrors.region && (
+                              <p className="text-sm text-red-500">{locationErrors.region}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="postal_code">Postal Code</Label>
+                            <Input
+                              id="postal_code"
+                              name="postal_code"
+                              value={locationForm.postal_code}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your postal code"
+                              className={locationErrors.postal_code ? "border-red-500" : ""}
+                            />
+                            {locationErrors.postal_code && (
+                              <p className="text-sm text-red-500">{locationErrors.postal_code}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input
+                              id="phone"
+                              name="phone"
+                              value={locationForm.phone}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your phone number"
+                              className={locationErrors.phone ? "border-red-500" : ""}
+                            />
+                            {locationErrors.phone && (
+                              <p className="text-sm text-red-500">{locationErrors.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="flex justify-between">
+                        <Button type="submit" disabled={isUpdatingLocation}>
+                          {isUpdatingLocation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Update Location
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  ) : (
+                    // Create new location form
+                    <form onSubmit={handleCreateLocation}>
+                      <CardContent className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                          <div className="flex items-center">
+                            <Info className="h-5 w-5 text-blue-600 mr-2" />
+                            <h3 className="font-medium text-blue-800">Add Location Information</h3>
+                          </div>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Add your location details to help tenants find your properties.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="address">Address *</Label>
+                            <Input
+                              id="address"
+                              name="address"
+                              value={locationForm.address}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your street address"
+                              className={locationErrors.address ? "border-red-500" : ""}
+                            />
+                            {locationErrors.address && (
+                              <p className="text-sm text-red-500">{locationErrors.address}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City *</Label>
+                            <Input
+                              id="city"
+                              name="city"
+                              value={locationForm.city}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your city"
+                              className={locationErrors.city ? "border-red-500" : ""}
+                            />
+                            {locationErrors.city && (
+                              <p className="text-sm text-red-500">{locationErrors.city}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="country">Country *</Label>
+                            <Input
+                              id="country"
+                              name="country"
+                              value={locationForm.country}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your country"
+                              className={locationErrors.country ? "border-red-500" : ""}
+                            />
+                            {locationErrors.country && (
+                              <p className="text-sm text-red-500">{locationErrors.country}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="region">Region/State *</Label>
+                            <Input
+                              id="region"
+                              name="region"
+                              value={locationForm.region}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your region or state"
+                              className={locationErrors.region ? "border-red-500" : ""}
+                            />
+                            {locationErrors.region && (
+                              <p className="text-sm text-red-500">{locationErrors.region}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="postal_code">Postal Code *</Label>
+                            <Input
+                              id="postal_code"
+                              name="postal_code"
+                              value={locationForm.postal_code}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your postal code"
+                              className={locationErrors.postal_code ? "border-red-500" : ""}
+                            />
+                            {locationErrors.postal_code && (
+                              <p className="text-sm text-red-500">{locationErrors.postal_code}</p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number *</Label>
+                            <Input
+                              id="phone"
+                              name="phone"
+                              value={locationForm.phone}
+                              onChange={handleLocationChange}
+                              placeholder="Enter your phone number"
+                              className={locationErrors.phone ? "border-red-500" : ""}
+                            />
+                            {locationErrors.phone && (
+                              <p className="text-sm text-red-500">{locationErrors.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button type="submit" disabled={isUpdatingLocation} className="ml-auto">
+                          {isUpdatingLocation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Add Location
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  )}
                 </Card>
               </TabsContent>
 
@@ -872,8 +1283,26 @@ const OwnerProfilePage = () => {
                           <p className="text-sm text-green-700">Your identity has been verified successfully.</p>
                         </div>
                       </div>
+                    ) : userKyc && userKyc.id && !user?.kyc_verified ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex flex-col items-start">
+                        <div className="flex items-center mb-2">
+                          <div className="bg-yellow-100 rounded-full p-2 mr-4">
+                            <Clock className="h-6 w-6 text-yellow-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-yellow-800">KYC Pending Review</h3>
+                            <p className="text-sm text-yellow-700">Your KYC documents are pending review.</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-yellow-700 mb-4">You can update your submission if needed.</p>
+                        <div className="mt-2 w-full">
+                          <KycVerificationForm />
+                        </div>
+                      </div>
                     ) : (
-                      <KycVerificationForm />
+                      <div className="w-full"> {/* Wrapper for consistent styling/layout */}
+                        <KycVerificationForm />
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -1059,36 +1488,35 @@ const OwnerProfilePage = () => {
                                     className={`${
                                       property.status === "available"
                                         ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                        : "bg-red-50 text-red-700 border-red-200"
                                     }`}
                                   >
-                                    {property.status === "available" ? "Available" : "Unavailable"}
+                                    {property.status === "available" ? "Active" : "Inactive"}
                                   </Badge>
                                 </div>
-                                <div className="mt-2">
-                                  <p className="text-sm">{property.description.substring(0, 100)}...</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {property.tags.map((tag: string) => (
+                                    <Badge key={tag} variant="outline" className="text-muted-foreground">
+                                      {tag}
+                                    </Badge>
+                                  ))}
                                 </div>
-                                <div className="mt-4 flex justify-between items-center">
-                                  <div className="flex items-center">
-                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                                    <span className="ml-1 font-medium">${property.price}/night</span>
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/properties/${property.id}`)}
-                                    >
-                                      View Details
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/properties/${property.id}/edit`)}
-                                    >
-                                      Edit
-                                    </Button>
-                                  </div>
+                                <div className="mt-4 flex gap-2">
+                                  <Button
+                                    onClick={() => navigate(`/properties/${property.id}/edit`)}
+                                    className="flex-1"
+                                  >
+                                    Edit Property
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      // Handle property deletion
+                                    }}
+                                    variant="outline"
+                                    className="flex-1 text-red-600 hover:text-red-700"
+                                  >
+                                    Delete Property
+                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -1097,14 +1525,19 @@ const OwnerProfilePage = () => {
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Showing {properties.length} of {properties.length} properties
-                      </p>
-                    </div>
-                    <Button onClick={() => navigate("/add-property")}>Add New Property</Button>
-                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              {/* Preferences Tab */}
+              <TabsContent value="preferences">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Preferences</CardTitle>
+                    <CardDescription>Manage your account preferences and settings.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TagManagementSection />
+                  </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>

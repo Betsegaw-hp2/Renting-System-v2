@@ -48,6 +48,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   location: Location | null;
+  tags?: Array<{ id: string; name: string }>;
 }
 
 export interface UserWithToken extends User {

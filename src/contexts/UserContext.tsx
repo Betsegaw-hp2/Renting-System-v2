@@ -20,10 +20,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
+  
   const fetchUser = async () => {
-    if(!getAuthToken()) {
-      console.warn("⚠️ No auth token found, skipping user fetch")
+    const token = getAuthToken()
+    if(!token) {
       setCurrentUser(null)
       setLoading(false)
       return
@@ -31,12 +31,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true)
       setError(null)
-      console.log("🔄 Fetching current user from context provider")
       const user = await getCurrentUser()
       setCurrentUser(user)
-      console.log("✅ Current user cached in context:", user)
     } catch (err: any) {
-      console.error("❌ Error fetching current user:", err)
+      console.error("Error fetching current user:", err)
       setError(err.message)
       setCurrentUser(null)
     } finally {
@@ -50,6 +48,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchUser()
+    
+    // Listen for token changes in localStorage/cookies
+    const handleStorageChange = () => {
+      const token = getAuthToken()
+      if (!token) {
+        setCurrentUser(null)
+        setLoading(false)
+      } else {
+        fetchUser()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   return <UserContext.Provider value={{ currentUser, loading, error, refreshUser }}>{children}</UserContext.Provider>
