@@ -1,16 +1,16 @@
 "use client"
 
-import type React from "react"
-import { Calendar, DollarSign, Clock, Check, X, Mail, CreditCard, UserRoundIcon, Book } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { useUser } from "@/contexts/UserContext"
+import ChatDialog from "@/features/messages/components/ChatDialog"
 import { useToast } from "@/hooks/useToast"
 import type { Booking, BookingStatus, PaymentStatus } from "@/types/listing.types"
-import { useUserProfile } from "@/features/users/useUserProfile"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Calendar, Check, Clock, CreditCard, DollarSign, MessageSquare, X } from "lucide-react"
+import type React from "react"
+import { useState } from "react"
 import BookedUser from "./BookedUser"
 // import { fakeOwnerApi } from "@/features/owner/api/fakeOwnerApi"
 
@@ -22,6 +22,9 @@ interface BookingRequestsSectionProps {
 
 const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ bookings, isLoading, onBookingUpdate }) => {
   const { toast } = useToast()
+  const { currentUser } = useUser()
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false)
+  const [selectedChatPartner, setSelectedChatPartner] = useState<{ id: string; name: string; avatar?: string; listingId: string } | null>(null)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -78,7 +81,15 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
     }
   }
 
+  const openChatDialog = (partnerId: string, partnerName: string, partnerAvatar: string | undefined, listingId: string) => {
+    setSelectedChatPartner({ id: partnerId, name: partnerName, avatar: partnerAvatar, listingId })
+    setIsChatDialogOpen(true)
+  }
 
+  const closeChatDialog = () => {
+    setIsChatDialogOpen(false)
+    setSelectedChatPartner(null)
+  }
 
   if (isLoading) {
     return (
@@ -209,12 +220,33 @@ const BookingRequestsSection: React.FC<BookingRequestsSectionProps> = ({ booking
                       </Button>
                     </div>
                   )}
+                  {currentUser && currentUser.id !== booking.renter_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => openChatDialog(booking.renter_id,  "Tenant", "booking.renter_avatar", booking.listing_id)}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Message Tenant
+                    </Button>
+                  )}
                 </div>
               )
             })}
           </div>
         )}
       </CardContent>
+      {selectedChatPartner && currentUser && (
+        <ChatDialog
+          isOpen={isChatDialogOpen}
+          onClose={closeChatDialog}
+          partnerId={selectedChatPartner.id}
+          partnerName={selectedChatPartner.name}
+          partnerAvatar={selectedChatPartner.avatar}
+          listingId={selectedChatPartner.listingId}
+        />
+      )}
     </Card>
   )
 }
