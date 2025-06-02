@@ -33,6 +33,7 @@ export class ChatWebSocketService {
       this.socket.onopen = () => {
         this.connected = true
         console.log("Chat WS open")
+        window.dispatchEvent(new Event('chat-ws-open'));
       }
 
       this.socket.onmessage = (e) => {
@@ -64,6 +65,7 @@ export class ChatWebSocketService {
       this.socket.onclose = (e) => {
         console.warn("Chat WS closed", e.reason, e.code, e);
         this.connected = false;
+        window.dispatchEvent(new Event('chat-ws-close'));
       }
       this.socket.onerror = (err) => {
         console.error("Chat WS error", err);

@@ -5,19 +5,21 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { BookOpen, HomeIcon, Loader2, Search, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Footer } from "../../../components/layout/Footer"
 import { Header } from "../../../components/layout/Header"
 import { ListingCard } from "../../../components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "../../../components/ui/alert"
 import { Button } from "../../../components/ui/button"
-import { Card, CardContent, CardFooter } from "../../../components/ui/card"
+import { Card, CardContent } from "../../../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
 import { useToast } from "../../../hooks/useToast"
 import type { RootState } from "../../../store"
 import { tenantApi, type Booking, type FeaturedListing } from "../api/tenantApi"
 
 import { Input } from "@/components/ui/input"
+import { useUser } from "@/contexts/UserContext"
+import ChatDialog from "@/features/messages/components/ChatDialog"
 import {
   Carousel,
   CarouselContent,
@@ -31,6 +33,7 @@ export default function TenantHomePage() {
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
   const { toast } = useToast()
+  const { currentUser } = useUser();
 
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
   const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
@@ -41,7 +44,14 @@ export default function TenantHomePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("recommended")
 
-
+  // Chat dialog state for tenant
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [selectedChatPartner, setSelectedChatPartner] = useState<{
+    id: string;
+    name: string;
+    avatar?: string;
+    listingId: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -150,6 +160,16 @@ export default function TenantHomePage() {
       })
     }
   }
+
+  // Add this handler for opening chat dialog
+  const openChatDialog = (partnerId: string, partnerName: string, partnerAvatar: string | undefined, listingId: string) => {
+    setSelectedChatPartner({ id: partnerId, name: partnerName, avatar: partnerAvatar, listingId });
+    setIsChatDialogOpen(true);
+  };
+  const closeChatDialog = () => {
+    setIsChatDialogOpen(false);
+    setSelectedChatPartner(null);
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -409,11 +429,11 @@ export default function TenantHomePage() {
                                 <span className="font-medium text-gray-900">${booking.total_amount}</span>
                               </div>
                               <div className="mt-4 flex gap-2 justify-end">
-                                <Link to={`/messages/${booking.listing_id}/${booking.owner_id}`}>
+                                {/* <Link to={`/messages/${booking.listing_id}/${booking.owner_id}`}>
                                   <Button variant="outline" size="sm">
                                     Message Owner
                                   </Button>
-                                </Link>
+                                </Link> */}
 
                                 {booking.payment_status === "in_escrow" && booking.status === "booked" && (
                                   <Button 
@@ -441,6 +461,19 @@ export default function TenantHomePage() {
                                   onClick={() => navigate(`/listings/${booking.listing_id}/bookings/${booking.id}`)}
                                 >
                                   View Details
+                                </Button>
+
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openChatDialog(
+                                    booking.owner_id,
+                                    "Owner name", 
+                                    "Owner avater",
+                                    booking.listing_id
+                                  )}
+                                >
+                                  Open Message
                                 </Button>
                               </div>
                             </div>
@@ -512,6 +545,18 @@ export default function TenantHomePage() {
       </main>
 
       <Footer />
+
+      {/* Render ChatDialog for tenant */}
+      {selectedChatPartner && currentUser && (
+        <ChatDialog
+          isOpen={isChatDialogOpen}
+          onClose={closeChatDialog}
+          partnerId={selectedChatPartner.id}
+          partnerName={selectedChatPartner.name}
+          partnerAvatar={selectedChatPartner.avatar}
+          listingId={selectedChatPartner.listingId}
+        />
+      )}
     </div>
   )
 }
