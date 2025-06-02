@@ -13,14 +13,14 @@ export interface Message {
 
 export interface CreateMessagePayload {
   content: string
-  listing_id: string
+  listing_id?: string
   sender_id: string
   receiver_id: string
 }
 
 export interface Conversation {
   id: string
-  listing_id: string
+  listing_id?: string
   partnerId: string
   partnerName: string
   partnerAvatar: string

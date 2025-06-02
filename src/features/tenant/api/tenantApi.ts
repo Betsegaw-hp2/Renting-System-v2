@@ -56,8 +56,8 @@ export const tenantApi = {
     try {
       console.log(`Fetching recommended listings for user ${userId} from real API`)
       const response = await publicAxiosInstance.get<ApiListingResponse[]>(`/users/${userId}/listings/recommendations`)
-      console.log(`Received ${response.data.length} recommended listings from API`)
-      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
+      console.log(`Received ${response.data?.length} recommended listings from API`)
+      return await Promise.all((response.data ?? []).map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error(`Error fetching recommended listings for user ${userId}:`, error)
       return tenantApi.getFeaturedListings()
@@ -69,8 +69,8 @@ export const tenantApi = {
     try {
       console.log("Fetching trending listings from real API")
       const response = await publicAxiosInstance.get<ApiListingResponse[]>("/listings/trending")
-      console.log(`Received ${response.data.length} trending listings from API`)
-      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
+      console.log(`Received ${response.data?.length} trending listings from API`)
+      return await Promise.all((response.data ?? []).map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching trending listings:", error)
       return tenantApi.getFeaturedListings()
@@ -84,8 +84,8 @@ export const tenantApi = {
       const response = await publicAxiosInstance.get<ApiListingResponse[]>("/listings/popular", {
         params: { limit: 8 },
       })
-      console.log(`Received ${response.data.length} listings from API`)
-      return await Promise.all(response.data.map(convertApiListingToFeaturedListing))
+      console.log(`Received ${response.data?.length} listings from API`)
+      return await Promise.all((response.data ?? []).map(convertApiListingToFeaturedListing))
     } catch (error) {
       console.error("Error fetching featured listings:", error)
       throw error
@@ -202,4 +202,4 @@ export const tenantApi = {
   },
 }
 
-export type { FeaturedListing, Booking, UpdateBookingPayload }
+export type { Booking, FeaturedListing, UpdateBookingPayload }

@@ -50,16 +50,23 @@ export class ChatWebSocketService {
         store.dispatch(receiveMessage(msg))
       }
 
-      this.socket.onerror = (err) => {
-        // Only log if already connected (ignore connect-time errors)
-        if (this.connected) {
-          console.error("Chat WS error", err)
-        }
-      }
+      // this.socket.onerror = (err) => {
+      //   // Only log if already connected (ignore connect-time errors)
+      //   if (this.connected) {
+      //     console.error("Chat WS error", err)
+      //   }
+      // }
 
+      // this.socket.onclose = (e) => {
+      //   console.warn("Chat WS closed", e.reason)
+      //   this.connected = false
+      // }
       this.socket.onclose = (e) => {
-        console.warn("Chat WS closed", e.reason)
-        this.connected = false
+        console.warn("Chat WS closed", e.reason, e.code, e);
+        this.connected = false;
+      }
+      this.socket.onerror = (err) => {
+        console.error("Chat WS error", err);
       }
     } catch (error) {
       console.error("Error creating WebSocket:", error)
@@ -73,7 +80,7 @@ export class ChatWebSocketService {
         const mockMessage: Message = {
           id: crypto.randomUUID(),
           content: msg.content,
-          listing_id: msg.listing_id,
+          listing_id: msg.listing_id || "",
           sender_id: msg.sender_id,
           receiver_id: msg.receiver_id,
           is_read: false,
