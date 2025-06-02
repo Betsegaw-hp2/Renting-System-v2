@@ -39,11 +39,9 @@ import {
 import type React from "react"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { useNavigate } from "react-router-dom"
 
 const TenantProfilePage = () => {
   const { toast } = useToast()
-  const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const user: User = useSelector((state: any) => state.auth.user)
   const [userKyc, setUserKyc] = useState<UserKYC | null>(null)
@@ -96,13 +94,15 @@ const TenantProfilePage = () => {
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
-
   // Error states
   const [personalInfoErrors, setPersonalInfoErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
   const [emailError, setEmailError] = useState<string | null>(null)
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({})
   const [locationErrors, setLocationErrors] = useState<Record<string, string>>({})
+  // Profile picture upload states
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null)
+  const [isUploadingProfilePicture, setIsUploadingProfilePicture] = useState(false)
   
 
   // Fetch user data on component mount
@@ -576,8 +576,90 @@ const TenantProfilePage = () => {
         })
       } finally {
         setIsUpdatingLocation(false)
+      }    }
+
+  // Profile picture handling functions
+  const handleProfilePictureSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a JPEG, PNG, or WebP image file",
+          variant: "destructive",
+        })
+        return
       }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+      if (file.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        })
+        return      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setProfilePicturePreview(previewUrl)
+      
+      // Auto-upload the selected image
+      handleProfilePictureUpload(file)
     }
+  }
+
+  const handleProfilePictureUpload = async (file: File) => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not found. Please log in again.",
+        variant: "destructive",
+      })
+      return
+    }    
+    setIsUploadingProfilePicture(true)
+    try {
+      const formData = new FormData()
+      formData.append("image", file)
+      const profilePictureResult = await userApi.uploadProfilePicture(user.id, formData)
+      
+      // Update Redux store with new profile picture URL
+      dispatch(updateUserProfile({ ...user, profile_picture: profilePictureResult.image }))
+      
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been updated successfully",
+      })
+      
+      // Clean up preview URL since we now have the uploaded image
+      if (profilePicturePreview) {
+        URL.revokeObjectURL(profilePicturePreview)
+        setProfilePicturePreview(null)      }
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.response?.data?.message || error.message || "Failed to upload profile picture",
+        variant: "destructive",
+      })
+      
+      // Clean up on error
+      if (profilePicturePreview) {
+        URL.revokeObjectURL(profilePicturePreview)
+        setProfilePicturePreview(null)
+      }
+    } finally {
+      setIsUploadingProfilePicture(false)
+    }
+  }
+
+  const triggerProfilePictureSelect = () => {
+    const fileInput = document.getElementById('tenant-profile-picture-input') as HTMLInputElement
+    fileInput?.click()
+  }
 
   if (isLoadingProfile || isKycLoading) {
     return (
@@ -596,18 +678,40 @@ const TenantProfilePage = () => {
           {/* Left sidebar */}
           <div className="md:col-span-1">
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col items-center">
+              <CardContent className="pt-6">                <div className="flex flex-col items-center">
                   <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage src={user?.profile_picture || ""} alt={user?.username || "User"} />
+                    <AvatarImage 
+                      src={profilePicturePreview || user?.profile_picture || ""} 
+                      alt={user?.username || "User"} 
+                    />
                     <AvatarFallback className="text-2xl">
                       {user?.first_name?.[0]}
                       {user?.last_name?.[0]}
                     </AvatarFallback>
                   </Avatar>
+                  
+                  {/* Hidden file input */}
+                  <input
+                    id="tenant-profile-picture-input"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleProfilePictureSelect}
+                    className="hidden"
+                  />
+                  
                   <div className="relative">
-                    <Button variant="outline" size="sm" className="absolute -top-12 -right-12 rounded-full">
-                      <Upload className="h-4 w-4" />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="absolute -top-12 -right-12 rounded-full"
+                      onClick={triggerProfilePictureSelect}
+                      disabled={isUploadingProfilePicture}
+                    >
+                      {isUploadingProfilePicture ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <h2 className="text-xl font-bold mt-2">

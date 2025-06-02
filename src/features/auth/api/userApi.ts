@@ -39,6 +39,11 @@ export interface UpdateUserPayload {
   username?: string
 }
 
+export interface profilePicturePayload {
+  user_id: string
+  image: string
+}
+
 // API functions for user profile management
 export const userApi = {
   // Update user personal information
@@ -113,13 +118,15 @@ export const userApi = {
       throw error
     }
   },
-
-  getUserPaymentDetails: async (userId: string): Promise<PaymentDetail> => {
+  getUserPaymentDetails: async (userId: string): Promise<PaymentDetail | null> => {
     try {
       const response = await apiClient.get<PaymentDetail>(`/users/${userId}/payment-details`)
       console.log("Payment details fetched successfully", response.data)
       return response.data
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return null // Return null if payment details not found
+      }
       console.error(`Error fetching payment details for user ${userId}:`, error)
       throw error 
     }
@@ -177,6 +184,38 @@ export const userApi = {
     } catch (error) {
       console.error(`Error updating location for user with location id ${locationId}:`, error)
       throw error
+    }
+  },
+
+  uploadProfilePicture: async (userId: string, image: FormData): Promise<profilePicturePayload> => {
+    try {
+
+
+      const response = await apiClient.post<profilePicturePayload>(`/users/${userId}/profile-picture`, image, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+
+      console.log("Profile picture uploaded successfully", response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error uploading profile picture for user ${userId}:`, error)
+      throw error
+    }
+  },
+
+  getProfilePicture: async (userId: string): Promise<string | null> => {
+    try {
+      const response = await apiClient.get(`/users/${userId}/profile-picture`, {
+        responseType: 'blob' // Ensure we get the image as a blob
+      })
+      const imageUrl = URL.createObjectURL(response.data)
+      console.log("Profile picture fetched successfully", imageUrl)
+      return imageUrl
+    } catch (error) {
+      console.error(`Error fetching profile picture for user ${userId}:`, error)
+      return null // Return null if there's an error
     }
   },
 

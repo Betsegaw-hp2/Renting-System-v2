@@ -1,5 +1,5 @@
 "use client"
-import { Star, ChevronLeft, ChevronRight } from "lucide-react"
+import { Star, ChevronLeft, ChevronRight, Eye } from "lucide-react"
 import type React from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
@@ -138,13 +138,18 @@ export function ListingCard({ listing, showSaveButton = false, isSaved = false, 
               <Star className={`h-4 w-4 ${isListingSaved ? "fill-current" : ""}`} />
             </button>
           )}
-        </div>
-        <div className="p-4">
-          <div className="flex items-center mb-2">
-            <Star className="h-4 w-4 text-yellow-400" />
-            <span className="text-sm font-medium ml-1">
-              {rating || 0} ({reviewCount || 0} reviews)
-            </span>
+        </div>        <div className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Star className="h-4 w-4 text-yellow-400" />
+              <span className="text-sm font-medium ml-1">
+                {rating || 0} ({reviewCount || 0} reviews)
+              </span>
+            </div>
+            <div className="flex items-center text-gray-500">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm ml-1">{listing.views_count || 0}</span>
+            </div>
           </div>
           <h3 className="font-bold text-lg mb-1 line-clamp-1">{title || "Untitled Listing"}</h3>
           <p className="text-gray-500 text-sm mb-2">{location}</p>

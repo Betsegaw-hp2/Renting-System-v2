@@ -779,10 +779,8 @@ export default function HomePage() {
             ></path>
           </svg>
         </div>
-      </section>
-
-      {/* Footer */}
-      <Footer scrollToSection={scrollToSection} howItWorksRef={howItWorksRef} />
+      </section>      {/* Footer */}
+      <Footer />
     </div>
   )
 }

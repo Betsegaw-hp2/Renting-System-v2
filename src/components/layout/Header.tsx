@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { logoutUser } from "../../features/auth/slices/authSlice"
 import { NotificationBell } from "../../features/notifications/components/NotificationBell"
 import { usePermissions } from "../../hooks/usePermissions"
@@ -55,10 +55,7 @@ export function Header({
   searchValue = "",
   onSearchSubmit,
   variant = "default",
-}: HeaderProps) {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const location = useLocation()
+}: HeaderProps) {  const dispatch = useDispatch()
   const { user, is_authenticated } = useSelector((state: RootState) => state.auth)
   const permissions = usePermissions()
   const [isScrolled, setIsScrolled] = useState(false)
@@ -234,15 +231,11 @@ export function Header({
                       </Link>
                     </>
                   )}
-                </>
-              ) : (
+                </>              ) : (
                 <>
                   <Link to="/browse" className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}>
                     <Search className="h-4 w-4" />
                     <span>Browse</span>
-                  </Link>
-                  <Link to="/how-it-works" className={`text-sm font-medium ${getLinkClasses()}`}>
-                    How It Works
                   </Link>
                   <Link to="/about" className={`text-sm font-medium ${getLinkClasses()}`}>
                     About Us
