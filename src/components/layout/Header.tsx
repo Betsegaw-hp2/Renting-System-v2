@@ -2,13 +2,9 @@
 
 import type React from "react"
 
-import { MessageIcon } from "@/features/messages/components/MessageIcon"
+// import { MessageIcon } from "@/features/messages/components/MessageIcon"
 import {
-  BookOpen,
-  Building2,
-  Calendar,
   FileText,
-  Heart,
   Home,
   LogOut,
   Menu,
@@ -281,7 +277,7 @@ export function Header({
             {is_authenticated && user?.is_verified && (
               <div className={variant === "transparent" && !isScrolled ? "text-white" : ""}>
                 <NotificationBell />
-                <MessageIcon />
+                {/* <MessageIcon /> */}
               </div>
             )}
 

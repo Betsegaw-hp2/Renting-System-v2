@@ -1,6 +1,7 @@
 "use client"
 
 import type { FeaturedListing } from "@/api/publicApi"
+import { KYCVerificationDialog } from "@/components/kyc/KYCVerificationDialog"
 import { Header } from "@/components/layout/Header"
 import { ListingCard } from "@/components/listings/ListingCard"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -23,6 +24,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useUser } from "@/contexts/UserContext"
+import ChatDialog from "@/features/messages/components/ChatDialog"
 import { AddPropertyDialog } from "@/features/owner/components/AddPropertyDialog"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { useToast } from "@/hooks/useToast"
@@ -53,6 +56,7 @@ import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { ownerApi } from "../api/ownerApi"
 
+
 type ViewMode = "grid" | "list"
 
 // Utility functions for localStorage
@@ -74,17 +78,29 @@ export default function OwnerHomePage() {
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
   const { toast } = useToast()
+  const { currentUser } = useUser();
+  
 
   // State for owner-specific data
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
   const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
+   const [bookings, setBookings] = useState<Booking[]>([])
   const [ownerListings, setOwnerListings] = useState<FeaturedListing[]>([])
   const [userStats] = useState<UserListingStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode())
   const [listingToDelete, setListingToDelete] = useState<string | null>(null)
+  const [showKYCDialog, setShowKYCDialog] = useState(false)
+
+    // Chat dialog state for tenant
+    const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+    const [selectedChatPartner, setSelectedChatPartner] = useState<{
+      id: string;
+      name: string;
+      avatar?: string;
+      listingId: string;
+    } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -150,8 +166,16 @@ export default function OwnerHomePage() {
         title: "Error",
         description: `Failed to ${status === "confirmed" ? "accept" : "decline"} booking`,
         variant: "destructive",
-      })
+      })    }
+  }
+
+  // KYC verification handler
+  const handleAddProperty = () => {
+    if (!user?.kyc_verified) {
+      setShowKYCDialog(true)
+      return false
     }
+    return true
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -204,6 +228,16 @@ export default function OwnerHomePage() {
     setViewMode(mode)
     setStoredViewMode(mode)
   }
+
+    // Add this handler for opening chat dialog
+  const openChatDialog = (partnerId: string, partnerName: string, partnerAvatar: string | undefined, listingId: string) => {
+    setSelectedChatPartner({ id: partnerId, name: partnerName, avatar: partnerAvatar, listingId });
+    setIsChatDialogOpen(true);
+  };
+  const closeChatDialog = () => {
+    setIsChatDialogOpen(false);
+    setSelectedChatPartner(null);
+  };
 
 
   // Render properties in grid format
@@ -623,17 +657,23 @@ export default function OwnerHomePage() {
                           className="h-8 px-3"
                         >
                           <List className="h-4 w-4" />
+                        </Button>                      </div>
+                      {user?.kyc_verified ? (
+                        <AddPropertyDialog
+                          trigger={
+                            <Button>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add New Property
+                            </Button>
+                          }
+                          onSuccess={handlePropertyAdded}
+                        />
+                      ) : (
+                        <Button onClick={handleAddProperty}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add New Property
                         </Button>
-                      </div>
-                      <AddPropertyDialog
-                        trigger={
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add New Property
-                          </Button>
-                        }
-                        onSuccess={handlePropertyAdded}
-                      />
+                      )}
                     </div>
                   </div>
 
@@ -685,12 +725,15 @@ export default function OwnerHomePage() {
                         <h3 className="text-xl font-semibold mb-2">No Properties Listed</h3>
                         <p className="text-gray-500 mb-6">
                           You haven't listed any properties yet. Create your first listing to start receiving booking
-                          requests.
-                        </p>
-                        <AddPropertyDialog
-                          trigger={<Button>Add Your First Property</Button>}
-                          onSuccess={handlePropertyAdded}
-                        />
+                          requests.                        </p>
+                        {user?.kyc_verified ? (
+                          <AddPropertyDialog
+                            trigger={<Button>Add Your First Property</Button>}
+                            onSuccess={handlePropertyAdded}
+                          />
+                        ) : (
+                          <Button onClick={handleAddProperty}>Add Your First Property</Button>
+                        )}
                       </CardContent>
                     </Card>
                   )}
@@ -814,8 +857,17 @@ export default function OwnerHomePage() {
                                   <span className="font-medium text-gray-900">${booking.total_amount}</span>
                                 </div>
                                 <div className="mt-4 flex gap-2 justify-end">
-                                  <Button variant="outline" size="sm">
-                                    Message
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openChatDialog(
+                                      booking.owner_id,
+                                      "Owner name", 
+                                      "Owner avatar",
+                                      booking.listing_id
+                                    )}
+                                  >
+                                    Open Message
                                   </Button>
                                   {booking.status === "pending" && (
                                     <>
@@ -864,6 +916,23 @@ export default function OwnerHomePage() {
           </div>
         </section>
       </main>
+      {/* Render ChatDialog for tenant */}
+       {selectedChatPartner && currentUser && (
+         <ChatDialog
+           isOpen={isChatDialogOpen}
+           onClose={closeChatDialog}
+           partnerId={selectedChatPartner.id}
+           partnerName={selectedChatPartner.name}
+           partnerAvatar={selectedChatPartner.avatar}
+           listingId={selectedChatPartner.listingId}
+         />       )}
+      
+      {/* KYC Verification Dialog */}
+      <KYCVerificationDialog 
+        open={showKYCDialog} 
+        onOpenChange={setShowKYCDialog} 
+      />
     </div>
+
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import type { FeaturedListing } from "@/api/publicApi"
+import { KYCVerificationDialog } from "@/components/kyc/KYCVerificationDialog"
 import { Header } from "@/components/layout/Header"
 import { TagManagementSection } from "@/components/preferences/TagManagementSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -23,14 +24,12 @@ import { ownerApi } from "@/features/owner/api/ownerApi"
 import { useToast } from "@/hooks/useToast"
 import type { CreateLocation, Location, UpdateLocation } from "@/types/location.types"
 import {
-  AlertTriangle,
   Building,
   Calendar,
   CheckCircle,
   Clock,
   CreditCard,
   DollarSign,
-  Download,
   Home,
   Info,
   Loader2,
@@ -38,7 +37,7 @@ import {
   Star,
   Upload,
   Users,
-  XCircle,
+  XCircle
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
@@ -102,10 +101,10 @@ const OwnerProfilePage = () => {
     averageRating: 0,
     totalRevenue: 0,
   })
-
   // KYC state
   const [userKyc, setUserKyc] = useState<UserKYC | null>(null)
   const [isKycLoading, setIsKycLoading] = useState(false)
+  const [showKYCDialog, setShowKYCDialog] = useState(false)
   // Loading states
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
   const [isLoadingProperties, setIsLoadingProperties] = useState(false)
@@ -692,10 +691,18 @@ const OwnerProfilePage = () => {
         title: "Update failed",
         description: error.response.data.message || error.message || "Failed to update your location details",
         variant: "destructive",
-      })
-    } finally {
+      })    } finally {
       setIsUpdatingLocation(false)
     }
+  }
+
+  // KYC verification handler
+  const handleAddProperty = () => {
+    if (!user?.kyc_verified) {
+      setShowKYCDialog(true)
+      return
+    }
+    navigate("/add-property")
   }
 
   if (isLoadingProfile) {
@@ -850,7 +857,7 @@ const OwnerProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t">
+                {/* <div className="mt-8 pt-6 border-t">
                   <h3 className="font-medium mb-4">Account Actions</h3>
                   <div className="space-y-2">
                     <Button variant="outline" className="w-full justify-start">
@@ -865,7 +872,7 @@ const OwnerProfilePage = () => {
                       Deactivate Account
                     </Button>
                   </div>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
@@ -1353,7 +1360,7 @@ const OwnerProfilePage = () => {
                             </div>
                           </div>
                         </div>
-
+{/* 
                         <div className="flex justify-end">
                           <Button
                             variant="outline"
@@ -1364,7 +1371,7 @@ const OwnerProfilePage = () => {
                             {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Remove Payment Details
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     ) : (
                       <form onSubmit={handleUpdatePaymentDetails} className="space-y-6">
@@ -1456,13 +1463,18 @@ const OwnerProfilePage = () => {
                     ) : properties.length === 0 ? (
                       <div className="text-center py-8">
                         <Building className="h-12 w-12 mx-auto text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">No properties yet</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <h3 className="mt-4 text-lg font-medium">No properties yet</h3>                        <p className="mt-2 text-sm text-muted-foreground">
                           You haven't added any properties to your account yet.
                         </p>
-                        <Button className="mt-4" onClick={() => navigate("/add-property")}>
-                          Add Your First Property
-                        </Button>
+                        {user?.kyc_verified ? (
+                          <Button className="mt-4" onClick={() => navigate("/add-property")}>
+                            Add Your First Property
+                          </Button>
+                        ) : (
+                          <Button className="mt-4" onClick={handleAddProperty}>
+                            Add Your First Property
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1503,12 +1515,12 @@ const OwnerProfilePage = () => {
                                 </div>
                                 <div className="mt-4 flex gap-2">
                                   <Button
-                                    onClick={() => navigate(`/properties/${property.id}/edit`)}
+                                    onClick={() => navigate(`/owner/listing/${property.id}/manage`)}
                                     className="flex-1"
                                   >
                                     Edit Property
                                   </Button>
-                                  <Button
+                                  {/* <Button
                                     onClick={() => {
                                       // Handle property deletion
                                     }}
@@ -1516,7 +1528,7 @@ const OwnerProfilePage = () => {
                                     className="flex-1 text-red-600 hover:text-red-700"
                                   >
                                     Delete Property
-                                  </Button>
+                                  </Button> */}
                                 </div>
                               </div>
                             </div>
@@ -1540,10 +1552,15 @@ const OwnerProfilePage = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-            </Tabs>
-          </div>
+            </Tabs>          </div>
         </div>
       </div>
+      
+      {/* KYC Verification Dialog */}
+      <KYCVerificationDialog 
+        open={showKYCDialog} 
+        onOpenChange={setShowKYCDialog} 
+      />
     </>
   )
 }
