@@ -94,7 +94,7 @@ export function ChatThread() {
 
   if (!currentUserId || !receiverId || !listingId) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <p className="text-muted-foreground">Invalid chat parameters.</p>
           <Button onClick={() => navigate(-1)} className="mt-2">
@@ -106,64 +106,71 @@ export function ChatThread() {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto border rounded-lg bg-white shadow-md">
-      <div className="flex items-center p-4 border-b">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
-          <X className="h-5 w-5" />
-        </Button>
-        <Avatar className="h-8 w-8 mr-2">
-          <AvatarImage src={"/placeholder.svg?height=40&width=40"} alt={receiverId} />
-          <AvatarFallback>{receiverId[0]}</AvatarFallback>
-        </Avatar>
-        <span className="font-semibold">Chat</span>
-      </div>
-      <ScrollArea className="flex-grow p-4 bg-gray-50">
-        <div className="space-y-4">
-          {isLoading && <p className="text-center text-gray-500">Loading messages...</p>}
-          {!isLoading && messages.length === 0 && (
-            <p className="text-center text-gray-500">No messages yet. Start the conversation!</p>
-          )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender_id === currentUserId ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  msg.sender_id === currentUserId
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-800"
-                }`}
-              >
-                <p className="text-sm">{msg.content}</p>
-                <p className="text-xs mt-1 text-gray-500">
-                  {new Date(msg.sent_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </p>
-              </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="w-full border-b bg-white/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto flex items-center p-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+            <X className="h-5 w-5" />
+          </Button>
+          <Avatar className="h-8 w-8 mr-2">
+            <AvatarImage src={"/placeholder.svg?height=40&width=40"} alt={receiverId} />
+            <AvatarFallback>{receiverId[0]}</AvatarFallback>
+          </Avatar>
+          <span className="font-semibold text-lg">Instant Chat Room</span>
+          <span className="ml-2 text-xs text-green-600 animate-pulse">(Instant)</span>
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col items-center justify-center w-full">
+        <div className="w-full max-w-2xl flex flex-col h-[80vh] border rounded-lg bg-white shadow-lg mt-8 mb-8">
+          <ScrollArea className="flex-grow p-4 bg-gray-50" style={{ minHeight: 0, maxHeight: "100%", overflowY: "auto" }}>
+            <div className="space-y-4">
+              {isLoading && <p className="text-center text-gray-500">Loading messages...</p>}
+              {!isLoading && messages.length === 0 && (
+                <p className="text-center text-gray-500">No messages yet. Start the conversation!</p>
+              )}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender_id === currentUserId ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[70%] p-3 rounded-lg ${
+                      msg.sender_id === currentUserId
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-xs mt-1 text-gray-500">
+                      {new Date(msg.sent_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          <div ref={messagesEndRef} />
+          </ScrollArea>
+          <div className="p-4 border-t bg-white">
+            <div className="flex w-full items-center space-x-2">
+              <Button variant="ghost" size="icon">
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <Input
+                type="text"
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                className="flex-grow"
+              />
+              <Button type="button" onClick={handleSendMessage} disabled={!newMessage.trim() || isLoading}>
+                <Send className="h-5 w-5 mr-2" />
+                Send
+              </Button>
+            </div>
+          </div>
         </div>
-      </ScrollArea>
-      <div className="p-4 border-t bg-white">
-        <div className="flex w-full items-center space-x-2">
-          <Button variant="ghost" size="icon">
-            <Paperclip className="h-5 w-5" />
-          </Button>
-          <Input
-            type="text"
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            className="flex-grow"
-          />
-          <Button type="button" onClick={handleSendMessage} disabled={!newMessage.trim() || isLoading}>
-            <Send className="h-5 w-5 mr-2" />
-            Send
-          </Button>
-        </div>
-      </div>
+      </main>
     </div>
   )
 }

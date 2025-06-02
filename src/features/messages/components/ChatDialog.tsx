@@ -93,10 +93,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     try {
       // Send via WebSocket
       sendMessageWS({
-        content: optimisticMessage.content,
         sender_id: currentUserId,
         receiver_id: partnerId,
-        listing_id: listingId,
+        content: optimisticMessage.content,
+        // listing_id: listingId,
       });
       // Optionally: Listen for server confirmation and update message state
     } catch (error) {
@@ -140,7 +140,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[700px] p-0 flex flex-col h-[80vh]">
-        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between">
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between bg-muted">
           <div className="flex items-center gap-2">
             {/* Webhook status pulse */}
             <span className="relative flex h-3 w-3 mr-2">
@@ -151,7 +151,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
               <AvatarImage src={partnerAvatar} alt={partnerName} />
               <AvatarFallback>{partnerName[0]}</AvatarFallback>
             </Avatar>
-            {partnerName}
+            <span className="font-semibold text-lg">Instant Chat <span className="ml-2 text-xs text-green-600 animate-pulse">(Instant)</span></span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" title="Refresh" onClick={handleRefresh}>

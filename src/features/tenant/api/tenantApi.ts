@@ -20,7 +20,7 @@ export const tenantApi = {
       console.log("Fetching saved listings from real API")
       const response = await publicAxiosInstance.get<ApiListingResponse[]>("/listings/favorites")
       console.log(`Received ${response.data?.length} saved listings from API`)
-      return response.data && await  Promise.all(response.data.map(convertApiListingToFeaturedListing))
+      return (response.data && await  Promise.all(response.data.map(convertApiListingToFeaturedListing)))
     } catch (error) {
       console.error("Error fetching saved listings:", error)
       return []
@@ -203,3 +203,4 @@ export const tenantApi = {
 }
 
 export type { Booking, FeaturedListing, UpdateBookingPayload }
+
