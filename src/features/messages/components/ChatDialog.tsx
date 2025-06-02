@@ -126,6 +126,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     loadHistory();
   };
 
+  // Ensure scroll to bottom on open and on new messages
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }
+  }, [isOpen, messages]);
+
   if (!isOpen) return null;
 
   return (
@@ -159,7 +168,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-grow p-4 bg-gray-50">
+        <ScrollArea className="flex-grow p-4 bg-gray-50" style={{ minHeight: 0, maxHeight: '100%', overflowY: 'auto' }}>
           <div className="space-y-4">
             {isLoading && <p className="text-center text-gray-500">Loading messages...</p>}
             {!isLoading && messages.length === 0 && (
