@@ -113,6 +113,10 @@ export default function ListingDetailsPage() {
   const [isImageGalleryOpen, setIsImageGalleryOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
+  // Add user authentication check
+  const user = useSelector((state: RootState) => state.auth.user)
+  const isLoggedIn = !!user
+
   useEffect(() => {
     const fetchListing = async () => {
       if (!id) {
@@ -137,35 +141,40 @@ export default function ListingDetailsPage() {
           return
         }
 
-        // Get reviews count from API
+        // Only fetch reviews if user is logged in
         let reviewCount = 0
-        try {
-          const reviews = await reviewsApi.getListingReviews(id)
-          const reviewCount = reviews?.length
-          
-          setListing({
-            ...foundListing,
-            reviewCount: reviewCount
-          })
-          setReviewsCount(reviewCount)
-
-          // Set the selected image to the first media item or placeholder
-          if (foundListing.media && foundListing.media?.length > 0) {
-            setSelectedImage(foundListing.media[0].media_url)
-          } else {
-            setSelectedImage("https://picsum.photos/200/300")
+        if (isLoggedIn) {
+          try {
+            const reviews = await reviewsApi.getListingReviews(id)
+            reviewCount = reviews?.length || 0
+            setReviewsCount(reviewCount)
+          } catch (err) {
+            console.error("Error fetching reviews:", err)
+            // Don't set error for review fetch failure, just log it
           }
-        } catch (err) {
-          console.error("Error fetching listing:", err)
-          setError("Failed to load listing details. Please try again later.")
         }
+        
+        setListing({
+          ...foundListing,
+          reviewCount: reviewCount
+        })
+
+        // Set the selected image to the first media item or placeholder
+        if (foundListing.media && foundListing.media?.length > 0) {
+          setSelectedImage(foundListing.media[0].media_url)
+        } else {
+          setSelectedImage("https://picsum.photos/200/300")
+        }
+      } catch (err) {
+        console.error("Error fetching listing:", err)
+        setError("Failed to load listing details. Please try again later.")
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchListing()
-  }, [id])
+  }, [id, isLoggedIn])
 
   // Format dates with null check
   const formatDate = (dateString?: string | null) => {
@@ -283,6 +292,8 @@ export default function ListingDetailsPage() {
   }
 
   const handleReviewSubmitted = async () => {
+    if (!isLoggedIn) return
+    
     setShowReviewForm(false)
     setReviewsRefreshTrigger((prev) => prev + 1)
     
@@ -524,7 +535,9 @@ export default function ListingDetailsPage() {
                     </div>
                   </CardContent>
                 </Card>
-              )}              {/* Location */}
+              )}
+
+              {/* Location */}
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-bold mb-4">Location</h2>
@@ -543,8 +556,27 @@ export default function ListingDetailsPage() {
                 </CardContent>
               </Card>
 
-              {/* Reviews Section */}
-              <div className="space-y-8">
+              {/* Reviews Section - Only show if user is logged in */}
+              {isLoggedIn ? (
+                <div className="space-y-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-2xl font-bold flex items-center">
+                        <MessageCircle className="h-6 w-6 mr-3 text-blue-600" />
+                        Reviews & Ratings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      {/* Reviews List */}
+                      <ReviewsList
+                        listingId={listing.id}
+                        ownerId={listing.owner_id}
+                        refreshTrigger={reviewsRefreshTrigger}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-2xl font-bold flex items-center">
@@ -552,16 +584,22 @@ export default function ListingDetailsPage() {
                       Reviews & Ratings
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    {/* Reviews List */}
-                    <ReviewsList
-                      listingId={listing.id}
-                      ownerId={listing.owner_id}
-                      refreshTrigger={reviewsRefreshTrigger}
-                    />
+                  <CardContent className="p-6">
+                    <div className="text-center py-8">
+                      <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Sign in to view reviews
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        Login to see what other users are saying about this listing
+                      </p>
+                      <Button asChild>
+                        <Link to="/login">Sign In</Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
+              )}
             </div>
 
             {/* Right column - Booking and info */}
@@ -590,7 +628,7 @@ export default function ListingDetailsPage() {
 
                   {/* Action buttons */}
                   <div className="space-y-3">
-                    {isTenant && (
+                    {isLoggedIn && isTenant ? (
                       <>
                         {listing?.status === ListingStatus.AVAILABLE ? (
                           <Button className="w-full" onClick={openBookingModal}>
@@ -607,8 +645,11 @@ export default function ListingDetailsPage() {
                           </Button>
                         </Link>
                       </>
-                    )}
-                    {!isTenant && (
+                    ) : !isLoggedIn ? (
+                      <Button asChild className="w-full">
+                        <Link to="/login">Sign in to Book</Link>
+                      </Button>
+                    ) : (
                       <Button variant="outline" className="w-full" disabled>
                         Booking not available for your role
                       </Button>
@@ -623,16 +664,18 @@ export default function ListingDetailsPage() {
                         <Share2 className="h-4 w-4 mr-1" />
                         Share
                       </Button>
-                      <ReportButton
-                        reportedId={listing.owner_id || ""}
-                        listingId={listing.id}
-                        size="sm"
-                        variant="ghost"
-                        className="flex items-center"
-                      >
-                        <Flag className="h-4 w-4 mr-1" />
-                        Report
-                      </ReportButton>
+                      {isLoggedIn && (
+                        <ReportButton
+                          reportedId={listing.owner_id || ""}
+                          listingId={listing.id}
+                          size="sm"
+                          variant="ghost"
+                          className="flex items-center"
+                        >
+                          <Flag className="h-4 w-4 mr-1" />
+                          Report
+                        </ReportButton>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -672,6 +715,17 @@ export default function ListingDetailsPage() {
                         <span>{listing.category.name}</span>
                       </div>
                     )}
+
+                    {/* Show review count only if logged in */}
+                    {isLoggedIn && listing.reviewCount !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <MessageCircle className="h-4 w-4 mr-2 text-blue-600" />
+                          Reviews
+                        </span>
+                        <span>{reviewsCount}</span>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -681,6 +735,7 @@ export default function ListingDetailsPage() {
       </main>
 
       <Footer />
+      
       {/* Booking Modal */}
       <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden">

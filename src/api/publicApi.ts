@@ -230,7 +230,7 @@ export const publicApi = {
   increaseListingViews: async (listingId: string): Promise<void> => {
     try {
       console.log(`Increasing views for listing ${listingId}`)
-      await publicAxiosInstance.post(`/listings/${listingId}/view`)
+      await publicAxiosInstance.get(`/listings/${listingId}/view`)
       console.log(`Successfully increased views for listing ${listingId}`)
     } catch (error) {
       console.error("Error increasing listing views:", error)
@@ -297,10 +297,38 @@ export const publicApi = {
       console.error("Error fetching category counts:", error)
       throw error
     }
+  },  // Get tags for a specific category
+  getCategoryTags: async (categorySlug: string): Promise<string[]> => {
+    try {
+      console.log(`Fetching tags for category: ${categorySlug}`)
+      
+      // First, find the category by slug
+      const categoriesResponse = await publicAxiosInstance.get<ApiCategoryResponse[]>("/categories")
+      const matchingCategory = categoriesResponse.data.find(
+        (cat) => cat.slug.toLowerCase() === categorySlug.toLowerCase(),
+      )
+
+      if (!matchingCategory) {
+        console.log("Category not found, returning empty tags")
+        return []
+      }
+
+      // Use the dedicated endpoint to get tags for this category
+      // API returns array of objects with {id, name} structure
+      const response = await publicAxiosInstance.get<{id: string, name: string}[]>(`/categories/${matchingCategory.id}/tags`)
+      
+      // Extract just the tag names from the response
+      const tagNames = response.data.map(tag => tag.name)
+      
+      console.log(`Found ${tagNames.length} tags for category ${matchingCategory.name}:`, tagNames)
+      return tagNames
+    } catch (error) {
+      console.error("Error fetching category tags:", error)
+      return []
+    }
   },
 
-
-searchListings: async (
+  searchListings: async (
     query: string,
     category?: string,
     startDate?: Date | string,
@@ -309,6 +337,7 @@ searchListings: async (
     minPrice?: number,
     maxPrice?: number,
     city?: string,
+    tags?: string[],
   ): Promise<FeaturedListing[]> => {
     try {
       if (useMockApi) {
@@ -333,9 +362,15 @@ searchListings: async (
       // Add price filtering if provided
       if (minPrice !== undefined) params.min_price = minPrice.toString()
       if (maxPrice !== undefined) params.max_price = maxPrice.toString()
-      
-      // Add city filtering if provided
+        // Add city filtering if provided
       if (city) params.city = city
+      
+      // Add tags filtering if provided
+      if (tags && tags.length > 0) {
+        tags.forEach((tag, index) => {
+          params[`tags[${index}]`] = tag
+        })
+      }
 
       let response
 
@@ -383,16 +418,6 @@ searchListings: async (
     }
   },
 
-  // get views count for a listing
-  doListingViewsCount: async (listingId: string) => {
-    try {
-      const response = await publicAxiosInstance.get<{ views_count: number }>(`/listings/${listingId}/view`)
-      console.log(`Views count for listing ${listingId}:`, response.data.views_count)
-    } catch (error) {
-      console.error("Error fetching listing views count:", error)
-      throw error
-    }
-  }
 }
 
 function formatDate(date: Date): string {

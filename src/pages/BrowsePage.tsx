@@ -25,6 +25,7 @@ export default function BrowsePage() {
   const minPriceParam = searchParams.get("min_price") || ""
   const maxPriceParam = searchParams.get("max_price") || ""
   const cityParam = searchParams.get("city") || ""
+  const tagsParam = searchParams.getAll("tags") // Get all tag parameters
   const useMockApiParam = searchParams.get("mock") !== "false" // Default to true if not specified
 
   // Date range options mapping
@@ -89,14 +90,17 @@ export default function BrowsePage() {
       setIsLoading(true)
       setError(null)
 
-      try {
-        // Get date range from param
+      try {        // Get date range from param
         const dateRange = getDateRangeFromValue(dateRangeParam)
-
+        
         console.log("Fetching listings with params:", {
           query: queryParam,
           category: categoryParam,
           dateRange,
+          minPrice: minPriceParam,
+          maxPrice: maxPriceParam,
+          city: cityParam,
+          tags: tagsParam,
           useMockApi: false, // Force use of real API
         })
         
@@ -110,6 +114,7 @@ export default function BrowsePage() {
           minPriceParam ? parseFloat(minPriceParam) : undefined,
           maxPriceParam ? parseFloat(maxPriceParam) : undefined,
           cityParam || undefined,
+          tagsParam.length > 0 ? tagsParam : undefined, // Add tags parameter
         )
 
         console.log(`Fetched ${searchResults.length} listings from API`)
@@ -121,11 +126,10 @@ export default function BrowsePage() {
         setFilteredListings([])
       } finally {
         setIsLoading(false)
-      }
-    }
+      }    }
 
     fetchAndFilterListings()
-  }, [queryParam, categoryParam, dateRangeParam, minPriceParam, maxPriceParam, cityParam])
+  }, [queryParam, categoryParam, dateRangeParam, minPriceParam, maxPriceParam, cityParam, tagsParam.join(",")])
 
   // Update the handleSearch function to not use mock data
   const handleSearch = async (filters: SearchFiltersType) => {
@@ -166,13 +170,17 @@ export default function BrowsePage() {
         params.set("max_price", filters.maxPrice.toString())
       } else {
         params.delete("max_price")
-      }
-
-      // Handle city parameter
+      }      // Handle city parameter
       if (filters.city) {
         params.set("city", filters.city)
       } else {
         params.delete("city")
+      }
+
+      // Handle tags parameter
+      params.delete("tags") // Clear existing tags
+      if (filters.tags && filters.tags.length > 0) {
+        filters.tags.forEach(tag => params.append("tags", tag))
       }
 
       // Always set mock to false to use real API
@@ -181,8 +189,7 @@ export default function BrowsePage() {
       window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`)
 
       console.log("Searching with filters:", filters)
-      
-      // Fetch new results based on filters
+        // Fetch new results based on filters
       const searchResults = await publicApi.searchListings(
         filters.query,
         filters.category || undefined,
@@ -192,6 +199,7 @@ export default function BrowsePage() {
         filters.minPrice,
         filters.maxPrice,
         filters.city,
+        filters.tags, // Add tags parameter
       )
 
       console.log(`Search returned ${searchResults.length} results`)
@@ -203,8 +211,7 @@ export default function BrowsePage() {
     } finally {
       setIsLoading(false)
     }
-  }
-  // Prepare initial values for the search form
+  }  // Prepare initial values for the search form
   const initialSearchValues: Partial<SearchFiltersType> = {
     query: queryParam,
     category: categoryParam,
@@ -212,6 +219,7 @@ export default function BrowsePage() {
     minPrice: minPriceParam ? parseFloat(minPriceParam) : undefined,
     maxPrice: maxPriceParam ? parseFloat(maxPriceParam) : undefined,
     city: cityParam,
+    tags: tagsParam, // Add tags to initial values
     useMockApi: useMockApiParam,
   }
 
@@ -263,7 +271,7 @@ export default function BrowsePage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">
               {filteredListings.length} {filteredListings.length === 1 ? "Result" : "Results"} Found
-            </h2>            {(queryParam || categoryParam || dateRangeParam !== "any" || minPriceParam || maxPriceParam || cityParam) && (
+            </h2>            {(queryParam || categoryParam || dateRangeParam !== "any" || minPriceParam || maxPriceParam || cityParam || tagsParam.length > 0) && (
               <Button
                 variant="outline"
                 onClick={() => {

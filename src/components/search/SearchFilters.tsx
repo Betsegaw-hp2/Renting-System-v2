@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { cn } from "../../lib/utils"
 import { addDays, subDays } from "date-fns"
 import { publicApi, type CategoryCount } from "@/api/publicApi"
+import { tagApi } from "@/api/tagApi"
 
 interface SearchFiltersProps {
   onSearch?: (filters: SearchFilters) => void
@@ -67,17 +68,20 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
   const [category, setCategory] = useState("")
   const [dateRangeValue, setDateRangeValue] = useState("any")
   const [showFilters, setShowFilters] = useState(showAdvanced)
-  const [error, setError] = useState<string | null>(null)
-    // New state variables for additional filters
+  const [error, setError] = useState<string | null>(null)  // New state variables for additional filters
   const [minPrice, setMinPrice] = useState<string>("")
   const [maxPrice, setMaxPrice] = useState<string>("")
   const [city, setCity] = useState<string>("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-
+  
+  // New state for dynamic tags
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [isLoadingTags, setIsLoadingTags] = useState(false)
+  
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const data = await publicApi.getCategoryCounts(false) // or pass useMockApi if needed
+        const data = await publicApi.getCategoryCounts(false)
         setCategories(data)
       } catch (err) {
         console.error("Failed to fetch categories:", err)
@@ -86,6 +90,47 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
 
     fetchCategories()
   }, [])
+
+  // Fetch tags when category changes
+  useEffect(() => {
+    async function fetchTagsForCategory() {      if (!category || category === "all") {
+        // If no category selected, get all tags from API
+        setIsLoadingTags(true)
+        try {
+          const allTags = await tagApi.getAllTags()
+          const tagNames = allTags.map(tag => tag.name)
+          setAvailableTags(tagNames)
+        } catch (err) {
+          console.error("Failed to fetch all tags:", err)
+          setAvailableTags(AVAILABLE_TAGS)
+        } finally {
+          setIsLoadingTags(false)
+        }
+        return
+      }
+
+      setIsLoadingTags(true)
+      try {
+        // Fetch tags for the specific category
+        const categoryTags = await publicApi.getCategoryTags(category)
+        setAvailableTags(categoryTags.length > 0 ? categoryTags : AVAILABLE_TAGS)
+        
+        // Clear selected tags that are not available in the new category
+        setSelectedTags(prev => 
+          prev.filter(tagName => 
+            categoryTags.includes(tagName)
+          )
+        )
+      } catch (err) {
+        console.error("Failed to fetch category tags:", err)
+        setAvailableTags(AVAILABLE_TAGS)
+      } finally {
+        setIsLoadingTags(false)
+      }
+    }
+
+    fetchTagsForCategory()
+  }, [category])
 
 
   // Load saved filters from localStorage on component mount
@@ -405,24 +450,41 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </Select>            </div>
-
-            {/* Tags */}
+              </Select>            </div>            {/* Dynamic Tags */}
             <div className="md:col-span-2 lg:col-span-3">
-              <Label className="text-sm font-medium mb-2 block">Tags</Label>
-              <div className="flex flex-wrap gap-2">
-                {AVAILABLE_TAGS.map((tag) => (
-                  <Button
-                    key={tag}
-                    variant={selectedTags.includes(tag) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleTagToggle(tag)}
-                    className="text-sm"
-                  >
-                    {tag}
-                  </Button>
-                ))}
-              </div>
+              <Label className="text-sm font-medium mb-2 block">
+                Tags {category && category !== "all" && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    (for {categories.find(c => c.slug === category)?.name || category})
+                  </span>
+                )}
+              </Label>
+              {isLoadingTags ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+                  Loading tags...
+                </div>
+              ) : availableTags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <Button
+                      key={tag}
+                      variant={selectedTags.includes(tag) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleTagToggle(tag)}
+                      className="text-sm"
+                    >
+                      {tag}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  {category && category !== "all" 
+                    ? "No tags available for this category" 
+                    : "Select a category to see available tags"}
+                </p>
+              )}
             </div>
           </div>
         )}
