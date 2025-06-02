@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, Filter, MoreHorizontal, Search, UserPlus } from "lucide-react";
+import { ArrowUpDown, Filter, MoreHorizontal, Search } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom"; // Added for navigation
@@ -28,17 +28,21 @@ import {
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
+import { useToast } from "../../../hooks/useToast";
 import { UserRole, type User } from "../../../types/user.types";
 import { adminApi } from "../api/adminApi";
 import { AdminLayout } from "../components/layout/AdminLayout";
 import type { TableState } from "../types";
 
 export default function UsersPage() {
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [totalUsers, setTotalUsers] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
+  const [userToDeactivate, setUserToDeactivate] = useState<string | null>(null)
   const [tableState, setTableState] = useState<TableState>({
     pagination: {
       pageIndex: 0,
@@ -85,16 +89,50 @@ export default function UsersPage() {
     setUserToDelete(userId)
     setIsDeleteDialogOpen(true)
   }
-
+  const handleDeactivateUser = async (userId: string) => {
+    setUserToDeactivate(userId)
+    setIsDeactivateDialogOpen(true)
+  }
+  const confirmDeactivateUser = async () => {
+    if (userToDeactivate) {
+      try {
+        await adminApi.deactivateUser(userToDeactivate)
+        // Refresh the users list to show updated status
+        fetchUsers()
+        toast({
+          title: "User Deactivated",
+          description: "The user has been successfully deactivated.",
+        })
+      } catch (error) {
+        console.error("Error deactivating user:", error)
+        toast({
+          title: "Error",
+          description: "Failed to deactivate user. Please try again later.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsDeactivateDialogOpen(false)
+        setUserToDeactivate(null)
+      }
+    }
+  }
   const confirmDeleteUser = async () => {
     if (userToDelete) {
       try {
         await adminApi.deleteUser(userToDelete)
         setUsers((prev) => prev.filter((user) => user.id !== userToDelete))
         setTotalUsers((prev) => prev - 1)
+        toast({
+          title: "User Deleted",
+          description: "The user has been permanently deleted.",
+        })
       } catch (error) {
         console.error("Error deleting user:", error)
-        alert("Failed to delete user. Please try again later.")
+        toast({
+          title: "Error",
+          description: "Failed to delete user. Please try again later.",
+          variant: "destructive",
+        })
       } finally {
         setIsDeleteDialogOpen(false)
         setUserToDelete(null)
@@ -189,10 +227,10 @@ export default function UsersPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <Button>
+          {/* <Button>
             <UserPlus className="mr-2 h-4 w-4" />
             Add User
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex flex-col gap-4">
@@ -269,6 +307,7 @@ export default function UsersPage() {
                   <TableHead>Role</TableHead>
                   <TableHead>Email status</TableHead>
                   <TableHead>KYC status</TableHead>
+                  <TableHead>Account status</TableHead>
                   <TableHead>
                     <Button
                       variant="ghost"
@@ -300,6 +339,9 @@ export default function UsersPage() {
                         <TableCell>
                           <div className="h-4 w-32 animate-pulse rounded bg-muted"></div>
                         </TableCell>
+                        <TableCell>                         
+                           <div className="h-4 w-16 animate-pulse rounded bg-muted"></div>
+                        </TableCell>
                         <TableCell>
                           <div className="h-4 w-16 animate-pulse rounded bg-muted"></div>
                         </TableCell>
@@ -313,10 +355,10 @@ export default function UsersPage() {
                           <div className="h-8 w-8 animate-pulse rounded bg-muted"></div>
                         </TableCell>
                       </TableRow>
-                    ))
-                ) : users && users.length === 0 ? (
+                    ))) 
+                    : users && users.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center">
                       No users found.
                     </TableCell>
                   </TableRow>
@@ -350,14 +392,20 @@ export default function UsersPage() {
                         ) : (
                           <Badge variant="destructive">Not Verified</Badge>
                         )}
-                      </TableCell>
-                      <TableCell>
+                      </TableCell>                      <TableCell>
                         {user.kyc_verified ? (
                           <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
                             Verified
                           </Badge>
                         ) : (
                           <Badge variant="destructive">Not Verified</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.is_banned ? (
+                          <Badge variant="destructive">Banned</Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-700">Active</Badge>
                         )}
                       </TableCell>
                       <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
@@ -383,7 +431,7 @@ export default function UsersPage() {
                             )} */}
                             {/* delete user button */}
                             <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user.id)}>Delete User</DropdownMenuItem>
-                            {/* <DropdownMenuItem className="text-red-600">Deactivate User</DropdownMenuItem> */}
+                            <DropdownMenuItem className="text-red-600" onClick={() => handleDeactivateUser(user.id) } >Deactivate User</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -422,8 +470,7 @@ export default function UsersPage() {
             </div>
           </div>
         </div>
-      </div>
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      </div>      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -434,6 +481,20 @@ export default function UsersPage() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteUser}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isDeactivateDialogOpen} onOpenChange={setIsDeactivateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate this user? This will prevent them from accessing their account until reactivated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToDeactivate(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeactivateUser}>Deactivate</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

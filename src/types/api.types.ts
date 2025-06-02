@@ -41,7 +41,8 @@ export interface User {
   last_name: string;
   username: string;
   role: UserRole;
-  profile_picture: string | null; 
+  profile_picture: string | null;
+  is_banned: boolean;
   is_verified: boolean;
   is_member: boolean;
   kyc_verified: boolean;
