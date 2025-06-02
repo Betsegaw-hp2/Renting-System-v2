@@ -12,7 +12,6 @@ import { ChatHeader } from "./ChatHeader"
 import { ChatLayout } from "./ChatLayout"
 import { MessageInput } from "./MessageInput"
 import { MessageList } from "./MessageList"
-import { Sidebar } from "./Sidebar"
 
 export function ChatPage() {
   const dispatch = useDispatch<AppDispatch>()
@@ -42,7 +41,7 @@ export function ChatPage() {
   const activePartner = conversations.find((c) => c.partnerId === receiverId && c.listing_id === listingId)
 
   // Initialize chat hook
-  const chat = useChat(isInConversation ? listingId! : "", isInConversation ? receiverId! : "", user?.id || "")
+  const chat = useChat(isInConversation ? listingId! : "", isInConversation ? receiverId! : "")
 
   const handleBackClick = () => {
     navigate("/messages")
@@ -51,11 +50,11 @@ export function ChatPage() {
   return (
     <ChatLayout>
       <Card className="flex h-[calc(100vh-8rem)] overflow-hidden my-4 shadow-md">
-        {showSidebar && (
+        {/* {showSidebar && (
           <div className={`${isMobile ? "w-full" : "w-80"} border-r`}>
             <Sidebar conversations={conversations} />
           </div>
-        )}
+        )} */}
 
         {showConversation && (
           <div className="flex flex-col flex-1 h-full bg-background">
