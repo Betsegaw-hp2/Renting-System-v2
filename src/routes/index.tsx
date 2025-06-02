@@ -402,15 +402,15 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/kyc-management", // Added
-    element: ( // Added
-      <AdminRoute> {/* Added */}
-        <Suspense fallback={<LoadingFallback />}> {/* Added */}
-          <AdminAllKycPage /> {/* Added */}
-        </Suspense> {/* Added */}
-      </AdminRoute> // Added
-    ), // Added
-  }, // Added
+    path: "/admin/kyc-management", 
+    element: ( 
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}> 
+          <AdminAllKycPage /> 
+        </Suspense> 
+      </AdminRoute>
+    ), 
+  },
 
   // Fallback route
   {
