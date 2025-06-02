@@ -47,6 +47,8 @@ import { GoogleMap } from "../components/maps/GoogleMap"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { useSelector } from "react-redux"
+import type { RootState } from "@/store"
 
 // Listing interface matching the provided data structure
 interface Listing {
@@ -126,6 +128,7 @@ export default function ListingDetailsPage() {
       try {
         // Fetch all listings and find the one with matching ID
         const foundListing = await publicApi.getListingById(id)
+        await publicApi.increaseListingViews(id)
         console.log("Fetched found listing:", foundListing)
 
         if (!foundListing) {
