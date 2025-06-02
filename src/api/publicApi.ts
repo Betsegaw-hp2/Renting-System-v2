@@ -371,6 +371,17 @@ searchListings: async (
       throw error
     }
   },
+
+  // get views count for a listing
+  doListingViewsCount: async (listingId: string) => {
+    try {
+      const response = await publicAxiosInstance.get<{ views_count: number }>(`/listings/${listingId}/view`)
+      console.log(`Views count for listing ${listingId}:`, response.data.views_count)
+    } catch (error) {
+      console.error("Error fetching listing views count:", error)
+      throw error
+    }
+  }
 }
 
 function formatDate(date: Date): string {
