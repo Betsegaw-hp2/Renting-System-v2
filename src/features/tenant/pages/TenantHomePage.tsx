@@ -110,7 +110,6 @@ export default function TenantHomePage() {
   const isListingSaved = (listingId: string) => {
     return savedListings?.some((listing) => listing.id === listingId)
   }
-
   const handlePaymentRelease = async (bookingId: string) => {
     try {
       await tenantApi.PaymentReleased(bookingId)
@@ -121,16 +120,19 @@ export default function TenantHomePage() {
         title: "Success",
         description: "Payment released successfully.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error releasing payment:", error)
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          error?.message || 
+                          "Failed to release payment. Please try again."
       toast({
         title: "Error",
-        description: "Failed to release payment. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
   }
-
   const handleCancelBooking = async (bookingId: string) => {
     try {
       await tenantApi.PaymentCancelled(bookingId)
@@ -141,11 +143,15 @@ export default function TenantHomePage() {
         title: "Success",
         description: "Payment cancelled successfully.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error cancelling payment:", error)
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error || 
+                          error?.message || 
+                          "Failed to cancel payment. Please try again."
       toast({
         title: "Error",
-        description: "Failed to cancel payment. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -415,7 +421,7 @@ export default function TenantHomePage() {
                                   </Button>
                                 </Link>
 
-                                {booking.payment_status === "in_escrow" && booking.status === "booked" && (
+                                {booking.status === "booked" && (
                                   <Button 
                                     className="bg-green-500" 
                                     size="sm"
@@ -425,7 +431,7 @@ export default function TenantHomePage() {
                                   </Button>
                                 )}
 
-                                {booking.payment_status === "in_escrow" && (
+                                {booking.status === "booked" && (
                                   <Button
                                     variant="destructive"
                                     size="sm"
