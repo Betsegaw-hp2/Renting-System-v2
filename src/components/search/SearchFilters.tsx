@@ -10,7 +10,7 @@ import { Label } from "../ui/label"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { cn } from "../../lib/utils"
 import { addDays, subDays } from "date-fns"
-import { publicApi, type CategoryCount, type FeaturedListing } from "@/api/publicApi"
+import { publicApi, type CategoryCount } from "@/api/publicApi"
 
 interface SearchFiltersProps {
   onSearch?: (filters: SearchFilters) => void
@@ -32,8 +32,6 @@ export interface SearchFilters {
   maxPrice?: number
   city?: string
   tags?: string[]
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
 }
 
 // Predefined date ranges
@@ -46,16 +44,6 @@ const DATE_RANGES = [
   { label: "Next 7 days", value: "next7days" },
   { label: "Next 30 days", value: "next30days" },
   { label: "Next 90 days", value: "next90days" },
-]
-
-// Predefined sorting options
-const SORT_OPTIONS = [
-  { label: "Price: Low to High", value: "price_asc" },
-  { label: "Price: High to Low", value: "price_desc" },
-  { label: "Newest First", value: "created_at_desc" },
-  { label: "Oldest First", value: "created_at_asc" },
-  { label: "Rating: High to Low", value: "rating_desc" },
-  { label: "Rating: Low to High", value: "rating_asc" },
 ]
 
 // Predefined tags
@@ -78,16 +66,13 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
   const [categories, setCategories] = useState<CategoryCount[]>([])
   const [category, setCategory] = useState("")
   const [dateRangeValue, setDateRangeValue] = useState("any")
-  const [useMockApi, setUseMockApi] = useState(true)
   const [showFilters, setShowFilters] = useState(showAdvanced)
   const [error, setError] = useState<string | null>(null)
-  
-  // New state variables for additional filters
+    // New state variables for additional filters
   const [minPrice, setMinPrice] = useState<string>("")
   const [maxPrice, setMaxPrice] = useState<string>("")
   const [city, setCity] = useState<string>("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<string>("")
 
   useEffect(() => {
     async function fetchCategories() {
@@ -114,14 +99,11 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
       setDateRangeValue(
         initialValues.dateRange?.label
           ? DATE_RANGES.find((r) => r.label === initialValues.dateRange?.label)?.value || "any"
-          : "any"
-      )
-      setUseMockApi(initialValues.useMockApi !== undefined ? initialValues.useMockApi : true)
+          : "any"      )
       setMinPrice(initialValues.minPrice?.toString() || "")
       setMaxPrice(initialValues.maxPrice?.toString() || "")
       setCity(initialValues.city || "")
       setSelectedTags(initialValues.tags || [])
-      setSortBy(initialValues.sortBy || "")
     } else {
       // Only load from localStorage if NOT on the landing page
       if (pathname !== "/") {
@@ -132,12 +114,10 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
             setSearchQuery(parsedFilters.query || "")
             setCategory(parsedFilters.category || "")
             setDateRangeValue(parsedFilters.dateRange?.value || "any")
-            setUseMockApi(parsedFilters.useMockApi !== undefined ? parsedFilters.useMockApi : true)
             setMinPrice(parsedFilters.minPrice?.toString() || "")
             setMaxPrice(parsedFilters.maxPrice?.toString() || "")
             setCity(parsedFilters.city || "")
             setSelectedTags(parsedFilters.tags || [])
-            setSortBy(parsedFilters.sortBy || "")
           } catch (error) {
             console.error("Error parsing saved filters:", error)
           }
@@ -147,12 +127,10 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         setSearchQuery("")
         setCategory("")
         setDateRangeValue("any")
-        setUseMockApi(true)
         setMinPrice("")
         setMaxPrice("")
         setCity("")
         setSelectedTags([])
-        setSortBy("")
       }
     }
   }, [initialValues])
@@ -224,12 +202,10 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         : [...prev, tag]
     )
   }
-
   // Update the handleSearch function
   const handleSearch = () => {
     setError(null)
     const dateRange = getDateRangeFromValue(dateRangeValue)
-    const [sortField, sortOrder] = sortBy.split('_') as [string, 'asc' | 'desc']
     const minPriceValue = minPrice ? parseFloat(minPrice) : undefined
     const maxPriceValue = maxPrice ? parseFloat(maxPrice) : undefined
     if (minPriceValue && maxPriceValue && minPriceValue > maxPriceValue) {
@@ -245,8 +221,6 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
       maxPrice: maxPriceValue,
       city: city || undefined,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
-      sortBy: sortField,
-      sortOrder: sortOrder,
     }
     localStorage.setItem(
       "searchFilters",
@@ -262,20 +236,15 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
         setError("An error occurred while searching. Please try again.")
         console.error("Search error:", error)
       }
-    }
-    const queryParams = new URLSearchParams()
+    }    const queryParams = new URLSearchParams()
     if (searchQuery) queryParams.append("search", searchQuery)
     if (category) queryParams.append("category", category)
-    if (dateRangeValue !== "any") queryParams.append("since", dateRangeValue)
+    if (dateRangeValue !== "any") queryParams.append("date_range", dateRangeValue)
     if (minPriceValue !== undefined) queryParams.append("min_price", minPriceValue.toString())
     if (maxPriceValue !== undefined) queryParams.append("max_price", maxPriceValue.toString())
     if (city) queryParams.append("city", city)
     if (selectedTags.length > 0) {
       selectedTags.forEach(tag => queryParams.append("tags", tag))
-    }
-    if (sortBy && sortField) {
-      const sortParam = `${sortField},${sortOrder}`
-      queryParams.append("sort", sortParam)
     }
     queryParams.append("mock", "false")
     navigate(`/browse?${queryParams.toString()}`)
@@ -436,27 +405,7 @@ export function SearchFilters({ onSearch, className, showAdvanced = false, initi
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
-            </div>
-
-            {/* Sort By Dropdown */}
-            <div>
-              <Label htmlFor="sort-by" className="text-sm font-medium mb-1 block">
-                Sort By
-              </Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger id="sort-by">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SORT_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              </Select>            </div>
 
             {/* Tags */}
             <div className="md:col-span-2 lg:col-span-3">

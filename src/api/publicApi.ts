@@ -295,6 +295,9 @@ searchListings: async (
     startDate?: Date | string,
     endDate?: Date | string,
     useMockApi = config.useMockApi,
+    minPrice?: number,
+    maxPrice?: number,
+    city?: string,
   ): Promise<FeaturedListing[]> => {
     try {
       if (useMockApi) {
@@ -306,19 +309,22 @@ searchListings: async (
         //   startDate ? formatDate(startDate) : undefined,
         //   endDate ? formatDate(endDate) : undefined,
         // )
-      }
-
-      console.log("Searching listings with real API:", { query, category, startDate, endDate })
+      }      console.log("Searching listings with real API:", { query, category, startDate, endDate, minPrice, maxPrice, city })
 
       // Prepare search parameters
       const params: Record<string, string> = {}
-      if (query) params.search = query
-
-      // Add date filtering if provided
+      if (query) params.search = query      // Add date filtering if provided
       if (startDate) {
         const formattedDate = typeof startDate === "string" ? startDate : formatDate(startDate)
         params.since = formattedDate
       }
+
+      // Add price filtering if provided
+      if (minPrice !== undefined) params.min_price = minPrice.toString()
+      if (maxPrice !== undefined) params.max_price = maxPrice.toString()
+      
+      // Add city filtering if provided
+      if (city) params.city = city
 
       let response
 
