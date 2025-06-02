@@ -59,13 +59,11 @@ export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ isOpen }
           console.log('Opening checkout URL:', payload.checkout_url)
           window.open(payload.checkout_url, "_blank")
         } else if (payload.listing_id && payload.booking_id) {
-          // Route: /listings/:listingId/bookings/:bookingId
-          const url = `/listings/${payload.listing_id}/bookings/${payload.booking_id}`
+          const url = `/owner/listings/${payload.listing_id}/manage?bookingId=${payload.booking_id}`
           console.log('Navigating to booking:', url)
           window.location.href = url
         } else if (payload.listing_id) {
-          // Route: /listings/:id
-          const url = `/listings/${payload.listing_id}`
+          const url = `/owner/listings/${payload.listing_id}/manage`
           console.log('Navigating to listing:', url)
           window.location.href = url
         } else {
