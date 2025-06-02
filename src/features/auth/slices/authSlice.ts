@@ -89,6 +89,12 @@ export const loginUser = createAsyncThunk<
     try {
       const response = await authApi.login({ email, password })
 
+      // Check if user is banned
+      if (response.is_banned) {
+        // Don't store the token for banned users
+        return rejectWithValue("Your account has been suspended. Please contact support for assistance.")
+      }
+
       // Store token in cookie with remember_me option
       setAuthToken(response.token, remember_me)
 
@@ -115,6 +121,13 @@ export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWith
 export const fetchCurrentUser = createAsyncThunk<User,void, { rejectValue: string }>("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
   try {
     const user = await authApi.getCurrentUser()
+    
+    // Check if user is banned and log them out
+    if (user.is_banned) {
+      removeAuthToken()
+      return rejectWithValue("Your account has been suspended. Please contact support for assistance.")
+    }
+    
     return user
   } catch (error: any) {
     // If we get a 401 Unauthorized, remove the token and include it in error message
