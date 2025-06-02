@@ -227,6 +227,17 @@ export const publicApi = {
     }
   },
 
+  increaseListingViews: async (listingId: string): Promise<void> => {
+    try {
+      console.log(`Increasing views for listing ${listingId}`)
+      await publicAxiosInstance.post(`/listings/${listingId}/view`)
+      console.log(`Successfully increased views for listing ${listingId}`)
+    } catch (error) {
+      console.error("Error increasing listing views:", error)
+      throw error
+    }
+  },
+
   // get listing by Id ...
   getListingById: async (listingId: string): Promise<FeaturedListing> => {
     try {
