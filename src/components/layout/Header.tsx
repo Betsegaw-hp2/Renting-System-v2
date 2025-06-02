@@ -198,40 +198,13 @@ export function Header({
                   {/* Owner-specific links */}
                   {permissions.isOwner && (
                     <>
-                      <Link
-                        to="/owner/properties"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <Building2 className="h-4 w-4" />
-                        <span>My Properties</span>
-                      </Link>
-                      <Link
-                        to="/owner/bookings"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <Calendar className="h-4 w-4" />
-                        <span>Booking Requests</span>
-                      </Link>
+
                     </>
                   )}
 
                   {/* Tenant-specific links */}
                   {permissions.isTenant && (
                     <>
-                      <Link
-                        to="/tenant/bookings"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <BookOpen className="h-4 w-4" />
-                        <span>My Bookings</span>
-                      </Link>
-                      <Link
-                        to="/tenant/saved"
-                        className={`text-sm font-medium ${getLinkClasses()} flex items-center gap-1`}
-                      >
-                        <Heart className="h-4 w-4" />
-                        <span>Saved</span>
-                      </Link>
                     </>
                   )}
                 </>

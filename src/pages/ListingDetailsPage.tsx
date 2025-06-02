@@ -33,61 +33,21 @@ import {
   Heart,
   Home,
   MapPin,
-  MessageCircle, // Add PlusCircle
-  Share2,
+  MessageCircle,
   Star,
   Tag
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { publicApi, type Booking, type FeaturedListing } from "../api/publicApi"
+import { useSelector } from "react-redux"
+import { publicApi, type FeaturedListing } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
 import { GoogleMap } from "../components/maps/GoogleMap"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-
-// Listing interface matching the provided data structure
-interface Listing {
-  id: string
-  title: string
-  description: string
-  price: number
-  address?: string
-  city?: string
-  region?: string
-  country?: string
-  status?: ListingStatus
-  views_count?: number
-  owner_id?: string
-  availability_start?: string
-  availability_end?: string
-  media?: Array<{
-    id: string
-    media_type: string
-    media_url: string
-  }>
-  category?: {
-    id: string
-    slug: string
-    name: string
-  }
-  tags?: string[]
-  rating?: number
-  reviewCount?: number
-  features?: {
-    guests?: number
-    bedrooms?: number
-    bathrooms?: number
-    area?: number
-  }
-}
-
-interface BookingResponse {
-  booking: Booking
-  listing: Listing // You can define `Listing` similarly or as `any` if not needed
-}
+import type { RootState } from "@/store"
 
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -104,12 +64,18 @@ export default function ListingDetailsPage() {
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [showIllustration, setShowIllustration] = useState(false)
   const { toast } = useToast()
-  const { isTenant, isAdmin } = usePermissions()
+  const { isTenant } = usePermissions()
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviewsRefreshTrigger, setReviewsRefreshTrigger] = useState(0)
   const [reviewsCount, setReviewsCount] = useState<number>(0)
   const [isImageGalleryOpen, setIsImageGalleryOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isSaved, setIsSaved] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Add user authentication check
+  const user = useSelector((state: RootState) => state.auth.user)
+  const isLoggedIn = !!user
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -295,11 +261,62 @@ export default function ListingDetailsPage() {
           ...listing,
           reviewCount: newReviewCount
         })
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.error("Error updating review count:", error)
     }
   }
+
+  // Add save/unsave functionality
+  const handleSaveListing = async () => {
+    if (!isLoggedIn || !isTenant || !listing || isSaving) {
+      return
+    }
+    
+    setIsSaving(true)
+    try {
+      if (isSaved) {
+        // Currently saved, so remove it
+        await tenantApi.removeSavedListing(listing.id)
+        setIsSaved(false)
+        toast({ title: "Listing removed from saved" })
+      } else {
+        // Currently not saved, so add it
+        await tenantApi.saveListing(listing.id)
+        setIsSaved(true)
+        toast({ title: "Listing saved successfully" })
+      }
+    } catch (error) {
+      console.error("Error saving/unsaving listing:", error)
+      toast({ 
+        title: "Error", 
+        description: "Failed to save listing", 
+        variant: "destructive" 
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Check if listing is saved when component loads
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      if (!isLoggedIn || !isTenant || !listing) {
+        return
+      }
+      
+      try {
+        const savedListings = await tenantApi.getSavedListings()
+        const isCurrentListingSaved = savedListings.some(
+          (savedListing: any) => savedListing.id === listing.id
+        )
+        setIsSaved(isCurrentListingSaved)
+      } catch (error) {
+        console.error("Error checking saved status:", error)
+      }
+    }
+    
+    checkIfSaved()
+  }, [listing, isLoggedIn, isTenant])
 
   // Add this function to handle opening the image gallery
   const openImageGallery = (index: number) => {
@@ -609,16 +626,18 @@ export default function ListingDetailsPage() {
                       <Button variant="outline" className="w-full" disabled>
                         Booking not available for your role
                       </Button>
-                    )}
-
-                    <div className="flex justify-between">
-                      <Button variant="ghost" size="sm" className="flex items-center">
-                        <Heart className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                      <Button variant="ghost" size="sm" className="flex items-center">
-                        <Share2 className="h-4 w-4 mr-1" />
-                        Share
+                    )}                    <div className="flex justify-between">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex items-center"
+                        onClick={handleSaveListing}
+                        disabled={!isLoggedIn || !isTenant || isSaving || isSaved}
+                      >
+                        <Heart 
+                          className={`h-4 w-4 mr-1 ${isSaved ? 'fill-red-500 text-red-500' : ''}`} 
+                        />
+                        {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
                       </Button>
                       <ReportButton
                         reportedId={listing.owner_id || ""}

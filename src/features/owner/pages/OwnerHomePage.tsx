@@ -78,9 +78,9 @@ export default function OwnerHomePage() {
   // State for owner-specific data
   const [recommendedListings, setRecommendedListings] = useState<FeaturedListing[]>([])
   const [trendingListings, setTrendingListings] = useState<FeaturedListing[]>([])
-  const [userListings, setUserListings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [ownerListings, setOwnerListings] = useState<FeaturedListing[]>([])
-  const [userStats, setUserStats] = useState<UserListingStats | null>(null)
+  const [userStats] = useState<UserListingStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredViewMode())
@@ -98,15 +98,13 @@ export default function OwnerHomePage() {
           setTrendingListings(trending)
 
           // Fetch owner-specific 
-          // use listing id for getListingBookings 
-          // Fetch all owner properties first to get their IDs
+          // use listing id for getListingBookings          // Fetch all owner properties first to get their IDs
           const ownedListings = await ownerApi.getOwnerProperties(user.id)
           setOwnerListings(ownedListings)
 
           // Fetch bookings for each property owned by the user
-          const bookings = await ownerApi.getOwnerBookings(user.id);
-          setUserListings(bookings);
-
+          const allBookings = await ownerApi.getOwnerBookings(user.id);
+          setBookings(allBookings);
 
           // const stats = await mockHomeApi.getUserListingStats(user.id)
           // setUserStats(stats)
@@ -120,6 +118,41 @@ export default function OwnerHomePage() {
 
     fetchData()
   }, [user])
+  const handleBookingUpdate = async (bookingId: string, status: "confirmed" | "cancelled") => {
+    try {
+      // Find the booking to get the listing ID
+      const booking = bookings.find(b => b.id === bookingId)
+      if (!booking) throw new Error("Booking not found")
+
+      // Call backend to update booking status
+      if (status === "confirmed") {
+        await ownerApi.confirmBookingStatus(bookingId, booking.listing_id)
+      } else {
+        await ownerApi.cancelBooking(bookingId)
+      }
+
+      // Update local bookings state
+      setBookings(prevBookings => 
+        prevBookings.map(b => 
+          b.id === bookingId 
+            ? { ...b, status: status }
+            : b
+        )
+      )
+
+      toast({
+        title: "Success",
+        description: `Booking ${status === "confirmed" ? "accepted" : "declined"} successfully`,
+      })
+    } catch (error) {
+      console.error("Error updating booking:", error)
+      toast({
+        title: "Error",
+        description: `Failed to ${status === "confirmed" ? "accept" : "decline"} booking`,
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -716,9 +749,7 @@ export default function OwnerHomePage() {
                     </div>
                   )}
                 </div>
-              </TabsContent>
-
-              {/* Booking Requests Tab */}
+              </TabsContent>              {/* Booking Requests Tab */}
               <TabsContent value="bookingRequests" className="space-y-8">
                 <div>
                   <h2 className="text-2xl font-bold mb-6">Booking Requests</h2>
@@ -745,45 +776,62 @@ export default function OwnerHomePage() {
                     <Card>
                       <CardContent className="p-0">
                         <div className="divide-y">
-                          {userListings?.length > 0 ? (
-                            (userListings ?? []).map((listing, index) => (
-                              <div key={listing.id} className="p-4">
+                          {bookings?.length > 0 ? (
+                            bookings.map((booking, index) => (
+                              <div key={booking.id} className="p-4">
                                 <div className="flex justify-between items-center mb-2">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
-                                    <h3 className="font-bold">Booking Request #{listing.id.substring(0, 8)}</h3>
+                                    <h3 className="font-bold">Booking Request #{booking.id.substring(0, 8)}</h3>
                                   </div>
                                   <span
-                                    className={`px-2 py-1 rounded text-xs font-medium ${listing.status === "completed"
-                                      ? "bg-green-100 text-green-800"
-                                      : listing.status === "booked"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : listing.status === "pending"
-                                          ? "bg-yellow-100 text-yellow-800"
-                                          : "bg-gray-100 text-gray-800"
-                                      }`}
+                                    className={`px-2 py-1 rounded text-xs font-medium ${
+                                      booking.status === "confirmed"
+                                        ? "bg-green-100 text-green-800"
+                                        : booking.status === "cancelled"
+                                        ? "bg-red-100 text-red-800"
+                                        : booking.status === "pending"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
                                   >
-                                    {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1)}
+                                    {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
                                   </span>
+                                </div>                                <div className="mb-2">
+                                  <p className="text-sm text-gray-600">
+                                    Booking ID: <span className="font-medium">#{booking.id.substring(0, 8)}</span>
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    Renter ID: <span className="font-medium">{booking.renter_id.substring(0, 8)}</span>
+                                  </p>
                                 </div>
                                 <div className="flex justify-between items-center text-sm text-gray-500">
                                   <span>
-                                    {listing.start_date && listing.end_date
-                                      ? `${new Date(listing.start_date).toISOString().split("T")[0]} to ${new Date(listing.end_date).toISOString().split("T")[0]}`
+                                    {booking.start_date && booking.end_date
+                                      ? `${new Date(booking.start_date).toLocaleDateString()} to ${new Date(booking.end_date).toLocaleDateString()}`
                                       : "Dates not available"}
                                   </span>
-                                  <span className="font-medium text-gray-900">${listing.total_amount}</span>
+                                  <span className="font-medium text-gray-900">${booking.total_amount}</span>
                                 </div>
                                 <div className="mt-4 flex gap-2 justify-end">
                                   <Button variant="outline" size="sm">
                                     Message
                                   </Button>
-                                  {listing.status === "pending" && (
+                                  {booking.status === "pending" && (
                                     <>
-                                      <Button variant="destructive" size="sm">
+                                      <Button 
+                                        variant="destructive" 
+                                        size="sm"
+                                        onClick={() => handleBookingUpdate(booking.id, "cancelled")}
+                                      >
                                         Decline
                                       </Button>
-                                      <Button size="sm">Accept</Button>
+                                      <Button 
+                                        size="sm"
+                                        onClick={() => handleBookingUpdate(booking.id, "confirmed")}
+                                      >
+                                        Accept
+                                      </Button>
                                     </>
                                   )}
                                 </div>
@@ -801,7 +849,7 @@ export default function OwnerHomePage() {
                           )}
                         </div>
                       </CardContent>
-                      {userListings?.length > 0 && (
+                      {bookings?.length > 0 && (
                         <CardFooter className="bg-gray-50">
                           <Button variant="outline" className="w-full" onClick={() => navigate("/owner/bookings")}>
                             View All Booking Requests
