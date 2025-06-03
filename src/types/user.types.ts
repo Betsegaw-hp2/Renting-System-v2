@@ -64,6 +64,7 @@ export interface User {
   role: UserRole;
   profile_picture: string | null; 
   is_verified: boolean;
+  is_banned: boolean;
   is_member: boolean;
   kyc_verified: boolean;
   created_at: string;

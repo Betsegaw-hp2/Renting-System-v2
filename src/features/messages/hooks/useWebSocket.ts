@@ -1,8 +1,8 @@
-import { useEffect } from "react";
-import { chatWebSocketService } from "@/features/messages/services/chatWebSocket";
 import { useUser } from "@/contexts/UserContext";
+import { chatWebSocketService } from "@/features/messages/services/chatWebSocket";
 import { getAuthToken } from "@/lib/cookies";
 import type { CreateMessagePayload } from "@/types/message.types";
+import { useEffect } from "react";
 
 export function useWebSocket(listingId?: string, receiverId?: string) {
   const { currentUser } = useUser();

@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUser } from "@/contexts/UserContext";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/useToast";
 import type { Message } from "@/types/message.types";
 import { Paperclip, Send, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ChatDialogProps {
   isOpen: boolean;
@@ -34,7 +35,9 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected'>('disconnected');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const currentUserId = currentUser?.id;
 
@@ -90,10 +93,10 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     try {
       // Send via WebSocket
       sendMessageWS({
-        content: optimisticMessage.content,
         sender_id: currentUserId,
         receiver_id: partnerId,
-        listing_id: listingId,
+        content: optimisticMessage.content,
+        // listing_id: listingId,
       });
       // Optionally: Listen for server confirmation and update message state
     } catch (error) {
@@ -106,27 +109,66 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
     }
   };
 
+  // WebSocket status effect
+  useEffect(() => {
+    function handleOpen() { setWsStatus('connected'); }
+    function handleClose() { setWsStatus('disconnected'); }
+    window.addEventListener('chat-ws-open', handleOpen);
+    window.addEventListener('chat-ws-close', handleClose);
+    return () => {
+      window.removeEventListener('chat-ws-open', handleOpen);
+      window.removeEventListener('chat-ws-close', handleClose);
+    };
+  }, []);
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    loadHistory();
+  };
+
+  // Ensure scroll to bottom on open and on new messages
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }
+  }, [isOpen, messages]);
+
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px] md:max-w-[600px] lg:max-w-[700px] p-0 flex flex-col h-[80vh]">
-        <DialogHeader className="p-4 border-b">
-          <DialogTitle className="flex items-center">
+        <DialogHeader className="p-4 border-b flex flex-row items-center justify-between bg-muted">
+          <div className="flex items-center gap-2">
+            {/* Webhook status pulse */}
+            <span className="relative flex h-3 w-3 mr-2">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${wsStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'} opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${wsStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></span>
+            </span>
             <Avatar className="h-8 w-8 mr-2">
               <AvatarImage src={partnerAvatar} alt={partnerName} />
               <AvatarFallback>{partnerName[0]}</AvatarFallback>
             </Avatar>
-            {partnerName}
-          </DialogTitle>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" className="absolute right-4 top-4" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <span className="font-semibold text-lg">Instant Chat <span className="ml-2 text-xs text-green-600 animate-pulse">(Instant)</span></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" title="Refresh" onClick={handleRefresh}>
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M5.582 9A7.003 7.003 0 0112 5c1.657 0 3.156.576 4.354 1.536M18.418 15A7.003 7.003 0 0112 19c-1.657 0-3.156-.576-4.354-1.536" /></svg>
             </Button>
-          </DialogClose>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/messages/${listingId}/${partnerId}`)}>
+              Open Page
+            </Button>
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon" className="ml-2">
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-grow p-4 bg-gray-50">
+        <ScrollArea className="flex-grow p-4 bg-gray-50" style={{ minHeight: 0, maxHeight: '100%', overflowY: 'auto' }}>
           <div className="space-y-4">
             {isLoading && <p className="text-center text-gray-500">Loading messages...</p>}
             {!isLoading && messages.length === 0 && (

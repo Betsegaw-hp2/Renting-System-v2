@@ -100,7 +100,6 @@ export const adminApi = {
       throw error
     }
   },
-
   approveUser: async (id: string) => {
     try {
       // The endpoint is GET /users/{id}/approve as per the spec
@@ -108,6 +107,27 @@ export const adminApi = {
       return response.data
     } catch (error) {
       console.error(`Error approving user ${id}:`, error)
+      throw error
+    }
+  },
+  deactivateUser: async (id: string) => {
+    try {
+      const response = await apiClient.post(`/users/${id}/deactivate`)
+      console.log(`User ${id} deactivated successfully`, response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error deactivating user ${id}:`, error)
+      throw error
+    }
+  },
+
+  activateUser: async (id: string) => {
+    try {
+      const response = await apiClient.post(`/users/${id}/activate`)
+      console.log(`User ${id} activated successfully`, response.data)
+      return response.data
+    } catch (error) {
+      console.error(`Error activating user ${id}:`, error)
       throw error
     }
   },

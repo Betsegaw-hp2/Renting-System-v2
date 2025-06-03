@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useSelector } from "react-redux"
 
 export function useTagManager() {
-  const { currentUser, loading: userLoading, refreshUser } = useUser()
+  const { currentUser, loading: userLoading } = useUser()
   const { user: authUser, is_loading: authLoading, is_authenticated } = useSelector((state: RootState) => state.auth)
   const [isTagPromptOpen, setIsTagPromptOpen] = useState(false)
   const [hasCheckedTags, setHasCheckedTags] = useState(false)
@@ -81,11 +81,9 @@ export function useTagManager() {
       setIsTagPromptOpen(true)
       setHasCheckedTags(true)
       return
-    }
-
-    // For normal tag checking, add a small delay to ensure navigation is complete
-    const timer = setTimeout(() => {
-      const shouldShow = shouldShowTagPrompt(userToCheck)
+    }    // For normal tag checking, add a small delay to ensure navigation is complete
+    const timer = setTimeout(async () => {
+      const shouldShow = await shouldShowTagPrompt(userToCheck)
       if (shouldShow) {
         setIsTagPromptOpen(true)
       }
@@ -94,25 +92,31 @@ export function useTagManager() {
 
     return () => clearTimeout(timer)
   }, [authUser, currentUser, hasCheckedTags, userLoading, authLoading, is_authenticated, isOnVerificationPage, currentPath])
-
-  const shouldShowTagPrompt = (user: any): boolean => {
+  const shouldShowTagPrompt = async (user: any): Promise<boolean> => {
     if (sessionStorage.getItem('skippedTagPrompt') === 'true') {
       return false
     }
-    return !user.tags || user.tags.length === 0
+    
+    try {
+      // Check the server for actual user tags
+      const userTags = await tagApi.getUserTags(user.id)
+      return userTags.length === 0
+    } catch (error) {
+      console.error('Failed to check user tags:', error)
+      // If API call fails, assume user has no tags to be safe
+      return true
+    }
   }
 
   const manuallyOpenTagPrompt = () => {
     setIsTagPromptOpen(true)
   }
-
   const handleSaveTags = async (selectedTagIds: string[]): Promise<void> => {
     const userToCheck = currentUser || authUser
     if (!userToCheck?.id) throw new Error("No user logged in")
 
     try {
       await tagApi.updateUserTags(userToCheck.id, selectedTagIds)
-      await refreshUser()
       setIsTagPromptOpen(false)
       sessionStorage.removeItem('skippedTagPrompt')
     } catch (error) {

@@ -1,7 +1,7 @@
 "use client"
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, CheckCircle, Clock, Mail, ShieldCheck, UserCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, Mail, Shield, ShieldCheck, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom"; // Assuming react-router-dom for useParams and Link
 import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar";
@@ -17,12 +17,12 @@ import { AdminLayout } from "../components/layout/AdminLayout";
 export default function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>()
   const { toast } = useToast()
-
   const [user, setUser] = useState<User | null>(null) // User type from user.types.ts
   const [kycDetails, setKycDetails] = useState<UserKycType | null>(null) // UserKycType from user.types.ts
   const [loadingUser, setLoadingUser] = useState(true)
   const [loadingKyc, setLoadingKyc] = useState(true)
   const [isApproving, setIsApproving] = useState(false)
+  const [isDeactivating, setIsDeactivating] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -78,9 +78,25 @@ export default function UserDetailPage() {
 
     } catch (error) {
       console.error("Error approving user:", error)
-      toast({ title: "Error", description: "Failed to approve user.", variant: "destructive" })
-    } finally {
+      toast({ title: "Error", description: "Failed to approve user.", variant: "destructive" })    } finally {
       setIsApproving(false)
+    }
+  }
+  const handleDeactivateUser = async () => {
+    if (!userId || !user) return
+    setIsDeactivating(true)
+    try {
+      await adminApi.deactivateUser(userId)
+      toast({ title: "Success", description: "User deactivated successfully." })
+      
+      // Refetch user data to get updated status
+      const updatedUser = await adminApi.getUser(userId)
+      setUser(updatedUser)
+    } catch (error) {
+      console.error("Error deactivating user:", error)
+      toast({ title: "Error", description: "Failed to deactivate user.", variant: "destructive" })
+    } finally {
+      setIsDeactivating(false)
     }
   }
 
@@ -195,9 +211,12 @@ export default function UserDetailPage() {
                 <Clock className="mr-2 h-5 w-5 text-muted-foreground" />
                 <span>Joined: {new Date(user.created_at).toLocaleDateString()}</span>
               </div>
-               <div className="flex items-center">
+              <div className="flex items-center">
                 <ShieldCheck className="mr-2 h-5 w-5 text-muted-foreground" />
                 <span>Overall Status: {(user.kyc_verified && user.is_verified) ? <Badge className="bg-blue-100 text-blue-700">Approved</Badge> : <Badge variant="secondary">Pending</Badge>}</span>
+              </div>              <div className="flex items-center">
+                <Shield className="mr-2 h-5 w-5 text-muted-foreground" />
+                <span>Account Status: {user.is_banned ? <Badge variant="destructive">Banned</Badge> : <Badge className="bg-green-100 text-green-700">Active</Badge>}</span>
               </div>
             </CardContent>
           </Card>
@@ -269,17 +288,33 @@ export default function UserDetailPage() {
                 <p>No KYC documents submitted.</p>
               )}
             </CardContent>
-          </Card>
-        </div>
-        
-        {/* Placeholder for other management actions like Edit, Suspend, etc. */}
-        {/* <Card>
-          <CardHeader><CardTitle>Other Actions</CardTitle></CardHeader>
-          <CardContent className="flex gap-2">
-            <Button variant="outline">Edit User Details</Button>
-            <Button variant="destructive">Suspend User</Button>
+          </Card>        </div>
+          {/* User Management Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Management</CardTitle>
+            <CardDescription>Administrative actions for this user</CardDescription>
+          </CardHeader>          
+          <CardContent className="space-y-4">
+            <div>
+              <Button 
+                variant={user.is_banned ? "default" : "destructive"}
+                onClick={handleDeactivateUser} 
+                disabled={isDeactivating || user.is_banned}
+                className="w-full md:w-auto"
+              >
+                {isDeactivating 
+                  ? (!user.is_banned && "Deactivating...") 
+                  : (!user.is_banned ? "Deactivate User" : "User Deactivated")
+                }
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                {!user.is_banned && "Deactivating will prevent the user from accessing their account."
+                }
+              </p>
+            </div>
           </CardContent>
-        </Card> */}
+        </Card>
       </div>
     </AdminLayout>
   )

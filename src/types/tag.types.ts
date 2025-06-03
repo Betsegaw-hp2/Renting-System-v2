@@ -11,5 +11,5 @@ export interface UserTag {
 }
 
 export interface CreateUserTagsPayload {
-  tag_ids: string[]
+  tags: string[]
 }

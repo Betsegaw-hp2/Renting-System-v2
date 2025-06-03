@@ -32,10 +32,18 @@ export class ChatWebSocketService {
 
       this.socket.onopen = () => {
         this.connected = true
-        console.log("Chat WS open")
+        console.log("Chat WS open", {
+          url: url.toString(),
+          time: new Date().toISOString(),
+        })
+        window.dispatchEvent(new Event('chat-ws-open'));
       }
 
       this.socket.onmessage = (e) => {
+        console.log("Chat WS message received", {
+          data: e.data,
+          time: new Date().toISOString(),
+        })
         const raw: Partial<Message> = JSON.parse(e.data)
         const msg: Message = {
           id: raw.id ?? crypto.randomUUID(),
@@ -50,23 +58,22 @@ export class ChatWebSocketService {
         store.dispatch(receiveMessage(msg))
       }
 
-      // this.socket.onerror = (err) => {
-      //   // Only log if already connected (ignore connect-time errors)
-      //   if (this.connected) {
-      //     console.error("Chat WS error", err)
-      //   }
-      // }
-
-      // this.socket.onclose = (e) => {
-      //   console.warn("Chat WS closed", e.reason)
-      //   this.connected = false
-      // }
       this.socket.onclose = (e) => {
-        console.warn("Chat WS closed", e.reason, e.code, e);
+        console.warn("Chat WS closed", {
+          reason: e.reason,
+          code: e.code,
+          wasClean: e.wasClean,
+          time: new Date().toISOString(),
+          event: e,
+        })
         this.connected = false;
+        window.dispatchEvent(new Event('chat-ws-close'));
       }
       this.socket.onerror = (err) => {
-        console.error("Chat WS error", err);
+        console.error("Chat WS error", {
+          error: err,
+          time: new Date().toISOString(),
+        })
       }
     } catch (error) {
       console.error("Error creating WebSocket:", error)
@@ -80,7 +87,7 @@ export class ChatWebSocketService {
         const mockMessage: Message = {
           id: crypto.randomUUID(),
           content: msg.content,
-          listing_id: msg.listing_id || "",
+          listing_id:  "",
           sender_id: msg.sender_id,
           receiver_id: msg.receiver_id,
           is_read: false,
@@ -93,9 +100,17 @@ export class ChatWebSocketService {
     }
 
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      console.log("Chat WS sending message", {
+        message: msg,
+        time: new Date().toISOString(),
+      })
       this.socket.send(JSON.stringify(msg))
     } else {
-      console.warn("Chat WS not open; cannot send message")
+      console.warn("Chat WS not open; cannot send message", {
+        message: msg,
+        socketState: this.socket ? this.socket.readyState : null,
+        time: new Date().toISOString(),
+      })
     }
   }
 

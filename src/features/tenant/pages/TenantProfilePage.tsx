@@ -24,12 +24,10 @@ import type { AppDispatch } from "@/store"
 import type { CreateLocation, Location, UpdateLocation } from "@/types/location.types"
 import type { User, UserKYC } from "@/types/user.types"
 import {
-  AlertTriangle,
   Calendar,
   CheckCircle,
   Clock,
   CreditCard,
-  Download,
   Info,
   Loader2,
   MapPin,
@@ -793,7 +791,7 @@ const TenantProfilePage = () => {
 
                 </div>
 
-                <div className="mt-8 pt-6 border-t">
+                {/* <div className="mt-8 pt-6 border-t">
                   <h3 className="font-medium mb-4">Account Actions</h3>
                   <div className="space-y-2">
                     <Button variant="outline" className="w-full justify-start">
@@ -808,7 +806,7 @@ const TenantProfilePage = () => {
                       Deactivate Account
                     </Button>
                   </div>
-                </div>
+                </div> */}
               </CardContent>
             </Card>
           </div>
@@ -1279,7 +1277,7 @@ const TenantProfilePage = () => {
                           </div>
                         </div>
 
-                        <div className="flex justify-end">
+                        {/* <div className="flex justify-end">
                           <Button
                             variant="outline"
                             onClick={handleDeletePaymentDetails}
@@ -1289,7 +1287,7 @@ const TenantProfilePage = () => {
                             {isUpdatingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Remove Payment Details
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     ) : (
                       <form onSubmit={handleUpdatePaymentDetails} className="space-y-6">

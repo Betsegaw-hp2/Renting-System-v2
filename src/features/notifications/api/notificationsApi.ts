@@ -4,15 +4,33 @@ import apiClient from "../../../api/client"
 import type { Notification } from "../../../types/notification.types"
 
 export const notificationsApi = {
-  getNotification: (id: string) =>
-    apiClient.get<Notification>(`${apiConfig.apiBaseUrl}/notifications/${id}`)
-      .then(res => res.data),
+  getNotification: async (id: string) => {
+    try {
+      const res = await apiClient.get<Notification>(`${apiConfig.apiBaseUrl}/notifications/${id}`)
+      return res.data
+    } catch (error) {
+      // Optionally handle/log error
+      throw error
+    }
+  },
 
-  getUserNotifications: (userId: string) =>
-    apiClient.get<Notification[]>(`${apiConfig.apiBaseUrl}/users/${userId}/notifications`)
-      .then(res => res.data),
+  getUserNotifications: async (userId: string) => {
+    try {
+      const res = await apiClient.get<Notification[]>(`${apiConfig.apiBaseUrl}/users/${userId}/notifications`)
+      return res.data
+    } catch (error) {
+      // Optionally handle/log error
+      throw error
+    }
+  },
 
-  markAsRead: (id: string) =>
-    apiClient.patch(`${apiConfig.apiBaseUrl}/notification/${id}/read`)
-      .then(res => res.status === 204),
+  markAsRead: async (id: string) => {
+    try {
+      const res = await apiClient.patch(`${apiConfig.apiBaseUrl}/notification/${id}/read`)
+      return res.status === 204
+    } catch (error) {
+      // Optionally handle/log error
+      throw error
+    }
+  },
 }

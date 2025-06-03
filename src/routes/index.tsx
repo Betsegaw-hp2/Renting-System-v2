@@ -44,6 +44,7 @@ const ManagePropertyPage = lazy(() => import("../features/owner/pages/ManageList
 const HomePage = lazy(() => import("../pages/HomePage"))
 const BrowsePage = lazy(() => import("../pages/BrowsePage"))
 const AboutPage = lazy(() => import("../pages/About"))
+const  TermsAndConditionsPage = lazy(() => import("../pages/ReturnPolicy"))
 const ContactPage = lazy(() => import("../pages/Contact"))
 // const DashboardPage = lazy(() => import("../pages/Dashboard/Dashboard"))
 // We'll need to create a ListingDetailsPage component
@@ -103,7 +104,12 @@ const router = createBrowserRouter([
         <AboutPage />
       </Suspense>
     ),
-  },  {
+  },
+  {
+    path: "/terms",
+    element: <TermsAndConditionsPage />,
+  }, 
+   {
     path: "/contact",
     element: (
       <Suspense fallback={<LoadingFallback />}>
@@ -402,15 +408,15 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/kyc-management", // Added
-    element: ( // Added
-      <AdminRoute> {/* Added */}
-        <Suspense fallback={<LoadingFallback />}> {/* Added */}
-          <AdminAllKycPage /> {/* Added */}
-        </Suspense> {/* Added */}
-      </AdminRoute> // Added
-    ), // Added
-  }, // Added
+    path: "/admin/kyc-management", 
+    element: ( 
+      <AdminRoute>
+        <Suspense fallback={<LoadingFallback />}> 
+          <AdminAllKycPage /> 
+        </Suspense> 
+      </AdminRoute>
+    ), 
+  },
 
   // Fallback route
   {
