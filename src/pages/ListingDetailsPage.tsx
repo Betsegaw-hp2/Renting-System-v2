@@ -22,6 +22,7 @@ import { ReviewsList } from "@/features/reviews/components/ReviewsList"
 import { tenantApi } from "@/features/tenant/api/tenantApi"
 import { usePermissions } from "@/hooks/usePermissions"
 import { useToast } from "@/hooks/useToast"
+import type { RootState } from "@/store"
 import { ListingStatus } from "@/types/listing.types"
 import { addDays, differenceInDays, format, formatISO } from "date-fns"
 import {
@@ -38,8 +39,8 @@ import {
   Tag
 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
 import { useSelector } from "react-redux"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { publicApi, type FeaturedListing } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
@@ -47,7 +48,6 @@ import { GoogleMap } from "../components/maps/GoogleMap"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import type { RootState } from "@/store"
 
 export default function ListingDetailsPage() {
   const { id } = useParams<{ id: string }>()
@@ -78,57 +78,64 @@ export default function ListingDetailsPage() {
   const isLoggedIn = !!user
 
   useEffect(() => {
-    const fetchListing = async () => {
-      if (!id) {
-        console.error("No listing ID provided")
-        setError("No listing ID provided")
+  const fetchListing = async () => {
+    if (!id) {
+      console.error("No listing ID provided")
+      setError("No listing ID provided")
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Fetch all listings and find the one with matching ID
+      const foundListing = await publicApi.getListingById(id)
+      console.log("Fetched found listing:", foundListing)
+
+      if (!foundListing) {
+        setError("Listing not found")
         setIsLoading(false)
         return
       }
 
-      setIsLoading(true)
-      setError(null)
-
-      try {
-        // Fetch all listings and find the one with matching ID
-        const foundListing = await publicApi.getListingById(id)
-        console.log("Fetched found listing:", foundListing)
-
-        if (!foundListing) {
-          setError("Listing not found")
-          setIsLoading(false)
-          return
-        }
-
-        // Get reviews count from API
-        let reviewCount = 0
+      // Only fetch reviews if user is authenticated
+      let reviewCount = 0
+      if (isLoggedIn) {
         try {
           const reviews = await reviewsApi.getListingReviews(id)
-          const reviewCount = reviews?.length
-          
-          setListing({
-            ...foundListing,
-            reviewCount: reviewCount
-          })
+          reviewCount = reviews?.length || 0
           setReviewsCount(reviewCount)
-
-          // Set the selected image to the first media item or placeholder
-          if (foundListing.media && foundListing.media?.length > 0) {
-            setSelectedImage(foundListing.media[0].media_url)
-          } else {
-            setSelectedImage("https://picsum.photos/200/300")
-          }
         } catch (err) {
-          console.error("Error fetching listing:", err)
-          setError("Failed to load listing details. Please try again later.")
+          console.error("Error fetching reviews:", err)
+          // Don't set error here, just continue without reviews
+          reviewCount = 0
+          setReviewsCount(0)
         }
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    fetchListing()
-  }, [id])
+      setListing({
+        ...foundListing,
+        reviewCount: reviewCount
+      })
+
+      // Set the selected image to the first media item or placeholder
+      if (foundListing.media && foundListing.media?.length > 0) {
+        setSelectedImage(foundListing.media[0].media_url)
+      } else {
+        setSelectedImage("https://picsum.photos/200/300")
+      }
+    } catch (err) {
+      console.error("Error fetching listing:", err)
+      setError("Failed to load listing details. Please try again later.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  fetchListing()
+}, [id, isLoggedIn])
 
   // Format dates with null check
   const formatDate = (dateString?: string | null) => {
@@ -558,24 +565,38 @@ export default function ListingDetailsPage() {
               </Card>
 
               {/* Reviews Section */}
-              <div className="space-y-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-bold flex items-center">
-                      <MessageCircle className="h-6 w-6 mr-3 text-blue-600" />
-                      Reviews & Ratings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    {/* Reviews List */}
-                    <ReviewsList
-                      listingId={listing.id}
-                      ownerId={listing.owner_id}
-                      refreshTrigger={reviewsRefreshTrigger}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+              {isLoggedIn && (
+                <div className="space-y-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-2xl font-bold flex items-center">
+                        <MessageCircle className="h-6 w-6 mr-3 text-blue-600" />
+                        Reviews & Ratings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      {/* Reviews List */}
+                      <ReviewsList
+                        listingId={listing.id}
+                        ownerId={listing.owner_id}
+                        refreshTrigger={reviewsRefreshTrigger}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+              {!isLoggedIn && (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <MessageCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">Want to see reviews?</h3>
+                      <p className="text-gray-600 mb-4">Sign in to read reviews from other renters</p>
+                      <Button asChild>
+                        <Link to="/login">Sign In</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
 
             {/* Right column - Booking and info */}
