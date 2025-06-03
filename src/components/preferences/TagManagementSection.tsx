@@ -10,7 +10,7 @@ import { useEffect, useState } from "react"
 import { TagSelectionModal } from "./TagSelectionModal"
 
 export function TagManagementSection() {
-  const { currentUser, refreshUser } = useUser()
+  const { currentUser } = useUser()
   const { toast } = useToast()
   const [userTags, setUserTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -21,17 +21,16 @@ export function TagManagementSection() {
       fetchUserTags()
     }
   }, [currentUser])
+  
   const fetchUserTags = async () => {
     if (!currentUser) return
     
     try {
       setIsLoading(true)
-      if (currentUser.tags && currentUser.tags?.length > 0) {
-        setUserTags(currentUser.tags)
-      } else {
-        const tags = await tagApi.getUserTags(currentUser.id)
-        setUserTags(tags)
-      }
+      // Always fetch from server - don't rely on user.tags property
+      const tags = await tagApi.getUserTags(currentUser.id)
+      console.warn("Fetched user tags:", tags)
+      setUserTags(tags)
     } catch (error) {
       console.error("Failed to fetch user tags:", error)
       toast({
@@ -43,13 +42,13 @@ export function TagManagementSection() {
       setIsLoading(false)
     }
   }
+  
   const handleSaveTags = async (selectedTagIds: string[]): Promise<void> => {
     if (!currentUser) throw new Error("No user logged in")
 
     try {
       await tagApi.updateUserTags(currentUser.id, selectedTagIds)
-      // Refresh user data to get updated tags
-      await refreshUser()
+      // Refresh tags from server to get updated data
       await fetchUserTags()
       toast({
         title: "Success",
@@ -70,7 +69,7 @@ export function TagManagementSection() {
 
     try {
       await tagApi.removeUserTag(currentUser.id, tagId)
-      await refreshUser()
+      // Refresh tags from server to get updated data
       await fetchUserTags()
       toast({
         title: "Success",
