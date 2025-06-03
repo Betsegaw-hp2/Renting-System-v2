@@ -34,7 +34,7 @@ import {
   Loader2,
   MapPin,
   Upload,
-  XCircle
+  XCircle,
 } from "lucide-react"
 import type React from "react"
 import { useEffect, useState } from "react"
