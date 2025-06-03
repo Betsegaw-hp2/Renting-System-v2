@@ -107,7 +107,7 @@ export const tagApi = {
         return
       }
 
-      await apiClient.delete(`/user/${userId}/tag/${tagId}`)
+      await apiClient.delete(`/users/${userId}/tags/${tagId}`)
     } catch (error) {
       console.error("Error removing user tag:", error)
       throw error
