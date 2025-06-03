@@ -695,13 +695,17 @@ export default function HomePage() {
                           <p className="text-gray-600 mb-6 text-lg italic">"{testimonial.comment}"</p>
                           <div className="flex items-center">
                             <div className="w-12 h-12 bg-gray-200 rounded-full mr-4 overflow-hidden border-2 border-blue-100">
-                              {testimonial.avatar && (
                                 <img
-                                  src={testimonial.avatar || "/placeholder.svg"}
-                                  alt={testimonial.name}
-                                  className="w-12 h-12 rounded-full object-cover"
+                                src={
+                                  testimonial.avatar && testimonial.avatar.trim() !== ""
+                                  ? testimonial.avatar
+                                  : `https://api.dicebear.com/7.x/thumbs/svg?seed=${encodeURIComponent(
+                                    testimonial.name || "user"
+                                    )}`
+                                }
+                                alt={testimonial.name}
+                                className="w-12 h-12 rounded-full object-cover"
                                 />
-                              )}
                             </div>
                             <div>
                               <h4 className="font-semibold text-lg">{testimonial.name}</h4>

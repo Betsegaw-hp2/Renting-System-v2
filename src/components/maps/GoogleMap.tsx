@@ -140,13 +140,13 @@ export const GoogleMap: React.FC<GoogleMapProps> = ({
   if (!isLoaded) {
     return (
       <div className={`${className} bg-gray-100 flex items-center justify-center border`}>
-        <div className="text-center p-4">
+        {/* <div className="text-center p-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
           <p className="text-gray-500 text-sm mt-2">Loading map...</p>
           <p className="text-gray-400 text-xs mt-1">
             {getLocationString()}
           </p>
-        </div>
+        </div> */}
       </div>
     )
   }

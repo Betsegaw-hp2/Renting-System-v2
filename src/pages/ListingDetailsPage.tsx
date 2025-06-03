@@ -44,7 +44,6 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { publicApi, type FeaturedListing } from "../api/publicApi"
 import { Footer } from "../components/layout/Footer"
 import { Header } from "../components/layout/Header"
-import { GoogleMap } from "../components/maps/GoogleMap"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -545,7 +544,8 @@ export default function ListingDetailsPage() {
                     </div>
                   </CardContent>
                 </Card>
-              )}              {/* Location */}
+              )}              {
+                /* Location */}
               <Card>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-bold mb-4">Location</h2>
@@ -555,12 +555,12 @@ export default function ListingDetailsPage() {
                       <span className="block">{getLocationString()}</span>
                     </p>
                   </div>
-                  <GoogleMap 
+                  {/* <GoogleMap 
                     city={listing.city}
                     region={listing.region}
                     country={listing.country}
                     className="w-full h-[200px] rounded-lg"
-                  />
+                  /> */}
                 </CardContent>
               </Card>
 
