@@ -92,6 +92,7 @@ export default function ListingDetailsPage() {
       // Fetch all listings and find the one with matching ID
       const foundListing = await publicApi.getListingById(id)
       console.log("Fetched found listing:", foundListing)
+      await publicApi.increaseListingViews(id)
 
       if (!foundListing) {
         setError("Listing not found")

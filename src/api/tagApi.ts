@@ -56,8 +56,10 @@ export const tagApi = {
       console.error("Error fetching user tags:", error)
       return []
     }
-  },  updateUserTags: async (userId: string, tagIds: string[]): Promise<void> => {
-    try {      if (config.useMockApi) {
+  },  
+  updateUserTags: async (userId: string, tagIds: string[]): Promise<void> => {
+    try {      
+      if (config.useMockApi) {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 500))
         
@@ -76,7 +78,7 @@ export const tagApi = {
 
       // First get existing user tags to filter out duplicates
       const existingTagsResponse = await apiClient.get<Tag[]>(`/users/${userId}/tags`)
-      const existingTagIds = existingTagsResponse.data.map(tag => tag.id)
+      const existingTagIds = (existingTagsResponse.data ?? []).map(tag => tag.id)
       
       // Filter out tags that user already has
       const newTagIds = tagIds.filter(tagId => !existingTagIds.includes(tagId))

@@ -26,7 +26,7 @@ export const notificationsApi = {
 
   markAsRead: async (id: string) => {
     try {
-      const res = await apiClient.patch(`${apiConfig.apiBaseUrl}/notification/${id}/read`)
+      const res = await apiClient.patch(`${apiConfig.apiBaseUrl}/notifications/${id}/read`)
       return res.status === 204
     } catch (error) {
       // Optionally handle/log error
