@@ -2,6 +2,7 @@
 
 import type React from "react"
 
+import { LeafletMap } from "@/components/maps/LeafletMap"
 import { CheckCircle } from "lucide-react"
 import { useState } from "react"
 import { Footer } from "../components/layout/Footer"
@@ -269,10 +270,15 @@ export default function ContactPage() {
 
             <div className="mt-16">
               <h2 className="text-2xl font-bold mb-6 text-center">Find Us</h2>
-              <div className="bg-gray-200 rounded-lg overflow-hidden h-96">
-                {/* This would be replaced with an actual map component */}
+              <div className="bg-gray-200 rounded-lg overflow-hidden h-fit">
                 <div className="w-full h-full flex items-center justify-center">
-                  <p className="text-gray-600">Interactive Map Would Be Displayed Here</p>
+                  <LeafletMap
+                    city="Bole"
+                    region="Addis Abeba"
+                    country="Ethiopia"
+                    address="Airport road"
+                    className="w-full h-[200px] rounded-lg z-0"
+                  />
                 </div>
               </div>
             </div>

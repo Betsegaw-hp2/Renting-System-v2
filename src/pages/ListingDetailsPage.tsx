@@ -1,5 +1,6 @@
 "use client"
 
+import { LeafletMap } from "@/components/maps/LeafletMap"
 import {
   Carousel,
   CarouselContent,
@@ -557,12 +558,13 @@ export default function ListingDetailsPage() {
                       <span className="block">{getLocationString()}</span>
                     </p>
                   </div>
-                  {/* <GoogleMap 
+                  <LeafletMap
                     city={listing.city}
                     region={listing.region}
                     country={listing.country}
-                    className="w-full h-[200px] rounded-lg"
-                  /> */}
+                    address={listing.address}
+                    className="w-full h-[200px] rounded-lg z-0"
+                  />
                 </CardContent>
               </Card>
 
