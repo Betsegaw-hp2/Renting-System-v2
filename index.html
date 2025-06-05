@@ -6,37 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>All-In-One Rental</title>
     <style>
-      /* Google Translate Widget Styling */
+      /* Updated styling for Google Translate Widget */
       #google_translate_element {
         position: fixed !important;
-        bottom: 20px !important;
-        right: 20px !important;
+        bottom: 10px !important;
+        right: 10px !important;
         z-index: 9999 !important;
-        background: white !important;
-        border-radius: 12px !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
-        padding: 8px 12px !important;
-        border: 1px solid #e5e7eb !important;
+        background: #f3f4f6 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+        padding: 6px 8px !important;
+        border: 1px solid #d1d5db !important;
         transition: all 0.3s ease !important;
       }
 
       #google_translate_element:hover {
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
         transform: translateY(-2px) !important;
       }
 
       /* Style the select dropdown */
       .goog-te-combo {
-        background: white !important;
+        background: #ffffff !important;
         border: 1px solid #d1d5db !important;
-        border-radius: 8px !important;
-        padding: 6px 10px !important;
-        font-size: 14px !important;
+        border-radius: 6px !important;
+        padding: 4px 6px !important;
+        font-size: 12px !important;
         color: #374151 !important;
         outline: none !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
-        min-width: 120px !important;
+        min-width: 100px !important;
       }
 
       .goog-te-combo:hover {
@@ -45,7 +45,7 @@
 
       .goog-te-combo:focus {
         border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
       }
 
       /* Hide the Google Translate banner */
@@ -57,37 +57,18 @@
         top: 0 !important;
       }
 
-      /* Style for dark mode */
-      @media (prefers-color-scheme: dark) {
-        #google_translate_element {
-          background: #1f2937 !important;
-          border-color: #374151 !important;
-        }
-
-        .goog-te-combo {
-          background: #1f2937 !important;
-          border-color: #4b5563 !important;
-          color: #f9fafb !important;
-        }
-
-        .goog-te-combo:hover,
-        .goog-te-combo:focus {
-          border-color: #3b82f6 !important;
-        }
-      }
-
       /* Mobile responsive */
       @media (max-width: 640px) {
         #google_translate_element {
-          bottom: 80px !important;
-          right: 16px !important;
-          padding: 6px 8px !important;
+          bottom: 20px !important;
+          right: 10px !important;
+          padding: 4px 6px !important;
         }
 
         .goog-te-combo {
-          font-size: 12px !important;
-          padding: 4px 8px !important;
-          min-width: 100px !important;
+          font-size: 10px !important;
+          padding: 3px 5px !important;
+          min-width: 80px !important;
         }
       }
 
@@ -95,17 +76,11 @@
       .goog-te-gadget-simple {
         background: transparent !important;
         border: none !important;
-        font-size: 14px !important;
+        font-size: 12px !important;
       }
 
       .goog-te-gadget-simple .goog-te-menu-value {
         color: #374151 !important;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        .goog-te-gadget-simple .goog-te-menu-value {
-          color: #f9fafb !important;
-        }
       }
 
       /* Style the dropdown arrow */
@@ -128,47 +103,126 @@
         opacity: 0.7 !important;
       }
     </style>
+    <style>
+      /* Google Translate Toggle Button */
+      #google-translate-toggle {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        z-index: 10000;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 1px solid #e5e7eb;
+        transition: box-shadow 0.2s;
+      }
+      #google-translate-toggle:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+      }
+      #google-translate-toggle img {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: block;
+      }
+      #google_translate_element {
+        display: none;
+        position: fixed !important;
+        bottom: 60px !important;
+        right: 10px !important;
+        z-index: 9999 !important;
+        background: #f3f4f6 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+        padding: 6px 8px !important;
+        border: 1px solid #d1d5db !important;
+        transition: all 0.3s ease !important;
+      }
+      #google_translate_element.active {
+        display: block !important;
+      }
+      @media (max-width: 640px) {
+        #google-translate-toggle {
+          bottom: 20px;
+          right: 10px;
+          width: 38px;
+          height: 38px;
+        }
+        #google-translate-toggle img {
+          width: 22px;
+          height: 22px;
+        }
+        #google_translate_element {
+          bottom: 60px !important;
+          right: 10px !important;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Google Translate Toggle Button -->
+    <div id="google-translate-toggle" title="Translate">
+      <img src="https://www.gstatic.com/images/branding/product/1x/translate_48dp.png" alt="Google Translate" />
+    </div>
     <!-- 1. Load Google's translate script -->
     <script
       type="text/javascript"
       src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
     ></script>
-
     <!-- 2. Where the "Translate" dropdown will appear -->
     <div id="google_translate_element"></div>
-
     <!-- 3. Initialize the widget -->
     <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
           {
             pageLanguage: 'en',
-            includedLanguages: 'en,am,om', 
+            includedLanguages: 'en,am,om',
             layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false,
             multilanguagePage: true
           },
           'google_translate_element'
         );
-
-        // Add loading class initially
         document.getElementById('google_translate_element').classList.add('loading');
-        
-        // Remove loading class after a short delay
         setTimeout(() => {
           document.getElementById('google_translate_element').classList.remove('loading');
         }, 1000);
       }
-
+      // Toggle widget visibility
+      document.addEventListener('DOMContentLoaded', function() {
+        const toggle = document.getElementById('google-translate-toggle');
+        const widget = document.getElementById('google_translate_element');
+        let isOpen = false;
+        toggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          isOpen = !isOpen;
+          if (isOpen) {
+            widget.classList.add('active');
+          } else {
+            widget.classList.remove('active');
+          }
+        });
+        // Hide widget when clicking outside
+        document.addEventListener('click', function(e) {
+          if (isOpen && !widget.contains(e.target) && !toggle.contains(e.target)) {
+            widget.classList.remove('active');
+            isOpen = false;
+          }
+        });
+      });
       // Handle mobile navigation interference
       window.addEventListener('load', function() {
-        // Ensure translate widget doesn't interfere with mobile navigation
         const translateElement = document.getElementById('google_translate_element');
         if (window.innerWidth <= 640 && translateElement) {
-          translateElement.style.bottom = '80px';
+          translateElement.style.bottom = '60px';
         }
       });
     </script>

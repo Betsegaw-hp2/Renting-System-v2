@@ -37,8 +37,7 @@ export class ChatWebSocketService {
           time: new Date().toISOString(),
         })
         window.dispatchEvent(new Event('chat-ws-open'));
-      }
-
+      }      
       this.socket.onmessage = (e) => {
         console.log("Chat WS message received", {
           data: e.data,

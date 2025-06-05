@@ -17,22 +17,22 @@ import {
 import { tenantApi, type Booking } from "@/features/tenant/api/tenantApi"
 import { useToast } from "@/hooks/useToast"
 import { differenceInDays, format } from "date-fns"
-import { CalendarIcon, Clock, Edit2Icon, Save } from "lucide-react"
+import { CalendarIcon, Clock, Edit2Icon, LinkIcon, Save } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { publicApi } from "../api/publicApi"
+import { publicApi, type FeaturedListing } from "../api/publicApi"
 
-interface Listing {
-  id: string
-  title: string
-  description: string
-  price: number
-}
+// interface Listing {
+//   id: string
+//   title: string
+//   description: string
+//   price: number
+// }
 
 const BookingDetailPage = () => {
   const { listingId, bookingId } = useParams<{ listingId: string; bookingId: string }>()
   const [booking, setBooking] = useState<Booking | null>(null)
-  const [listing, setListing] = useState<Listing | null>(null)
+  const [listing, setListing] = useState<FeaturedListing | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -238,14 +238,20 @@ const BookingDetailPage = () => {
                 <CardTitle className="text-2xl">Booking Details</CardTitle>
                 <CardDescription>Booking #{booking.id.substring(0, 8)}</CardDescription>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => setIsEditDialogOpen(true)}
-                disabled={booking.status === "completed" || booking.status === "cancelled"}
-              >
-                <Edit2Icon className="mr-2 h-4 w-4" />
-                Edit Booking
-              </Button>
+              <div>
+                <Button variant="link" onClick={() => navigate(`/listings/${listing?.id}`)}>
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  View Listing
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  disabled={booking.status === "completed" || booking.status === "cancelled"}
+                >
+                  <Edit2Icon className="mr-2 h-4 w-4" />
+                  Edit Booking
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">

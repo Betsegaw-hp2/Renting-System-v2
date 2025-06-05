@@ -1,24 +1,8 @@
-import axios from "axios"
-import config from "@/config/api.config"
-import { getAuthToken } from "@/lib/cookies"
-import { publicAxiosInstance } from "@/api/publicApi"
+import apiClient from "@/api/client";
+import { publicAxiosInstance } from "@/api/publicApi";
 
 // Create axios instance for reviews API
-const reviewsAxiosInstance = axios.create({
-  baseURL: config.apiBaseUrl,
-  headers: {
-    "Content-Type": "application/json",
-  },
-})
-
-// Add auth token to requests
-reviewsAxiosInstance.interceptors.request.use((config) => {
-  const token = getAuthToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+const reviewsAxiosInstance = apiClient;
 
 // Types for reviews
 export interface Review {

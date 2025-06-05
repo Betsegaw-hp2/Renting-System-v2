@@ -1,27 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Star, MessageCircle, Reply, Send, ChevronDown, ChevronUp, Plus } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/useToast"
+import { Textarea } from "@/components/ui/textarea"
 import { usePermissions } from "@/hooks/usePermissions"
+import { useToast } from "@/hooks/useToast"
+import { ChevronDown, ChevronUp, MessageCircle, Plus, Reply, Send, Star } from "lucide-react"
+import { useEffect, useState } from "react"
 import { reviewsApi, type Review, type ReviewReply } from "../api/reviewApi"
 import { ReviewForm } from "./ReviewForm"
-import { Input } from "@/components/ui/input"
-import { toast } from "react-toastify"
 
 interface ReviewsListProps {
   listingId: string
   ownerId?: string
   refreshTrigger?: number
+  currentUserId?: string | null
 }
 
-export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListProps) {
+export function ReviewsList({ listingId, ownerId, refreshTrigger, currentUserId }: ReviewsListProps) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [replies, setReplies] = useState<Record<string, ReviewReply>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -493,7 +492,7 @@ export function ReviewsList({ listingId, ownerId, refreshTrigger }: ReviewsListP
                         )}
 
                         {/* Edit and Delete buttons */}
-                        {!editingReview && (
+                        {!editingReview && review.reviewer_id === currentUserId && (
                           <div className="flex gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               variant="ghost"

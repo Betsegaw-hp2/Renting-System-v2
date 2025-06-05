@@ -71,7 +71,6 @@ export default function ListingDetailsPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-
   // Add user authentication check
   const user = useSelector((state: RootState) => state.auth.user)
   const isLoggedIn = !!user
@@ -104,7 +103,7 @@ export default function ListingDetailsPage() {
       if (isLoggedIn) {
         try {
           const reviews = await reviewsApi.getListingReviews(id)
-          await publicApi.increaseListingViews(id)
+          // isTenant && await publicApi.increaseListingViews(id)
           reviewCount = reviews?.length || 0
           setReviewsCount(reviewCount)
         } catch (err) {
@@ -583,6 +582,7 @@ export default function ListingDetailsPage() {
                         listingId={listing.id}
                         ownerId={listing.owner_id}
                         refreshTrigger={reviewsRefreshTrigger}
+                        currentUserId={user?.id}
                       />
                     </CardContent>
                   </Card>
